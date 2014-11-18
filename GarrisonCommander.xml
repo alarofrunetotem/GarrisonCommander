@@ -1,0 +1,27 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+
+	<Script file="GarrisonCommander.lua"/>
+
+	<CheckButton name="GarrisonFrame" parent="UIParent" movable="true" enableMouse="true" clampedToScreen="true" inherits="LootWonALertFrameTemplate">
+		<Anchors>
+			<Anchor point="CENTER" x="0" y="300"/>
+		</Anchors>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForDrag("LeftButton")
+				self:RegisterForClicks("AnyUp")
+			</OnLoad>
+			<OnDragStart>
+				self:StartMoving()
+			</OnDragStart>
+			<OnDragStop>
+				self:SetopMovingOrSizing()
+			</OnDragStop>
+			<OnLeave>
+				GameTooltip:Hide()
+				ResetCursor()
+			</OnLeave>
+		</Scripts>
+	</CheckButton>
+</Ui>

@@ -1,0 +1,18 @@
+package-as: GarrisonCommander
+enable-nolib-creation: no
+
+externals:
+	libs/AlarShared-3.0:
+		url: git://git.curseforge.net/wow/alar-art-remover/mainline.git/libs/AlarShared-3.0
+	libs/Ace3:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk
+		tag: latest
+
+manual-changelog:
+		filename: CHANGELOG.txt
+		markup-type: creole
+
+
+ignore:
+- .buildpath
+- .project
