@@ -8,13 +8,22 @@ self:HF_Pre([[
 = GarrisonCommander helps you when choosing the right follower for the right mission =
 == Description ==
 GarrisonCommander adds to mission tooltips the following informations:
-* base success chance
+* makes mission panel movable (position NOT yet saved between sessions)
+* base success chance (does NOT account for followers)
 * list of follower that have the necessary counters for the mission, with their status (on mission, available etc)
+* both traits (orange lines) and abilities(blue lines) are shown
+* every follower line has now the icon for countered trait/ability
 
 == Future plans ==
 # Showing information in an overlay on mission buttons to have all needed information for all missions at a glance
 # Mission assign optimizer: I think I could also propone the best assignment to maximise your chances of success
 
+]])
+self:RelNotes(1,0,1,[[
+Fixed: Follower info refresh should be now more reliable
+Feature: Mission panel is now movable
+Feature: Shows also countered traits( i.e. environmente/racial bonuses)
+Feature: Shows icon for trait or ability countered. Abilities are blue lines, traits orange lines
 ]])
 self:RelNotes(1,0,0,[[
 Initial release

@@ -1,9 +1,7 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
-== Description ==
-GarrisonCommander adds to mission tooltips the following informations:
-* base success chance
-* list of follower that have the necessary counters for the mission, with their status (on mission, available etc)
-
-== Future plans ==
-# Showing information in an overlay on mission buttons to have all needed information for all missions at a glance
-# Mission assign optimizer: I think I could also propone the best assignment to maximise your chances of success
+* 1.0.1
+Fixed: Follower info refresh should be now more reliable
+Feature: Mission panel is now movable
+Feature: Shows also countered traits( i.e. environmente/racial bonuses)
+Feature: Shows icon for trait or ability countered. Abilities are blue lines, traits orange lines
+* 1.0.0 First release
