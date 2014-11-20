@@ -19,7 +19,7 @@ GarrisonCommander adds to mission tooltips the following informations:
 # Mission assign optimizer: I think I could also propone the best assignment to maximise your chances of success
 
 ]])
-self:RelNotes(1,0,1,[[
+self:RelNotes(1,0,2,[[
 Fixed: Follower info refresh should be now more reliable
 Feature: Mission panel is now movable
 Feature: Shows also countered traits( i.e. environmente/racial bonuses)

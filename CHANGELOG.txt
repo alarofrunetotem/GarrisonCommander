@@ -1,5 +1,5 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
-* 1.0.1
+* 1.0.2
 Fixed: Follower info refresh should be now more reliable
 Feature: Mission panel is now movable
 Feature: Shows also countered traits( i.e. environmente/racial bonuses)

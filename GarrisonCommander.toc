@@ -4,7 +4,7 @@
 ## Notes-itIT: Ti aiuta a scegliere il giusto seguace per la giusta missione
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ @project-abbreviated-hash@
-## X-Version: 1.0.1
+## X-Version: 1.0.2
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
