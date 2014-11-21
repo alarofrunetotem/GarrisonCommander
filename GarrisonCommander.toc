@@ -8,17 +8,13 @@
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
-## RequiredDeps: Blizzard_GarrisonUI
+## X-RequiredDeps: Blizzard_GarrisonUI
 ## OptionalDeps: AlarArtRemover
 ## DefaultState: Enabled
-## LoadOnDemand: 1
-## LoadWith: Blizzard_GarrisonUI
 ## SavedVariables: dbGAC
 ## X-ID: GAC
 ## X-Database:dbGAC
 ## X-Category: Garrison
-## X-ID: MRF
-## X-Database: dbMRF
 ## X-License: GPL v3
 ## X-eMail: alar@aspide.it
 ## X-Date: @project-date-iso@
