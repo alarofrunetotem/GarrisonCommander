@@ -1,7 +1,10 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
 * 1.0.2
-Fixed: Follower info refresh should be now more reliable
-Feature: Mission panel is now movable
-Feature: Shows also countered traits( i.e. environmente/racial bonuses)
-Feature: Shows icon for trait or ability countered. Abilities are blue lines, traits orange lines
+Feature: Level added to follower line
+Feature: All counterd traits listed on the same line
+Feature: For "In mission" follower time letf is shown instead of "In mission"
+Feature: Trait related lines are now silver, while abilities related are Blue
+Feature: Mission panel can now optionally be relocked
+Feature: You can select to ignore "busy" followers
+Feature: possible party and success chance with that party
 * 1.0.0 First release
