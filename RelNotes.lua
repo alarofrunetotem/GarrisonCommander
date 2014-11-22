@@ -14,11 +14,12 @@ GarrisonCommander adds to mission tooltips the following informations:
 * both traits (silver lines) and abilities(blue lines) are shown
 * every follower line has now the icon for countered trait/ability
 * time left shown for In mission follower
+* possible party and success chance with that party
 
 == Future plans ==
-# Will calculate the success chance with the best possible setup
+
 # Showing information in an overlay on mission buttons to have all needed information for all missions at a glance
-# Mission assign optimizer: I think I could also propone the best assignment to maximise your chances of success
+
 
 ]])
 self:RelNotes(1,0,2,[[
@@ -28,6 +29,7 @@ Feature: For "In mission" follower time letf is shown instead of "In mission"
 Feature: Trait related lines are now silver, while abilities related are Blue
 Feature: Mission panel can now optionally be relocked
 Feature: You can select to ignore "busy" followers
+Feature: possible party and success chance with that party
 ]])
 self:RelNotes(1,0,1,[[
 Fixed: Follower info refresh should be now more reliable
