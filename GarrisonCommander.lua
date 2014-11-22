@@ -152,7 +152,7 @@ function addon:TooltipAdder(missionID)
 			for i,mechanic in pairs(enemy.mechanics) do
 				self.db.global.abilities[i .. '.' .. mechanic.name]=mechanic.description
 				local menace=mechanic.name
-				local res=""
+				local res
 				if (fellas[menace]) then
 					local followerID=fellas[menace].id
 					res=fellas[menace].name
@@ -170,7 +170,7 @@ function addon:TooltipAdder(missionID)
 				if (res) then
 					GameTooltip:AddDoubleLine(menace,res,0,1,0)
 				else
-					GameTooltip:AddDoubleLine(menace,res,1,0,0)
+					GameTooltip:AddDoubleLine(menace,'',1,0,0)
 				end
 			end
 		end
@@ -270,7 +270,9 @@ local hooks={
 	"GarrisonFollowerList_OnShow",
 }
 function addon:ScriptTrace(hook,frame,...)
+--@debug@
 	print("Triggered script on",frame:GetName(),...)
+--@end-debug@
 	return self.hooks[frame][hook](frame)
 end
 function addon:postHookScript(frame,hook,method)
