@@ -105,7 +105,7 @@ function addon:TooltipAdder(missionID)
 			formato=formato.." %s"
 --@debug@
 			formato=formato .. " 0x+(0*8)  " .. id:sub(11)
---@end-debug
+--@end-debug@
 			if (b) then
 				if (not buffs[id]) then
 					buffs[id]={simple=follower.name,name=format(formato,follower.rank,follower.name),status=(follower.status or AVAILABLE)}
