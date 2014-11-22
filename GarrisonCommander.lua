@@ -207,10 +207,12 @@ function addon:TooltipAdder(missionID)
 				local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,follower.followerID)
 				if (rc and code) then
 					tinsert(added,follower.followerID)
-					GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Green.r,C.Green.g,C.Green.b)--SPELL_TARGET_TYPE1_DESC)
+					GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
 					if (#added >= maxfollowers) then break end
 				else
+--@debug@
 					print("Failed adding",follower.name,follower.followerID,rc,code)
+--@end-debug@
 				end
 			end
 			perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
@@ -261,7 +263,7 @@ end
 function addon:ADDON_LOADED(event,addon)
 	if (addon=="Blizzard_GarrisonUI") then
 		self:UnregisterEvent("ADDON_LOADED")
-		print("Enabled cause", addon," loaded")
+		print("Enabled")
 		self:Init()
 	end
 end
@@ -350,7 +352,7 @@ function addon:Init()
 		self[f]=function(...) print("Hooked",f,...) end
 		self:SecureHook(f,f)
 	end
---@debug-end@
+--@end-debugd@
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip","TooltipAdder")
 	self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
 	self:HookScript(GMFTab1,"OnClick","GarrisonMissionListTab_OnClick")
@@ -361,7 +363,7 @@ function addon:Init()
 	self:preHookScript(GMFMissionsTab2,"OnClick")
 	self:postHookScript(GMF.MissionTab.MissionPage.StartMissionButton,"OnClick")
 	self:postHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
---@debug-end@
+--@end-debug@
 	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
 end
 
