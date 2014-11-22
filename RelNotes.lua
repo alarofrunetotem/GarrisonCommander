@@ -4,8 +4,9 @@ local hlp=LibStub("AceAddon-3.0"):GetAddon(me)
 function hlp:loadHelp()
 self:HF_Title(me,"RELNOTES")
 self:HF_Paragraph("Description")
-self:HF_Pre([[
+self:Wiki([[
 = GarrisonCommander helps you when choosing the right follower for the right mission =
+
 == Description ==
 GarrisonCommander adds to mission tooltips the following informations:
 * makes mission panel movable (position NOT yet saved between sessions)
@@ -17,10 +18,7 @@ GarrisonCommander adds to mission tooltips the following informations:
 * possible party and success chance with that party
 
 == Future plans ==
-
 # Showing information in an overlay on mission buttons to have all needed information for all missions at a glance
-
-
 ]])
 self:RelNotes(1,0,2,[[
 Feature: Level added to follower line

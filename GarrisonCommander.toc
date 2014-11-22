@@ -8,7 +8,6 @@
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
-## X-RequiredDeps: Blizzard_GarrisonUI
 ## OptionalDeps: AlarArtRemover
 ## DefaultState: Enabled
 ## SavedVariables: dbGAC
