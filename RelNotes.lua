@@ -18,9 +18,9 @@ GarrisonCommander adds to mission tooltips the following informations:
 * possible party and success chance with that party
 
 == Future plans ==
-# Showing information in an overlay on mission buttons to have all needed information for all missions at a glance
+# Improving selection of followers for missions
 ]])
-self:RelNotes(1,0,2,[[
+self:RelNotes(1,1,0,[[
 Feature: Level added to follower line
 Feature: All counterd traits listed on the same line
 Feature: For "In mission" follower time letf is shown instead of "In mission"
