@@ -43,8 +43,9 @@ local GARRISON_MISSION_PERCENT_CHANCE=GARRISON_MISSION_PERCENT_CHANCE
 local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
 local AVAILABLE=AVAILABLE
 local PARTY=PARTY
-local SPELL_TARGET_TYPE4_DESC=SPELL_TARGET_TYPE4_DESC:capitalize()
-local SPELL_TARGET_TYPE1_DESC=SPELL_TARGET_TYPE1_DESC:capitalize()
+local SPELL_TARGET_TYPE4_DESC=SPELL_TARGET_TYPE4_DESC:capitalize() -- party member
+local SPELL_TARGET_TYPE1_DESC=SPELL_TARGET_TYPE1_DESC:capitalize() -- any
+local ANYONE='('..SPELL_TARGET_TYPE1_DESC..')'
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE .. ' ' .. GARRISON_FOLLOWERS
 local IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE.. ' ' .. GARRISON_FOLLOWER_INACTIVE .. ',' .. GARRISON_FOLLOWER_ON_MISSION ..',' .. GARRISON_FOLLOWER_WORKING.. ','.. GARRISON_FOLLOWER_EXHAUSTED .. ' ' .. GARRISON_FOLLOWERS
 IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE_UNAIVALABLE_FOLLOWERS:capitalize()
@@ -145,6 +146,10 @@ function addon:TooltipAdder(missionID)
 			end
 		end
 	end
+	local added=self:NewTable()
+	local maxfollowers=C_Garrison.GetMissionMaxFollowers(missionID)
+	local partyshown=false
+	local perc=0
 	if (next(traits) or next(buffs) ) then
 		GameTooltip:AddLine(GARRISON_FOLLOWER_CAN_COUNTER)
 		for id,v in pairs(buffs) do
@@ -156,10 +161,9 @@ function addon:TooltipAdder(missionID)
 			self:AddLine(nil,v.name,status,C.Silver())
 		end
 		GameTooltip:AddLine(PARTY,C.Green())
-		local maxfollowers=C_Garrison.GetMissionMaxFollowers(missionID)
+		partyshown=true
 		local enemies = select(8,C_Garrison.GetMissionInfo(missionID))
-		local missionInfo=C_Garrison.GetBasicMissionInfo(missionID)
-		local added=self:NewTable()
+		--local missionInfo=C_Garrison.GetBasicMissionInfo(missionID)
 --@debug@
 		--DevTools_Dump(fellas)
 --@end-debug@
@@ -186,7 +190,7 @@ function addon:TooltipAdder(missionID)
 				end
 			end
 		end
-		local perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
+		perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 		if (perc < 100 and  #added < maxfollowers and next(traits))  then
 			for id,v in (traits) do
 				local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,id)
@@ -196,40 +200,44 @@ function addon:TooltipAdder(missionID)
 			end
 			perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 		end
-		-- And then fill the roster
-		if (#added < maxfollowers )  then
-			for j=1,#followerList do
-				local index=followerList[j]
-				local follower=followers[index]
-				if (not follower.isCollected) then
-					break
-				end
-				local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,follower.followerID)
-				if (rc and code) then
-					tinsert(added,follower.followerID)
-					GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
-					if (#added >= maxfollowers) then break end
-				else
---@debug@
-					print("Failed adding",follower.name,follower.followerID,rc,code)
---@end-debug@
-				end
+	end
+	-- And then fill the roster
+	local partysize=#added
+	if (partysize < maxfollowers )  then
+		for j=1,#followerList do
+			local index=followerList[j]
+			local follower=followers[index]
+			if (not follower.isCollected) then
+				break
 			end
-			perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
-		end
-		local q=self:GetDifficultyColor(perc)
-		GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
-		for _,id in pairs(added) do
-			local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,missionID,id)
+			local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,follower.followerID)
+			if (rc and code) then
+				tinsert(added,follower.followerID)
+				--GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
+				if (#added >= maxfollowers) then break end
+			else
 --@debug@
-			if (not rc) then print("Add",rc,code) end
+				print("Failed adding",follower.name,follower.followerID,rc,code)
 --@end-debug@
+			end
 		end
-		self:DelTable(added)
+		perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
+	end
+	local q=self:GetDifficultyColor(perc)
+	if (not partyshown) then
+		GameTooltip:AddDoubleLine(PARTY,ANYONE,C.Orange.r,C.Orange.g,C.Orange.b)
+	end
+	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
+	for _,id in pairs(added) do
+		local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,missionID,id)
 --@debug@
-		--DevTools_Dump(fellas)
+		if (not rc) then print("Add",rc,code) end
 --@end-debug@
 	end
+	self:DelTable(added)
+--@debug@
+	--DevTools_Dump(fellas)
+--@end-debug@
 	self:DelTable(buffed)
 	self:DelTable(traited)
 	self:DelTable(buffs)
