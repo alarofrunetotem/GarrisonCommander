@@ -213,7 +213,7 @@ function addon:TooltipAdder(missionID)
 			local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,follower.followerID)
 			if (rc and code) then
 				tinsert(added,follower.followerID)
-				--GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
+				GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
 				if (#added >= maxfollowers) then break end
 			else
 --@debug@
@@ -360,7 +360,7 @@ function addon:Init()
 		self[f]=function(...) print("Hooked",f,...) end
 		self:SecureHook(f,f)
 	end
---@end-debugd@
+--@end-debug@
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip","TooltipAdder")
 	self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
 	self:HookScript(GMFTab1,"OnClick","GarrisonMissionListTab_OnClick")
