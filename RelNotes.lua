@@ -21,6 +21,10 @@ GarrisonCommander adds to mission tooltips the following informations:
 # Improving selection of followers for missions
 ]])
 self:RelNotes(1,1,0,[[
+Fixed: Added workaround to avoid that MasterPlan steals tooltip de facto
+disabling GarrisonCommander
+]])
+self:RelNotes(1,1,0,[[
 Feature: Level added to follower line
 Feature: All counterd traits listed on the same line
 Feature: For "In mission" follower time letf is shown instead of "In mission"

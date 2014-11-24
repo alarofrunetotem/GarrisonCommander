@@ -77,7 +77,17 @@ function addon:GetDifficultyColor(perc)
 	end
 	return QuestDifficultyColors[difficulty]
 end
+function addon:RestoreTooltip()
+	local self = GMF.MissionTab.MissionList;
+	local scrollFrame = self.listScroll;
+	local buttons = scrollFrame.buttons;
+	for i =1,#buttons do
+		buttons[i]:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
+	end
+	print ("Restoring tooltip")
+end
 function addon:TooltipAdder(missionID)
+	print("OnEnter called on button")
 --@debug@
 	GameTooltip:AddLine("ID:" .. tostring(missionID))
 --@end-debug@
@@ -242,6 +252,8 @@ function addon:TooltipAdder(missionID)
 		if (not rc) then print("Add",rc,code) end
 --@end-debug@
 	end
+	-- Add a signature
+	GameTooltip:AddDoubleLine("Tooltip enhancement","by GarrisonCommander",0,0,0,C:Silver())
 	self:DelTable(added)
 --@debug@
 	--DevTools_Dump(fellas)
@@ -279,7 +291,6 @@ end
 function addon:ADDON_LOADED(event,addon)
 	if (addon=="Blizzard_GarrisonUI") then
 		self:UnregisterEvent("ADDON_LOADED")
-		print("Enabled")
 		self:Init()
 	end
 end
@@ -344,7 +355,6 @@ function addon:preHookScript(frame,hook,method)
 	end
 end
 local hooks={
-	"GarrisonMissionList_Update",
 	"GarrisonMissionButton_OnEnter",
 	"GarrisonFollowerList_OnShow",
 }
@@ -361,6 +371,7 @@ function addon:Init()
 		self:ScheduleTimer("Init",2)
 		return
 	end
+	print("Enabled")
 	self:FillFollowersList()
 	self:CacheFollowers()
 --@debug@
@@ -371,6 +382,11 @@ function addon:Init()
 --@end-debug@
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip","TooltipAdder")
 	self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
+	if (IsAddOnLoaded("MasterPlan") or IsAddOnLoadOnDemand("MasterPlan")) then
+		-- I need to hook this function to restore tooltip handler disabled by MasterPlan
+		-- Bah!
+		self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
+	end
 	self:HookScript(GMFTab1,"OnClick","GarrisonMissionListTab_OnClick")
 	self:HookScript(GMFTab2,"OnClick","GarrisonMissionListTab_OnClick")
 --@debug@
