@@ -87,7 +87,6 @@ function addon:RestoreTooltip()
 	print ("Restoring tooltip")
 end
 function addon:TooltipAdder(missionID)
-	print("OnEnter called on button")
 --@debug@
 	GameTooltip:AddLine("ID:" .. tostring(missionID))
 --@end-debug@
@@ -354,10 +353,6 @@ function addon:preHookScript(frame,hook,method)
 		return self:SecureHookScript(frame,hook,function(...) addon:ScriptTrace(hook,...) end)
 	end
 end
-local hooks={
-	"GarrisonMissionButton_OnEnter",
-	"GarrisonFollowerList_OnShow",
-}
 function addon:Init()
 	GMF=GarrisonMissionFrame
 	GMFFollowers=GarrisonMissionFrameFollowers
@@ -371,18 +366,13 @@ function addon:Init()
 		self:ScheduleTimer("Init",2)
 		return
 	end
-	print("Enabled")
+	print("Activated")
 	self:FillFollowersList()
 	self:CacheFollowers()
---@debug@
-	for _,f in pairs(hooks) do
-		self[f]=function(...) print("Hooked",f,...) end
-		self:SecureHook(f,f)
-	end
---@end-debug@
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip","TooltipAdder")
 	self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
-	if (IsAddOnLoaded("MasterPlan") or IsAddOnLoadOnDemand("MasterPlan")) then
+	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
+	if (loadable or reason=="DEMAND_LOADED") then
 		-- I need to hook this function to restore tooltip handler disabled by MasterPlan
 		-- Bah!
 		self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
