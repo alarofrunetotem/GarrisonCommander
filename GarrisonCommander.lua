@@ -84,7 +84,6 @@ function addon:RestoreTooltip()
 	for i =1,#buttons do
 		buttons[i]:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
 	end
-	print ("Restoring tooltip")
 end
 function addon:TooltipAdder(missionID)
 --@debug@
@@ -252,7 +251,8 @@ function addon:TooltipAdder(missionID)
 --@end-debug@
 	end
 	-- Add a signature
-	GameTooltip:AddDoubleLine("Tooltip enhancement","by GarrisonCommander",0,0,0,C:Silver())
+	local r,g,b=C:Silver()
+	GameTooltip:AddDoubleLine("GarrisonCommander",self.version,r,g,b,r,g,b)
 	self:DelTable(added)
 --@debug@
 	--DevTools_Dump(fellas)
