@@ -20,7 +20,11 @@ GarrisonCommander adds to mission tooltips the following informations:
 == Future plans ==
 # Improving selection of followers for missions
 ]])
-self:RelNotes(1,1,0,[[
+self:RelNotes(1,1,2,[[
+Fixed: Solves a rare case of library incompatibility causing error ...rfaceGarrisonCommander\GarrisonCommander-1.1.1.lua:47: attempt to call method 'capitalize' (a nil value)
+Feature: Removed signature in tooltip... i was annoying me too.. :)
+]])
+self:RelNotes(1,1,2,[[
 Fixed: Added workaround to avoid that MasterPlan steals tooltip de facto
 disabling GarrisonCommander
 ]])

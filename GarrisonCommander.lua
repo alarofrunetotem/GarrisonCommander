@@ -44,13 +44,13 @@ local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
 local AVAILABLE=AVAILABLE -- "Available"
 local PARTY=PARTY -- "Party"
 local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
-local SPELL_TARGET_TYPE4_DESC=SPELL_TARGET_TYPE4_DESC:capitalize() -- party member
-local SPELL_TARGET_TYPE1_DESC=SPELL_TARGET_TYPE1_DESC:capitalize() -- any
+local SPELL_TARGET_TYPE4_DESC=strupper(strlower(SPELL_TARGET_TYPE4_DESC)) -- party member
+local SPELL_TARGET_TYPE1_DESC=strupper(strlower(SPELL_TARGET_TYPE1_DESC)) -- any
 local ANYONE='('..SPELL_TARGET_TYPE1_DESC..')'
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE .. ' ' .. GARRISON_FOLLOWERS
 local IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE.. ' ' .. GARRISON_FOLLOWER_INACTIVE .. ',' .. GARRISON_FOLLOWER_ON_MISSION ..',' .. GARRISON_FOLLOWER_WORKING.. ','.. GARRISON_FOLLOWER_EXHAUSTED .. ' ' .. GARRISON_FOLLOWERS
-IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE_UNAIVALABLE_FOLLOWERS:capitalize()
-IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL:capitalize()
+IGNORE_UNAIVALABLE_FOLLOWERS=strupper(strlower(IGNORE_UNAIVALABLE_FOLLOWERS))
+IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=strupper(strlower(IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL))
 local GameTooltip=GameTooltip
 local timers={}
 function addon:AddLine(icon,name,status,r,g,b,...)
@@ -251,8 +251,8 @@ function addon:TooltipAdder(missionID)
 --@end-debug@
 	end
 	-- Add a signature
-	local r,g,b=C:Silver()
-	GameTooltip:AddDoubleLine("GarrisonCommander",self.version,r,g,b,r,g,b)
+	--local r,g,b=C:Silver()
+	--GameTooltip:AddDoubleLine("GarrisonCommander",self.version,r,g,b,r,g,b)
 	self:DelTable(added)
 --@debug@
 	--DevTools_Dump(fellas)
