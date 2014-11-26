@@ -1,7 +1,7 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
 * 1.1.2
 Fixed: Solves a rare case of library incompatibility causing error ...rfaceGarrisonCommander\GarrisonCommander-1.1.1.lua:47: attempt to call method 'capitalize' (a nil value)
-Feature: Removed signature in tooltip... i was annoying me too.. :)
+Feature: Removed signature in tooltip... it was annoying me too.. :)
 * 1.1.1
 Fix for those who has MasterPlan installed. Master Plan was breaking GarrisonCommander, this patch fixes it
 * 1.1.0
