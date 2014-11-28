@@ -19,7 +19,9 @@ self:Wiki([[
 ]])
 self:RelNotes(1,1,3,[[
 Fixed: When used for a long session of mission management, GarrisonCommander could starve with memory. Now it never go over 1M
-Feature: Preview of 1.2.0 Chance of success is now permanently displayed on every mission. In this version it get updated ONLY when you hover on it
+Feature: Preview of 1.2.0: Chance of success is now permanently displayed on every mission. In this version it get updated ONLY when you hover on it
+Feature: Preview of 1.2.0: Number of requested followers is now permanently displayed on every mission.
+Feature: Even if you enabled use of busy followers in calculation, you are warned if you miss enough followers for the mission
 ]])
 self:RelNotes(1,1,2,[[
 Fixed: Solves a rare case of library incompatibility causing error ...rfaceGarrisonCommander\GarrisonCommander-1.1.1.lua:47: attempt to call method 'capitalize' (a nil value)
