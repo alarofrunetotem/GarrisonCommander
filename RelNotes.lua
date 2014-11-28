@@ -6,22 +6,19 @@ self:HF_Title(me,"RELNOTES")
 self:HF_Paragraph("Description")
 self:Wiki([[
 = GarrisonCommander helps you when choosing the right follower for the right mission =
-
-== Description ==
-GarrisonCommander adds to mission tooltips the following informations:
-* makes mission panel movable (position NOT yet saved between sessions)
-* base success chance (does NOT account for followers)
+== General enhancements ==
+* Mission panel is movable (position not saved, it's jus to see things, panel is so huge...)
+* Success chance extimation shown in mission list (optionally considering only available followers)
+== Tooltip Enhancements ==
+* base success chance (before adding followers)
 * list of follower that have the necessary counters for the mission, with their status (on mission, available etc)
 * both traits (silver lines) and abilities(blue lines) are shown
 * every follower line has now the icon for countered trait/ability
-* time left shown for In mission follower
-* possible party and success chance with that party
-
-== Future plans ==
-# Improving selection of followers for missions
+* for In mission follower reports remaining time
+* final success chance (optionally considering only available followers)
 ]])
 self:RelNotes(1,1,3,[[
-Fixed: When used for a long session of mission management, GarrisonCommande could starve with memory. Now it never go over 1M
+Fixed: When used for a long session of mission management, GarrisonCommander could starve with memory. Now it never go over 1M
 Feature: Preview of 1.2.0 Chance of success is now permanently displayed on every mission. In this version it get updated ONLY when you hover on it
 ]])
 self:RelNotes(1,1,2,[[
