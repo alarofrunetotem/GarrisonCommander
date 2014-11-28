@@ -498,17 +498,20 @@ function addon:CleanUp()
 end
 function addon:SetUp()
 	local start=GetTime()
+--@debug@
 	print("Addon setup")
+--@end-debug@
 	self:CacheFollowers()
 	local list=GarrisonMissionFrame.MissionTab.MissionList
 	C_Garrison.GetAvailableMissions(list.availableMissions)
 	if (#list.availableMissions > 0) then
 		for i,mission in pairs(list.availableMissions) do
-			print(mission.missionID)
 			self:TooltipAdder(mission.missionID,true)
 		end
 	end
+--@debug@
 	print("Done in",format("%.3f",GetTime()-start))
+--@end-debug@
 end
 function addon:Init()
 	GMF=GarrisonMissionFrame
