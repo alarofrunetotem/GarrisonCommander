@@ -20,11 +20,15 @@ GarrisonCommander adds to mission tooltips the following informations:
 == Future plans ==
 # Improving selection of followers for missions
 ]])
+self:RelNotes(1,1,3,[[
+Fixed: When used for a long session of mission management, GarrisonCommande could starve with memory. Now it never go over 1M
+Feature: Preview of 1.2.0 Chance of success is now permanently displayed on every mission. In this version it get updated ONLY when you hover on it
+]])
 self:RelNotes(1,1,2,[[
 Fixed: Solves a rare case of library incompatibility causing error ...rfaceGarrisonCommander\GarrisonCommander-1.1.1.lua:47: attempt to call method 'capitalize' (a nil value)
 Feature: Removed signature in tooltip... it was annoying me too.. :)
 ]])
-self:RelNotes(1,1,2,[[
+self:RelNotes(1,1,1,[[
 Fixed: Added workaround to avoid that MasterPlan steals tooltip de facto
 disabling GarrisonCommander
 ]])

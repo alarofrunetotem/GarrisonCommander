@@ -22,8 +22,49 @@ local function tcopy(obj, seen)
 end
 --@end-debug@
 -----------------------------------------------------------------
+-- Recycling function from ACE3
+----newcount, delcount,createdcount,cached = 0,0,0
+local new, del, copy
+do
+	local pool = setmetatable({},{__mode="k"})
+	function new()
+		--newcount = newcount + 1
+		local t = next(pool)
+		if t then
+			pool[t] = nil
+			return t
+		else
+			--createdcount = createdcount + 1
+			return {}
+		end
+	end
+	function copy(t)
+		local c = new()
+		for k, v in pairs(t) do
+			c[k] = v
+		end
+		return c
+	end
+	function del(t)
+		--delcount = delcount + 1
+		wipe(t)
+		pool[t] = true
+	end
+--	function cached()
+--		local n = 0
+--		for k in pairs(pool) do
+--			n = n + 1
+--		end
+--		return n
+--	end
+end
+local function capitalize(s)
+	s=tostring(s)
+	return strupper(s:sub(1,1))..strlower(s:sub(2))
+end
 local followerIndexes
 local followers
+local successes={}
 local GMF
 local GMFFollowers
 local GMFMissions
@@ -40,17 +81,18 @@ local GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP=GARRISON_BUILDING_SELECT_FOLLOWE
 local GARRISON_FOLLOWER_CAN_COUNTER=GARRISON_FOLLOWER_CAN_COUNTER -- "This follower can counter:"
 local GARRISON_MISSION_SUCCESS=GARRISON_MISSION_SUCCESS -- "Success"
 local GARRISON_MISSION_PERCENT_CHANCE=GARRISON_MISSION_PERCENT_CHANCE
+local UNKNOWN_CHANCE=GARRISON_MISSION_PERCENT_CHANCE:gsub('%%d%%%%',UNKNOWN)
 local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
 local AVAILABLE=AVAILABLE -- "Available"
 local PARTY=PARTY -- "Party"
 local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
-local SPELL_TARGET_TYPE4_DESC=strupper(strlower(SPELL_TARGET_TYPE4_DESC)) -- party member
-local SPELL_TARGET_TYPE1_DESC=strupper(strlower(SPELL_TARGET_TYPE1_DESC)) -- any
+local SPELL_TARGET_TYPE4_DESC=capitalize(SPELL_TARGET_TYPE4_DESC) -- party member
+local SPELL_TARGET_TYPE1_DESC=capitalize(SPELL_TARGET_TYPE1_DESC) -- any
 local ANYONE='('..SPELL_TARGET_TYPE1_DESC..')'
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE .. ' ' .. GARRISON_FOLLOWERS
 local IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE.. ' ' .. GARRISON_FOLLOWER_INACTIVE .. ',' .. GARRISON_FOLLOWER_ON_MISSION ..',' .. GARRISON_FOLLOWER_WORKING.. ','.. GARRISON_FOLLOWER_EXHAUSTED .. ' ' .. GARRISON_FOLLOWERS
-IGNORE_UNAIVALABLE_FOLLOWERS=strupper(strlower(IGNORE_UNAIVALABLE_FOLLOWERS))
-IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=strupper(strlower(IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL))
+IGNORE_UNAIVALABLE_FOLLOWERS=capitalize(IGNORE_UNAIVALABLE_FOLLOWERS)
+IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=capitalize(IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
 local GameTooltip=GameTooltip
 local timers={}
 function addon:AddLine(icon,name,status,r,g,b,...)
@@ -92,11 +134,11 @@ function addon:TooltipAdder(missionID)
 	local perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 	local q=self:GetDifficultyColor(perc)
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
-	local buffed=self:NewTable()
-	local traited=self:NewTable()
-	local buffs=self:NewTable()
-	local traits=self:NewTable()
-	local fellas=self:NewTable()
+	local buffed=new()
+	local traited=new()
+	local buffs=new()
+	local traits=new()
+	local fellas=new()
 	for id,d in pairs(C_Garrison.GetBuffedFollowersForMission(missionID)) do
 		buffed[id]=d
 	end
@@ -159,7 +201,7 @@ function addon:TooltipAdder(missionID)
 			end
 		end
 	end
-	local added=self:NewTable()
+	local added=new()
 	local maxfollowers=C_Garrison.GetMissionMaxFollowers(missionID)
 	local partyshown=false
 	local perc=0
@@ -244,6 +286,9 @@ function addon:TooltipAdder(missionID)
 		GameTooltip:AddDoubleLine(PARTY,ANYONE,C.White.r,C.White.g,C.White.b)
 	end
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
+	local b=GameTooltip:GetOwner()
+	successes[missionID]=perc
+	self:AddPerc(GameTooltip:GetOwner())
 	for _,id in pairs(added) do
 		local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,missionID,id)
 --@debug@
@@ -253,16 +298,20 @@ function addon:TooltipAdder(missionID)
 	-- Add a signature
 	--local r,g,b=C:Silver()
 	--GameTooltip:AddDoubleLine("GarrisonCommander",self.version,r,g,b,r,g,b)
-	self:DelTable(added)
+	del(added)
 --@debug@
 	--DevTools_Dump(fellas)
 --@end-debug@
-	self:DelTable(buffed)
-	self:DelTable(traited)
-	self:DelTable(buffs)
-	self:DelTable(traits)
+	del(buffed)
+	del(traited)
+	del(buffs)
+	del(traits)
+	del(fellas)
 --@debug@
-	self:DelTable(fellas)
+	GameTooltip:AddDoubleLine("Memory before",collectgarbage("count"))
+	--collectgarbage("step",100)
+	--collectgarbage("collect")
+	GameTooltip:AddDoubleLine("Memory after",collectgarbage("count"))
 --@end-debug@
 end
 function addon:FillFollowersList()
@@ -271,6 +320,7 @@ function addon:FillFollowersList()
 	end
 end
 function addon:CacheFollowers()
+	wipe(successes)
 	followers=C_Garrison.GetFollowers()
 	self:GetRunningMissionData()
 end
@@ -353,6 +403,40 @@ function addon:preHookScript(frame,hook,method)
 		return self:SecureHookScript(frame,hook,function(...) addon:ScriptTrace(hook,...) end)
 	end
 end
+function addon:AddPerc(b,...)
+	if (b and b.info and b.info.missionID and b.info.missionID ) then
+		if (GMF.MissionTab.MissionList.showInProgress) then
+			if (b.ProgressHidden) then
+				return
+			else
+				b.ProgressHidden=true
+				if (b.Success) then
+					b.Success:Hide()
+				end
+				return
+			end
+
+		end
+		local missionID=b.info.missionID
+		if (not b.Success) then
+			b.Success=b:CreateFontString()
+			b.Success:SetFontObject("GameFontNormalLarge2")
+			b.Success:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
+			b.Perc=-1
+		end
+		if (b.Perc == (successes[missionID] or -2)) then return end
+		if (successes[missionID]) then
+			b.Success:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,successes[missionID])
+			local q=self:GetDifficultyColor(successes[missionID])
+			b.Success:SetTextColor(q.r,q.g,q.b)
+		else
+			b.Success:SetText(UNKNOWN_CHANCE)
+			b.Success:SetTextColor(0,1,0)
+		end
+		b.Success:Show()
+		b.ProgressHidden=false
+	end
+end
 function addon:Init()
 	GMF=GarrisonMissionFrame
 	GMFFollowers=GarrisonMissionFrameFollowers
@@ -370,20 +454,18 @@ function addon:Init()
 	self:FillFollowersList()
 	self:CacheFollowers()
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip","TooltipAdder")
-	self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
+	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
+	--self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
 	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
 	if (loadable or reason=="DEMAND_LOADED") then
 		-- I need to hook this function to restore tooltip handler disabled by MasterPlan
 		-- Bah!
 		self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
 	end
-	self:HookScript(GMFTab1,"OnClick","GarrisonMissionListTab_OnClick")
-	self:HookScript(GMFTab2,"OnClick","GarrisonMissionListTab_OnClick")
+	self:HookScript(GMFMissions,"OnShow","CacheFollowers")
+	self:HookScript(GMF,"OnHide",function() collectgarbage("collect") end)
+	self:HookScript(GMF.MissionTab.MissionPage.StartMissionButton,"OnClick","CacheFollowers")
 --@debug@
-	self:preHookScript(GMFMissions,"OnShow")
-	self:preHookScript(GMFMissionsTab1,"OnClick")
-	self:preHookScript(GMFMissionsTab2,"OnClick")
-	self:postHookScript(GMF.MissionTab.MissionPage.StartMissionButton,"OnClick")
 	self:postHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
 --@end-debug@
 	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
@@ -407,88 +489,7 @@ function addon:GarrisonMissionListTab_OnClick(frame, button)
 			GMF:SetWidth(930)
 	end
 end
-
 --@do-not-package@
-if (false) then
-	local ga=GarrisonMissionFrame
-	local gmm=GarrisonMissionFrameMissionsListScrollFrame
-	local gmf=GarrisonMissionFrameFollowersListScrollFrame
-	local gf=GarrisonMissionFrameFollowers
-	local gm=GarrisonMissionFrameMissions
-	local gfol=GarrisonMissionFrame.FollowerTab
-
-	if (not ga:IsMovable()) then
-
-		print(ga:GetWidth())
-	end
-	gm:ClearAllPoints()
-	gm:SetPoint("TOPRIGHT",ga,"TOPRIGHT",-30,-60)
-	gm:SetPoint("BOTTOMRIGHT",ga,"BOTTOMRIGHT",0,30)
-	gf:SetPoint("TOPLEFT",ga,"TOPLEFT",30,-60)
-	gf:SetPoint("BOTTOMLEFT",ga,"BOTTOMLEFT",0,60)
-	ga:SetHeight(800)
-
-	print(gm:GetName())
-	for i=1,gm:GetNumPoints() do
-		local a,f,r,x,y=gm:GetPoint(i)
-		print(a,f:GetName(),r,x,y)
-	end
-	print(gm:IsShown(),gm:GetWidth())
-	function GACTab(self)
-		print("Selected")
-		PlaySound("UI_Garrison_Nav_Tabs");
-		local id=self:GetID()
-		GarrisonMissionFrame_SelectTab(id);
-		if (id == 1)  then
-				ga:SetWidth(1600)
-				gm:SetWidth(890+1600-1250)
-				gf:Show()
-		else
-				ga:SetWidth(930)
-		end
-	end
-	function GACClick(self,button)
-		print(self:GetName(),self:GetID(),button)
-		if ( IsModifiedClick("CHATLINK") ) then
-				local missionLink = C_Garrison.GetMissionLink(self.info.missionID);
-				if (missionLink) then
-					ChatEdit_InsertLink(missionLink);
-				end
-				return;
-		end
-		if (self.info.inProgress) then
-				return;
-		end
-		GarrisonMissionList_Update();
-		PlaySound("UI_Garrison_CommandTable_SelectMission");
-		GarrisonMissionFrame.MissionTab.MissionList:Hide();
-		GarrisonMissionFrame.MissionTab.MissionPage:Show();
-		GarrisonMissionPage_ShowMission(self.info);
-		GarrisonMissionFrame.followerCounters = C_Garrison.GetBuffedFollowersForMission(self.info.missionID)
-		GarrisonMissionFrame.followerTraits = C_Garrison.GetFollowersTraitsForMission(self.info.missionID);
-		GarrisonFollowerList_UpdateFollowers(GarrisonMissionFrame.FollowerList);
-
-	end
-	for i=1,8 do
-		local gname="GarrisonMissionFrameMissionsListScrollFrameButton"..i
-		local gbutton=_G[gname]
-		gbutton:SetScript("OnClick",GACClick)
-		gbutton:SetWidth(1200)
-		gbutton:SetHeight(80)
-		print(gbutton:GetHeight())
-			local f1=CreateFrame("Frame",gname..'Follower2',gbutton,"GarrisonMissionPageFollowerTemplate")
-			f1:ClearAllPoints()
-			f1:SetPoint("TOPLEFT",gbutton,"TOPLEFT",500,-10)
-		gbutton.follower1=f1
-		local f2=CreateFrame("Frame",gname..'Follower2',gbutton,"GarrisonMissionPageFollowerTemplate")
-		gbutton.follower2=f2
-		f2:SetPoint("TOPLEFT",f1,"TOPRIGHT",10,0)
-		local f3=CreateFrame("Frame",gname..'Follower2',gbutton,"GarrisonMissionPageFollowerTemplate")
-		gbutton.follower3=f3
-		f3:SetPoint("TOPLEFT",f2,"TOPRIGHT",10,0)
-	end
-end
---@end-do-not-package@
 --[[
 Garrison page structure
 Tab selection:
@@ -511,3 +512,4 @@ Missions tab selected
 
 
 --]]
+--@end-do-not-package@
