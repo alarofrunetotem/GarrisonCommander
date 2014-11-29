@@ -71,8 +71,10 @@ local function capitalize(s)
 end
 local masterplan
 local followers
+local dirty
 local successes={}
-local notEnough={}
+local requested={}
+local availableFollowers=0
 local GMF
 local GMFFollowers
 local GMFMissions
@@ -143,7 +145,7 @@ end
 -- This is a ugly hack while I rewrite this code for 2.0
 function addon:TooltipAdder(missionID,skipTT)
 --@debug@
-	GameTooltip:AddLine("ID:" .. tostring(missionID))
+	if (not skipTT) then GameTooltip:AddLine("ID:" .. tostring(missionID)) end
 --@end-debug@
 	local perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 	local q=self:GetDifficultyColor(perc)
@@ -153,7 +155,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	local buffs=new()
 	local traits=new()
 	local fellas=new()
-	local availableFollowers=0
+	availableFollowers=0
 	self:GetRunningMissionData()
 	for id,d in pairs(C_Garrison.GetBuffedFollowersForMission(missionID)) do
 		buffed[id]=d
@@ -223,6 +225,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	end
 	local added=new()
 	local maxfollowers=C_Garrison.GetMissionMaxFollowers(missionID)
+	requested[missionID]=maxfollowers
 	local partyshown=false
 	local perc=0
 	if (next(traits) or next(buffs) ) then
@@ -318,12 +321,10 @@ function addon:TooltipAdder(missionID,skipTT)
 	local b=GameTooltip:GetOwner()
 	successes[missionID]=perc
 	if (availableFollowers < maxfollowers) then
-		notEnough[missionID]=true
 		if (not skipTT) then GameTooltip:AddLine(GARRISON_PARTY_NOT_FULL_TOOLTIP,C:Red()) end
 	else
-		notEnough[missionID]=nil
 	end
-	self:AddPerc(GameTooltip:GetOwner())
+	if (not skipTT) then self:AddPerc(GameTooltip:GetOwner()) end
 	for _,id in pairs(added) do
 		local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,missionID,id)
 --@debug@
@@ -485,7 +486,10 @@ function addon:AddPerc(b,...)
 			b.Success:SetTextColor(1,1,1)
 		end
 		b.Success:Show()
-		if (notEnough[missionID]) then
+		if (not requested[missionID]) then
+			requested[missionID]=C_Garrison.GetMissionMaxFollowers(missionID)
+		end
+		if (requested[missionID]>availableFollowers) then
 			b.NotEnough:Show()
 		else
 			b.NotEnough:Hide()
@@ -512,6 +516,13 @@ function addon:SetUp()
 --@debug@
 	print("Done in",format("%.3f",GetTime()-start))
 --@end-debug@
+	dirty=false
+end
+function addon:SetDirty(...)
+--@debug@
+	print("Dirty",...)
+--@end-debug@
+	dirty=true
 end
 function addon:Init()
 	GMF=GarrisonMissionFrame
@@ -538,11 +549,15 @@ function addon:Init()
 	end
 	self:HookScript(GMFMissions,"OnShow","SetUp")
 	self:HookScript(GMF,"OnHide","CleanUp")
-	self:HookScript(GMF.MissionTab.MissionPage.StartMissionButton,"OnClick","CacheFollowers")
---@debug@
-	self:postHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
---@end-debug@
+	self:HookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","SetUp")
+	self:HookScript(GMF.MissionComplete,"OnHide","SetUp")
 	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","SetDirty")
+	self:RegisterEvent("GARRISON_MISSION_FINISHED","SetDirty")
+	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","SetDirty")
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","SetDirty")
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE","SetUp")
+	self:RegisterEvent("GARRISON_MISSION_STARTED","SetDirty")
 end
 
 function addon:GarrisonMissionListTab_OnClick(frame, button)
