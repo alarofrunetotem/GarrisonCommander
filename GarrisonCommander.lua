@@ -148,6 +148,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	if (not skipTT) then GameTooltip:AddLine("ID:" .. tostring(missionID)) end
 --@end-debug@
 	local perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
+	self:GetRunningMissionData()
 	local q=self:GetDifficultyColor(perc)
 	if (not skipTT) then GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b) end
 	local buffed=new()
@@ -457,7 +458,6 @@ function addon:AddPerc(b,...)
 				b.Success:SetFontObject("GameFontNormalLarge2")
 			end
 			b.Success:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
-			b.Perc=-1
 		end
 		if (not b.NotEnough) then
 			b.NotEnough=b:CreateFontString()
@@ -471,8 +471,10 @@ function addon:AddPerc(b,...)
 			b.NotEnough:SetText("(".. GARRISON_PARTY_NOT_FULL_TOOLTIP .. ")")
 			b.NotEnough:SetTextColor(C:Red())
 		end
-
-		if (b.Perc==Perc) then return end
+		if (Perc <0 and not b:IsMouseOver()) then
+			self:TooltipAdder(missionID,true)
+			Perc=successes[missionID] or -2
+		end
 		if (Perc>=0) then
 			if (masterplan) then
 				b.Success:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,successes[missionID])
@@ -547,16 +549,17 @@ function addon:Init()
 		masterplan=true
 		self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
 	end
-	self:HookScript(GMFMissions,"OnShow","SetUp")
+	--self:HookScript(GMFMissions,"OnShow","SetUp")
 	self:HookScript(GMF,"OnHide","CleanUp")
-	self:HookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","SetUp")
+	--self:HookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","SetUp")
 	self:HookScript(GMF.MissionComplete,"OnHide","SetUp")
+	--self:HookScript(GMFFollowers,"OnHide","SetUp")
 	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_FINISHED","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","SetDirty")
-	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE","SetUp")
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_STARTED","SetDirty")
 end
 

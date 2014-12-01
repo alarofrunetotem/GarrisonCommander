@@ -17,6 +17,10 @@ self:Wiki([[
 * for In mission follower reports remaining time
 * final success chance (optionally considering only available followers)
 ]])
+self:RelNotes(1,1,4,[[
+Fixed: Was lagging when zoning inside Garrison
+Fixed: Sometimes clicking on a mission button opened the wrong mission page
+]])
 self:RelNotes(1,1,3,[[
 Fixed: When used for a long session of mission management, GarrisonCommander could starve with memory. Now it never go over 1M
 Feature: Preview of 1.2.0: Chance of success is now permanently displayed on every mission. In this version it get updated ONLY when you hover on it
