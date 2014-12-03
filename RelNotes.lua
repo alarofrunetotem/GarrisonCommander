@@ -17,6 +17,10 @@ self:Wiki([[
 * for In mission follower reports remaining time
 * final success chance (optionally considering only available followers)
 ]])
+self:RelNotes(1,1,5,[[
+Fix: Possible clash with another addon
+Fix: Improved follower data refresh. Hopefully no more "You dont have enough followers.." on every button
+]])
 self:RelNotes(1,1,4,[[
 Fixed: Was lagging when zoning inside Garrison
 Fixed: Sometimes clicking on a mission button opened the wrong mission page

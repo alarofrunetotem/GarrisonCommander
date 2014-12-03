@@ -24,13 +24,6 @@ end
 -----------------------------------------------------------------
 -- Recycling function from ACE3
 ----newcount, delcount,createdcount,cached = 0,0,0
-
-local qualityColorEscape={}
-for i = 0, 7 do
-	local r, g, b, hex = GetItemQualityColor(i)
-	qualityColorEscape[i]=hex
-	--print(i, '|c'..hex, _G["ITEM_QUALITY" .. i .. "_DESC"], string.sub(hex,3))
-end
 local new, del, copy
 do
 	local pool = setmetatable({},{__mode="k"})
@@ -71,7 +64,6 @@ local function capitalize(s)
 end
 local masterplan
 local followers
-local dirty
 local successes={}
 local requested={}
 local availableFollowers=0
@@ -147,8 +139,8 @@ function addon:TooltipAdder(missionID,skipTT)
 --@debug@
 	if (not skipTT) then GameTooltip:AddLine("ID:" .. tostring(missionID)) end
 --@end-debug@
-	local perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 	self:GetRunningMissionData()
+	local perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 	local q=self:GetDifficultyColor(perc)
 	if (not skipTT) then GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b) end
 	local buffed=new()
@@ -157,7 +149,6 @@ function addon:TooltipAdder(missionID,skipTT)
 	local traits=new()
 	local fellas=new()
 	availableFollowers=0
-	self:GetRunningMissionData()
 	for id,d in pairs(C_Garrison.GetBuffedFollowersForMission(missionID)) do
 		buffed[id]=d
 	end
@@ -325,7 +316,7 @@ function addon:TooltipAdder(missionID,skipTT)
 		if (not skipTT) then GameTooltip:AddLine(GARRISON_PARTY_NOT_FULL_TOOLTIP,C:Red()) end
 	else
 	end
-	if (not skipTT) then self:AddPerc(GameTooltip:GetOwner()) end
+	--if (not skipTT) then self:AddPerc(GameTooltip:GetOwner()) end
 	for _,id in pairs(added) do
 		local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,missionID,id)
 --@debug@
@@ -354,6 +345,9 @@ function addon:CacheFollowers()
 	followers=C_Garrison.GetFollowers()
 end
 function addon:GetRunningMissionData()
+--@debug@
+	print("Mission timer refresh")
+--@end-debug@
 	local list=GarrisonMissionFrame.MissionTab.MissionList
 	C_Garrison.GetInProgressMissions(list.inProgressMissions);
 	--C_Garrison.GetAvailableMissions(list.availableMissions);
@@ -405,31 +399,8 @@ end
 
 function addon:ScriptTrace(hook,frame,...)
 --@debug@
-	print("Triggered " .. C(hook,"red").." script on",C(frame:GetName(),"Azure"),...)
+	print("Triggered " .. C(hook,"red").." script on",C(frame,"Azure"),...)
 --@end-debug@
-end
-function addon:postHookScript(frame,hook,method)
-	if (method) then
-		self:HookScript(frame,hook,
-		function(frame,...)
-			local t={self.hooks[frame][hook](frame,...)}
-			self[method](self,frame,...)
-			return unpack(t)
-		end)
-	else
-		return self:SecureHookScript(frame,hook,function(...) addon:ScriptTrace(hook,...) end)
-	end
-end
-function addon:preHookScript(frame,hook,method)
-	if (method) then
-		self:HookScript(frame,hook,
-		function(frame,...)
-			self[method](self,frame,...)
-			return self.hooks[frame][hook](frame,...)
-		end)
-	else
-		return self:SecureHookScript(frame,hook,function(...) addon:ScriptTrace(hook,...) end)
-	end
 end
 function addon:AddPerc(b,...)
 	if (b and b.info and b.info.missionID and b.info.missionID ) then
@@ -447,6 +418,9 @@ function addon:AddPerc(b,...)
 				return
 			end
 
+		end
+		if (b:GetName()=="GarrisonMissionFrameMissionsListScrollFrameButton1") then
+			self:SetUp()
 		end
 		local missionID=b.info.missionID
 		local Perc=successes[missionID] or -2
@@ -500,31 +474,41 @@ function addon:AddPerc(b,...)
 	end
 end
 function addon:CleanUp()
-	collectgarbage("collect")
+	collectgarbage("step",10)
 end
-function addon:SetUp()
+function addon:SetUp(full)
+	if (GMF.MissionTab.MissionList.showInProgress) then return end
 	local start=GetTime()
 --@debug@
-	print("Addon setup")
+	print("Addon setup",full and "full" or "simple")
 --@end-debug@
 	self:CacheFollowers()
 	local list=GarrisonMissionFrame.MissionTab.MissionList
 	C_Garrison.GetAvailableMissions(list.availableMissions)
-	if (#list.availableMissions > 0) then
-		for i,mission in pairs(list.availableMissions) do
-			self:TooltipAdder(mission.missionID,true)
+	if (full) then
+		local buttons=GarrisonMissionFrame.MissionTab.MissionList.listScroll.buttons
+		for i=1,#buttons do
+			local b=buttons[i]
+			if (b and b.info and b.info.missionID and b.info.missionID ) then
+				self:TooltipAdder(b.info.missionID,true)
+			end
 		end
 	end
 --@debug@
 	print("Done in",format("%.3f",GetTime()-start))
 --@end-debug@
-	dirty=false
 end
-function addon:SetDirty(...)
+function addon:DummyHookScript(frame,hook,method)
 --@debug@
-	print("Dirty",...)
+	print("DummyHook:",frame,hook)
 --@end-debug@
-	dirty=true
+	if (_G[frame]) then
+		self:HookScript(_G[frame],hook,function(...) self:ScriptTrace(frame,hook,...) end)
+--@debug@
+	else
+		print(C("Attempted hook for non exixtent:","red"),frame,hook)
+--@end-debug@
+	end
 end
 function addon:Init()
 	GMF=GarrisonMissionFrame
@@ -552,34 +536,28 @@ function addon:Init()
 	--self:HookScript(GMFMissions,"OnShow","SetUp")
 	self:HookScript(GMF,"OnHide","CleanUp")
 	--self:HookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","SetUp")
-	self:HookScript(GMF.MissionComplete,"OnHide","SetUp")
+	--self:HookScript(GMF.MissionComplete,"OnHide","SetUp")
 	--self:HookScript(GMFFollowers,"OnHide","SetUp")
 	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
+--@debug@
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_FINISHED","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE","SetDirty")
 	self:RegisterEvent("GARRISON_MISSION_STARTED","SetDirty")
+	self:DummyHookScript("GarrisonMissionFrameTab1","OnCLick")
+	self:DummyHookScript("GarrisonMissionFrameTab2","OnCLick")
+	self:DummyHookScript("GarrisonMissionFrameTab3","OnCLick")
+	self:DummyHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
+	self:DummyHookScript("GarrisonMissionFrameMIssionsTab2","OnCLick")
+	self:DummyHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
+--@end-debug@
 end
-
-function addon:GarrisonMissionListTab_OnClick(frame, button)
-	local id=frame:GetID()
-	if (id==1) then
-		self:CacheFollowers()
-	end
-	self.hooks[frame].OnClick(frame)
-	GarrisonMissionFrame_SelectTab(id);
-	if (true) then return end
-	if (id == 1)  then
-			GMF:SetWidth(1600)
-			GMFMissions:SetWidth(890+1600-1250)
-			GMFFollowers:Show()
-			GMFMissions:ClearAllPoints()
-			GMFMissions:SetPoint("TOPLEFT",GMF,"TOPLEFT",GMFFollowers:GetWidth()+35,-65)
-	else
-			GMF:SetWidth(930)
-	end
+function addon:SetDirty(...)
+--@debug@
+	print("Fired",...)
+--@end-debug@
 end
 --@do-not-package@
 --[[

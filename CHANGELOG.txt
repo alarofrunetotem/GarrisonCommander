@@ -1,4 +1,7 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
+* 1.1.5
+Fix: Possible clash with another addon
+Fix: Improved follower data refresh. Hopefully no more "You dont have enough followers.." on every button
 * 1.1.4
 Fixed: Was lagging when zoning inside Garrison
 Fixed: Sometimes clicking on a mission button opened the wrong mission page
