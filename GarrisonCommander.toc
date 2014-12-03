@@ -2,6 +2,7 @@
 ## Title: GarrisonCommander
 ## Notes: Helps you when choosing the right follower for the right mission
 ## Notes-itIT: Ti aiuta a scegliere il giusto seguace per la giusta missione
+## Notes-frFR: Vous aide au moment de choisir le droit utilisateur pour la bonne mission
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ @project-abbreviated-hash@
 ## X-Version: 1.1.5
