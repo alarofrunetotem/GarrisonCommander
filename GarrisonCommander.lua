@@ -66,6 +66,7 @@ local masterplan
 local followers
 local successes={}
 local requested={}
+local threats={}
 local availableFollowers=0
 local GMF
 local GMFFollowers
@@ -220,6 +221,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	requested[missionID]=maxfollowers
 	local partyshown=false
 	local perc=0
+	local menaces=0
 	if (next(traits) or next(buffs) ) then
 		if (not skipTT) then GameTooltip:AddLine(GARRISON_FOLLOWER_CAN_COUNTER) end
 		for id,v in pairs(buffs) do
@@ -244,6 +246,7 @@ function addon:TooltipAdder(missionID,skipTT)
 --@end-debug@
 				local menace=mechanic.name
 				local res
+				menaces=menaces+1
 				if (fellas[menace]) then
 					local followerID=fellas[menace].id
 					res=fellas[menace].name
@@ -312,6 +315,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	if (not skipTT) then GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b) end
 	local b=GameTooltip:GetOwner()
 	successes[missionID]=perc
+	threats[missionID]=menaces
 	if (availableFollowers < maxfollowers) then
 		if (not skipTT) then GameTooltip:AddLine(GARRISON_PARTY_NOT_FULL_TOOLTIP,C:Red()) end
 	else
@@ -426,20 +430,20 @@ function addon:AddPerc(b,...)
 		local Perc=successes[missionID] or -2
 		if (not b.Success) then
 			b.Success=b:CreateFontString()
+			b.Success:SetFontObject("GameFontNormalLarge2")
 			if (masterplan) then
-				b.Success:SetFontObject("GameFontNormal")
+				b.Success:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",200,-3)
 			else
-				b.Success:SetFontObject("GameFontNormalLarge2")
+				b.Success:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
 			end
-			b.Success:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
 		end
 		if (not b.NotEnough) then
 			b.NotEnough=b:CreateFontString()
 			if (masterplan) then
-				b.NotEnough:SetFontObject("GameFontNormal")
-				b.NotEnough:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",150,-3)
-			else
 				b.NotEnough:SetFontObject("GameFontNormalSmall2")
+				b.NotEnough:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
+			else
+				b.NotEnough:SetFontObject("GameFontNormalSmall")
 				b.NotEnough:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",0,-3)
 			end
 			b.NotEnough:SetText("(".. GARRISON_PARTY_NOT_FULL_TOOLTIP .. ")")
@@ -483,8 +487,6 @@ function addon:SetUp(full)
 	print("Addon setup",full and "full" or "simple")
 --@end-debug@
 	self:CacheFollowers()
-	local list=GarrisonMissionFrame.MissionTab.MissionList
-	C_Garrison.GetAvailableMissions(list.availableMissions)
 	if (full) then
 		local buttons=GarrisonMissionFrame.MissionTab.MissionList.listScroll.buttons
 		for i=1,#buttons do
@@ -510,6 +512,46 @@ function addon:DummyHookScript(frame,hook,method)
 --@end-debug@
 	end
 end
+function addon:FixButtons()
+	local self = GMF.MissionTab.MissionList
+	local scrollFrame = self.listScroll
+	local buttons = scrollFrame.buttons
+	if (masterplan) then
+		for i =1,#buttons do
+			local b=buttons[i]
+			b.Success:ClearAllPoints()
+			b.Success:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",200,-3)
+			b.NotEnough:SetFontObject("GameFontNormalSmall2")
+			b.NotEnough:ClearAllPoints()
+			b.NotEnough:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
+		end
+	else
+		for i =1,#buttons do
+			local b=buttons[i]
+			b.Success:ClearAllPoints()
+			b.Success:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
+			b.NotEnough:SetFontObject("GameFontNormalSmall")
+			b.NotEnough:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",0,-3)
+		end	
+	end
+end
+function addon:MasterPlanDetection(novar,...)
+	print("MPD",novar,...)
+	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
+	masterplan=false
+	if (loadable or reason=="DEMAND_LOADED") then
+		if (novar) then
+			masterplan=true
+			return
+		else
+			if (_G.MasterPlanConfig or _G.MasterPlanData ) then
+				masterplan=true
+				self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
+			end
+		end
+	end
+	pcall(self.FixButtons,self)
+end
 function addon:Init()
 	GMF=GarrisonMissionFrame
 	GMFFollowers=GarrisonMissionFrameFollowers
@@ -523,16 +565,13 @@ function addon:Init()
 		self:ScheduleTimer("Init",2)
 		return
 	end
+	self:MasterPlanDetection(true)
+	self:ScheduleTimer("MasterPlanDetection",1)
 	self:FillFollowersList()
 	self:CacheFollowers()
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip",function(id) self:TooltipAdder(id) end)
 	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
 	--self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
-	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
-	if (loadable or reason=="DEMAND_LOADED") then
-		masterplan=true
-		self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
-	end
 	--self:HookScript(GMFMissions,"OnShow","SetUp")
 	self:HookScript(GMF,"OnHide","CleanUp")
 	--self:HookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","SetUp")

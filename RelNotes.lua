@@ -17,6 +17,10 @@ self:Wiki([[
 * for In mission follower reports remaining time
 * final success chance (optionally considering only available followers)
 ]])
+self:RelNotes(1,1,6,[[
+Fix: GarrisonCommander was unwilling triggering a mission reordering.
+Fix: First mission list button was opening the wrong mission
+]])
 self:RelNotes(1,1,5,[[
 Fix: Possible clash with another addon
 Fix: Improved follower data refresh. Hopefully no more "You dont have enough followers.." on every button
