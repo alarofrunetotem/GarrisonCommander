@@ -20,6 +20,8 @@ self:Wiki([[
 self:RelNotes(1,1,6,[[
 Fix: GarrisonCommander was unwilling triggering a mission reordering.
 Fix: First mission list button was opening the wrong mission
+Feature: Reduced memory footprint
+Feature: You can switch between considering busy follower or not via a checkbox in main mission panel
 ]])
 self:RelNotes(1,1,5,[[
 Fix: Possible clash with another addon

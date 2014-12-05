@@ -68,6 +68,7 @@ local successes={}
 local requested={}
 local threats={}
 local availableFollowers=0
+local skipBusy
 local GMF
 local GMFFollowers
 local GMFMissions
@@ -136,6 +137,55 @@ function addon:RestoreTooltip()
 		buttons[i]:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
 	end
 end
+local openParty,isInParty,pushFollower,closeParty,roomInParty
+
+do
+	local ID,frames=0,nil
+	local members={}
+	local max=1
+	function openParty(missionID,maxfollowers)
+		max=maxfollowers
+		local frames={GetFramesRegisteredForEvent('GARRISON_FOLLOWER_LIST_UPDATE')}
+		for i=1,#frames do
+			frames[i]:UnregisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+		end
+		ID=missionID
+	end
+	function isInParty(followerID)
+		for i=1,maxfollowers do
+			if (followerID==members[i]) then return true end
+		end
+	end
+	function roomInParty()
+		return not members[max]
+	end
+	function pushFollower(followerID)
+		if (roomInParty()) then
+			local rc,code=pcall (C_Garrison.AddFollowerToMission,ID,followerID)
+			if (rc and code) then
+				tinsert(members,followerID)
+				return true
+			end
+		end
+	end
+	function closeParty()
+		for i=1,3 do
+			if (members[i]) then
+				C_Garrison.RemoveFollowerFromMission(ID,members[i])
+			else
+				break
+			end
+		end
+		if (frames) then
+			for i=1,#frames do
+				frames[i]:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+			end
+		end
+		frames=nil
+		wipe(members)
+	end
+end
+
 -- This is a ugly hack while I rewrite this code for 2.0
 function addon:TooltipAdder(missionID,skipTT)
 --@debug@
@@ -150,6 +200,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	local buffs=new()
 	local traits=new()
 	local fellas=new()
+	local fullname=new()
 	for id,d in pairs(C_Garrison.GetBuffedFollowersForMission(missionID)) do
 		buffed[id]=d
 	end
@@ -173,7 +224,7 @@ function addon:TooltipAdder(missionID,skipTT)
 		if (not follower.status) then
 			availableFollowers=availableFollowers+1
 		end
-		if (follower.status and self:GetBoolean('IGM')) then
+		if (follower.status and skipBusy) then
 		else
 			local id=follower.followerID
 			local b=buffed[id]
@@ -192,44 +243,48 @@ function addon:TooltipAdder(missionID,skipTT)
 --@end-debug@
 			if (b) then
 				if (not buffs[id]) then
-					buffs[id]={rank=follower.rank,simple=follower.name,name=format(formato,follower.rank,follower.name),quality=follower.quality,status=(follower.status or AVAILABLE)}
+					buffs[id]=index
+					fullname[id]=format(formato,follower.rank,follower.name)
 				end
 				for _,ability in pairs(b) do
-					buffs[id].name=buffs[id].name .. " |T" .. tostring(ability.icon) .. ":0|t"
-					if (not follower.status) then
+					fullname[id]=fullname[id] .. " |T" .. tostring(ability.icon) .. ":0|t"
+					if (not follower.status or not skipBusy) then
 						local aname=ability.name
 						if (not fellas[aname]) then
-							fellas[aname]={}
+							fellas[aname]=false
 						end
-						fellas[aname]={id=follower.followerID,rank=follower.rank,level=follower.level,iLevel=follower.iLevel,name=follower.name}
+						fellas[aname]=index
 					end
 				end
 			end
 			if (t) then
 				if (not traits[id]) then
-					traits[id]={rank=follower.rank,simple=follower.name,name=format(formato,follower.rank,follower.name),quality=follower.quality,status=follower.status or AVAILABLE}
+					traits[id]=index
+					fullname[id]=format(formato,follower.rank,follower.name)
 				end
 				for _,ability in pairs(t) do
-					traits[id].name=traits[id].name .. " |T" .. tostring(ability.icon) .. ":0|t"
+					fullname[id]=fullname[id] .. " |T" .. tostring(ability.icon) .. ":0|t"
 				end
 			end
 		end
 	end
-	local added=new()
 	local maxfollowers=C_Garrison.GetMissionMaxFollowers(missionID)
 	requested[missionID]=maxfollowers
 	local partyshown=false
 	local perc=0
 	local menaces=0
+	openParty(missionID,maxfollowers)
 	if (next(traits) or next(buffs) ) then
 		if (not skipTT) then GameTooltip:AddLine(GARRISON_FOLLOWER_CAN_COUNTER) end
-		for id,v in pairs(buffs) do
+		for id,i in pairs(buffs) do
+			local v=followers[i]
 			local status=(v.status == GARRISON_FOLLOWER_ON_MISSION and (timers[id] or GARRISON_FOLLOWER_ON_MISSION)) or v.status
-			if (not skipTT) then self:AddLine(nil,v.name,status,v.quality) end
+			if (not skipTT) then self:AddLine(nil,fullname[id],status or AVAILABLE,v.quality) end
 		end
-		for id,v in pairs(traits) do
+		for id,i in pairs(traits) do
+			local v=followers[i]
 			local status=(v.status == GARRISON_FOLLOWER_ON_MISSION and (timers[id] or GARRISON_FOLLOWER_ON_MISSION)) or v.status
-			if (not skipTT) then self:AddLine(nil,v.name,status,v.quality) end
+			if (not skipTT) then self:AddLine(nil,fullname[id],status or AVAILABLE,v.quality) end
 		end
 		if (not skipTT) then GameTooltip:AddLine(PARTY,C.White()) end
 		partyshown=true
@@ -247,11 +302,10 @@ function addon:TooltipAdder(missionID,skipTT)
 				local res
 				menaces=menaces+1
 				if (fellas[menace]) then
-					local followerID=fellas[menace].id
-					res=fellas[menace].name
-					local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,followerID)
-					if (rc and code) then
-						tinsert(added,followerID)
+					local follower=followers[fellas[menace]]
+					if (follower.status and skipBusy) then
+					elseif (pushFollower(follower.followerID)) then
+						res=fullname[follower.followerID]
 					end
 				end
 				if (not skipTT) then
@@ -263,51 +317,35 @@ function addon:TooltipAdder(missionID,skipTT)
 				end
 			end
 		end
-		perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
-		if (perc < 100 and  #added < maxfollowers and next(traits))  then
-			for id,v in pairs(traits) do
-				local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,id)
-				if (rc and code) then
-					tinsert(added,id)
-					if (not skipTT) then GameTooltip:AddDoubleLine(ENVIRONMENT_SUBHEADER,v.simple,v.quality) end
+		if (roomInParty() and next(traits))  then
+			for id,i in pairs(traits) do
+				local follower=followers[i]
+				if (follower.status and self:GetBoolean('IGM')) then
+				elseif (pushFollower(id)) then
+					if (not skipTT) then GameTooltip:AddDoubleLine(ENVIRONMENT_SUBHEADER,fullname[id],follower.quality) end
 					break
 				end
 			end
-			perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 		end
 	end
 	-- And then fill the roster
-	local partysize=#added
-	if (partysize < maxfollowers )  then
+	if (roomInParty())  then
 		for index=1,#followers do
 			local follower=followers[index]
-			if (not follower.isCollected) then
-				break
-			end
 			if (follower.status and self:GetBoolean('IGM')) then
-			else
-				if (C_Garrison.GetFollowerStatus(follower.followerID) ~= GARRISON_FOLLOWER_IN_PARTY) then
-					local rc,code=pcall(C_Garrison.AddFollowerToMission,missionID,follower.followerID)
-					if (rc and code) then
-						if (not partyshown) then
-							if (not skipTT) then GameTooltip:AddLine(PARTY,1) end
-							partyshown=true
-						end
-						tinsert(added,follower.followerID)
-						if (not skipTT) then
-							GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
-						end
-						if (#added >= maxfollowers) then break end
-					else
---@debug@
-						print("Failed adding",follower.name,follower.followerID,rc,code)
---@end-debug@
-					end
+			elseif (pushFollower(follower.followerID)) then
+				if (not partyshown) then
+					if (not skipTT) then GameTooltip:AddLine(PARTY,1) end
+					partyshown=true
 				end
+				if (not skipTT) then
+					GameTooltip:AddDoubleLine(SPELL_TARGET_TYPE4_DESC,follower.name,C.Orange.r,C.Orange.g,C.Orange.b)--SPELL_TARGET_TYPE1_DESC)
+				end
+				if (not roomInParty()) then break end
 			end
 		end
-		perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 	end
+	perc=select(4,C_Garrison.GetPartyMissionInfo(missionID))
 	local q=self:GetDifficultyColor(perc)
 	if (not partyshown) then
 		if (not skipTT) then GameTooltip:AddDoubleLine(PARTY,ANYONE,C.White.r,C.White.g,C.White.b) end
@@ -318,19 +356,12 @@ function addon:TooltipAdder(missionID,skipTT)
 	threats[missionID]=menaces
 	if (availableFollowers < maxfollowers) then
 		if (not skipTT) then GameTooltip:AddLine(GARRISON_PARTY_NOT_FULL_TOOLTIP,C:Red()) end
-	else
 	end
 	--if (not skipTT) then self:AddPerc(GameTooltip:GetOwner()) end
-	for _,id in pairs(added) do
-		local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,missionID,id)
---@debug@
-		if (not rc) then print("Add",rc,code) end
---@end-debug@
-	end
+	closeParty()
 	-- Add a signature
 	--local r,g,b=C:Silver()
 	--GameTooltip:AddDoubleLine("GarrisonCommander",self.version,r,g,b,r,g,b)
-	del(added)
 --@debug@
 	--DevTools_Dump(fellas)
 --@end-debug@
@@ -354,9 +385,6 @@ function addon:CacheFollowers()
 	end
 end
 function addon:GetRunningMissionData()
---@debug@
-	print("Mission timer refresh")
---@end-debug@
 	local list=GarrisonMissionFrame.MissionTab.MissionList
 	C_Garrison.GetInProgressMissions(list.inProgressMissions);
 	--C_Garrison.GetAvailableMissions(list.availableMissions);
@@ -374,7 +402,14 @@ function addon:ADDON_LOADED(event,addon)
 		self:Init()
 	end
 end
-
+function addon:ApplyIGM(value)
+	skipBusy=value
+	if (not GMF) then return end
+	GMF.Ignore.text:SetFormattedText("GarrisonCommander: %s",skipBusy and C(L["Ignore busy followers"],'green') or C(L["Ignore busy followers"],'red'))
+	if (GMF and GMF:IsShown()) then
+		self:RefreshMissions()
+	end
+end
 function addon:ApplyMOVEPANEL(value)
 	if (not GMF) then return end
 	if (value) then
@@ -403,6 +438,17 @@ function addon:OnInitialized()
 	self:loadHelp()
 	self.DbDefaults.global["*"]={}
 	self.db:RegisterDefaults(self.DbDefaults)
+	skipBusy=self:GetBoolean("IGM")
+--@debug@
+	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
+	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGEDE",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
+	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
+	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
+	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
+--@end-debug@
 	return true
 end
 
@@ -412,7 +458,11 @@ function addon:ScriptTrace(hook,frame,...)
 --@end-debug@
 end
 function addon:AddPerc(b,...)
+	if (GMFMissions.CompleteDialog:IsShown()) then return end
 	if (b and b.info and b.info.missionID and b.info.missionID ) then
+		if (b:GetName()=="GarrisonMissionFrameMissionsListScrollFrameButton1") then
+			GMF.Ignore:Hide()
+		end
 		if (GMF.MissionTab.MissionList.showInProgress) then
 			if (b.ProgressHidden) then
 				return
@@ -430,6 +480,7 @@ function addon:AddPerc(b,...)
 		end
 		if (b:GetName()=="GarrisonMissionFrameMissionsListScrollFrameButton1") then
 			self:SetUp()
+			GMF.Ignore:Show()
 		end
 		local missionID=b.info.missionID
 		local Perc=successes[missionID] or -2
@@ -454,7 +505,7 @@ function addon:AddPerc(b,...)
 			b.NotEnough:SetText("(".. GARRISON_PARTY_NOT_FULL_TOOLTIP .. ")")
 			b.NotEnough:SetTextColor(C:Red())
 		end
-		if (Perc <0 and not b:IsMouseOver()) then
+		if (Perc <0) then
 			self:TooltipAdder(missionID,true)
 			Perc=successes[missionID] or -2
 		end
@@ -487,33 +538,39 @@ function addon:CleanUp()
 end
 function addon:SetUp(full)
 	if (GMF.MissionTab.MissionList.showInProgress) then return end
-	local start=GetTime()
---@debug@
-	print("Addon setup",full and "full" or "simple")
 --@end-debug@
 	self:CacheFollowers()
-	if (full) then
-		local buttons=GarrisonMissionFrame.MissionTab.MissionList.listScroll.buttons
-		for i=1,#buttons do
-			local b=buttons[i]
-			if (b and b.info and b.info.missionID and b.info.missionID ) then
-				self:TooltipAdder(b.info.missionID,true)
-			end
-		end
-	end
---@debug@
-	print("Done in",format("%.3f",GetTime()-start))
---@end-debug@
 end
-function addon:DummyHookScript(frame,hook,method)
+
+function addon:RefreshMissions()
+	if (GMF:IsShown()) then
+		wipe(successes)
+		GarrisonMissionList_UpdateMissions()
+	end
+end
+function addon:SafeHookScript(frame,hook,method)
 --@debug@
 	print("DummyHook:",frame,hook)
 --@end-debug@
-	if (_G[frame]) then
-		self:HookScript(_G[frame],hook,function(...) self:ScriptTrace(frame,hook,...) end)
+	local name=frame
+	if (type(frame)=="string") then
+		frame=_G[frame]
+	else
+		if (frame and frame.GetName) then
+			name=frame:GetName()
+		else
+			name="Unknown"
+		end
+	end
+	if (frame) then
+		if (method) then
+			self:HookScript(frame,hook,method)
+		else
+			self:HookScript(frame,hook,function(...) self:ScriptTrace(name,hook,...) end)
+		end
 --@debug@
 	else
-		print(C("Attempted hook for non exixtent:","red"),frame,hook)
+		print(C("Attempted hook for non exixtent:","red"),name,hook)
 --@end-debug@
 	end
 end
@@ -541,7 +598,6 @@ function addon:FixButtons()
 	end
 end
 function addon:MasterPlanDetection(novar,...)
-	print("MPD",novar,...)
 	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
 	masterplan=false
 	if (loadable or reason=="DEMAND_LOADED") then
@@ -578,24 +634,33 @@ function addon:Init()
 	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
 	self:HookScript(GMF,"OnHide","CleanUp")
 	--self:HookScript(GMF,"OnShow","FillFollowersList")
+	--self:HookScript(GMFMissions.CompleteDialog,"OnHide","OnMissionCompleteClose")
+	local b=CreateFrame("CheckButton","GACOptions",GMF,"UICheckButtonTemplate")
+	b.text:SetTextColor(1,1,1)
 	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
+	b:SetChecked(self:GetBoolean('IGM'))
+	b:SetScript("OnCLick",function(b) self:ApplyIGM(b:GetChecked()) end)
+	b:SetPoint("TOPLEFT",42,3)
+	GMF.Ignore=b
+	self:ApplyIGM(self:GetBoolean("IGM"))
+	b:Show()
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab2","OnClick",function () GMF.Ignore:Hide() end)
+	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",function() wipe(successes) end)
 --@debug@
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
 	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
-	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
 	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
 	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
-	self:DummyHookScript("GarrisonMissionFrameTab1","OnCLick")
-	self:DummyHookScript("GarrisonMissionFrameTab2","OnCLick")
-	self:DummyHookScript("GarrisonMissionFrameTab3","OnCLick")
-	self:DummyHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
-	self:DummyHookScript("GarrisonMissionFrameMIssionsTab2","OnCLick")
-	self:DummyHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
-	self:DummyHookScript(GMFMissions,"OnShow","SetUp")
-	self:DummyHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
-	self:DummyHookScript(GMF.MissionComplete,"OnHide")
-	self:DummyHookScript(GMFFollowers,"OnHide")
+	self:SafeHookScript("GarrisonMissionFrameTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab2","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
+	self:SafeHookScript(GMFMissions,"OnShow","SetUp")
+	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
+	self:SafeHookScript(GMFFollowers,"OnHide")
+	self:SafeHookScript("Pippo","OnHide")
 --@end-debug@
 end
 --@do-not-package@
