@@ -1,4 +1,6 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
+* 1.1.7
+Fix: Followers cache was not initialized
 * 1.1.6
 Fix: GarrisonCommander was unwilling triggering a mission reordering.
 Fix: First mission list button was opening the wrong mission

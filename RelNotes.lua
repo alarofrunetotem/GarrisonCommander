@@ -17,6 +17,9 @@ self:Wiki([[
 * for In mission follower reports remaining time
 * final success chance (optionally considering only available followers)
 ]])
+self:RelNotes(1,1,7,[[
+Fix: Followers cache was not initialized
+]])
 self:RelNotes(1,1,6,[[
 Fix: GarrisonCommander was unwilling triggering a mission reordering.
 Fix: First mission list button was opening the wrong mission
