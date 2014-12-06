@@ -482,6 +482,8 @@ function addon:OnInitialized()
 	-- Forcing refresh when needed without possibly disrupting Blizzard Logic
 	self:SecureHook("GarrisonMissionPage_Close","RefreshMissions") -- Missino started
 	self:SecureHook("GarrisonMissionFrame_HideCompleteMissions","RefreshMissions")	-- Mission reward completed
+	self:CacheFollowers()
+
 --@debug@
 	--Only Used for development
 	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
@@ -597,11 +599,6 @@ function addon:AddPerc(b,...)
 end
 function addon:CleanUp()
 	collectgarbage("step",10)
-end
-function addon:SetUp(full)
-	if (GMF.MissionTab.MissionList.showInProgress) then return end
---@end-debug@
-	self:CacheFollowers()
 end
 function addon:RefreshMissions()
 --@debug@
