@@ -436,18 +436,6 @@ function addon:ApplyMOVEPANEL(value)
 		GMF:SetMovable(false)
 	end
 end
-local elapsed=0
-function addon:Menu(frame,ts,...)
-	elapsed=elapsed+ts
-	if (elapsed>10) then
-		if (not self:IsAvailableMission()) then
-			GMF.GCIgnore:Disable()
-		else
-			GMF.GCIgnore:Enable()
-		end
-		elapsed=0
-	end
-end
 function addon:OnInitialized()
 --@debug@
 	LoadAddOn("Blizzard_DebugTools")
@@ -494,8 +482,8 @@ function addon:OnInitialized()
 	-- Forcing refresh when needed without possibly disrupting Blizzard Logic
 	self:SecureHook("GarrisonMissionPage_Close","RefreshMissions") -- Missino started
 	self:SecureHook("GarrisonMissionFrame_HideCompleteMissions","RefreshMissions")	-- Mission reward completed
-	self:SafeHookScript(GMFMissions,"OnUpdate","Menu")
 --@debug@
+	--Only Used for development
 	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
 	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
 	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGEDE",print)
@@ -514,7 +502,6 @@ function addon:OnInitialized()
 	--self:SafeHookScript("GarrisonMissionFrameFollowers","OnHide")
 	self:SafeHookScript(GMFFollowers,"OnHide")
 	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
-	self:SafeHookScript("Pippo","OnHide")
 --@end-debug@
 	return true
 end
@@ -617,7 +604,9 @@ function addon:SetUp(full)
 	self:CacheFollowers()
 end
 function addon:RefreshMissions()
+--@debug@
 	print("Refresh missions called")
+--@end-debug@
 	if (self:IsAvailableMission()) then
 		wipe(successes)
 		GarrisonMissionList_UpdateMissions()
