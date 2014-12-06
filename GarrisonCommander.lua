@@ -225,6 +225,7 @@ function addon:TooltipAdder(missionID,skipTT)
 		follower.rank=follower.level < 100 and follower.level or follower.iLevel
 		if (not follower.isCollected) then break end
 		follower.status=C_Garrison.GetFollowerStatus(follower.followerID)
+		followers[index].status=follower.status		
 		if (not follower.status) then
 			availableFollowers=availableFollowers+1
 		end
@@ -327,7 +328,7 @@ function addon:TooltipAdder(missionID,skipTT)
 		if (roomInParty() and next(traits))  then
 			for id,i in pairs(traits) do
 				local follower=followers[i]
-				if (follower.status and self:GetBoolean('IGM')) then
+				if (follower.status and skipBusy) then
 				elseif (pushFollower(id)) then
 					if (not skipTT) then GameTooltip:AddDoubleLine(ENVIRONMENT_SUBHEADER,fullname[id],0,1,0) end
 					break
@@ -339,7 +340,7 @@ function addon:TooltipAdder(missionID,skipTT)
 	if (roomInParty())  then
 		for index=1,#followers do
 			local follower=followers[index]
-			if (follower.status and self:GetBoolean('IGM')) then
+			if (follower.status and skipBusy) then
 			elseif (pushFollower(follower.followerID)) then
 				if (not partyshown) then
 					if (not skipTT) then GameTooltip:AddLine(PARTY,1) end
@@ -605,6 +606,7 @@ function addon:RefreshMissions()
 	print("Refresh missions called")
 --@end-debug@
 	if (self:IsAvailableMission()) then
+		self:CacheFollowers()
 		wipe(successes)
 		GarrisonMissionList_UpdateMissions()
 	end

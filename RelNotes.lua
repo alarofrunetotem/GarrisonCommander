@@ -19,6 +19,7 @@ self:Wiki([[
 ]])
 self:RelNotes(1,1,7,[[
 Fix: Followers cache was not initialized
+FIx: When filling a party using followers with no counters, was taking busy followers in all cases
 ]])
 self:RelNotes(1,1,6,[[
 Fix: GarrisonCommander was unwilling triggering a mission reordering.
