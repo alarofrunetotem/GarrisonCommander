@@ -69,13 +69,16 @@ local requested={}
 local threats={}
 local availableFollowers=0
 local skipBusy
-local GMF
-local GMFFollowers
-local GMFMissions
-local GMFTab1
-local GMFTab2
-local GMFMissionsTab1
-local GMFMissionsTab2
+local GMF=GarrisonMissionFrame
+local GMFFollowers=GarrisonMissionFrameFollowers
+local GMFMissions=GarrisonMissionFrameMissions
+local GMFMissionPage=GMF.MissionTab
+local GMFRewardPage
+local GMFFollowerPage=GMF.FollowerTab
+local GMFTab1=GarrisonMissionFrameTab1
+local GMFTab2=GarrisonMissionFrameTab2
+local GMFMissionsTab1=GarrisonMissionFrameMissionsTab1
+local GMFMissionsTab2=GarrisonMissionFrameMissionsTab2
 local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
 local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
 local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
@@ -103,6 +106,7 @@ IGNORE_UNAIVALABLE_FOLLOWERS=capitalize(IGNORE_UNAIVALABLE_FOLLOWERS)
 IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=capitalize(IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
 local GameTooltip=GameTooltip
 local GetItemQualityColor=GetItemQualityColor
+local hookedListUpdate
 local timers={}
 function addon:AddLine(icon,name,status,quality,...)
 	local r2,g2,b2=C.Red()
@@ -250,8 +254,11 @@ function addon:TooltipAdder(missionID,skipTT)
 					fullname[id]=fullname[id] .. " |T" .. tostring(ability.icon) .. ":0|t"
 					if (not follower.status or not skipBusy) then
 						local aname=ability.name
-						if (not fellas[aname]) then
-							fellas[aname]=false
+						if (tonumber(fellas[aname])) then
+							local previous=followers[tonumber(fellas[aname])]
+							if (previous.rank>=follower.rank) then
+								break
+							end
 						end
 						fellas[aname]=index
 					end
@@ -322,7 +329,7 @@ function addon:TooltipAdder(missionID,skipTT)
 				local follower=followers[i]
 				if (follower.status and self:GetBoolean('IGM')) then
 				elseif (pushFollower(id)) then
-					if (not skipTT) then GameTooltip:AddDoubleLine(ENVIRONMENT_SUBHEADER,fullname[id],follower.quality) end
+					if (not skipTT) then GameTooltip:AddDoubleLine(ENVIRONMENT_SUBHEADER,fullname[id],0,1,0) end
 					break
 				end
 			end
@@ -405,24 +412,40 @@ end
 function addon:ApplyIGM(value)
 	skipBusy=value
 	if (not GMF) then return end
-	GMF.Ignore.text:SetFormattedText("GarrisonCommander: %s",skipBusy and C(L["Ignore busy followers"],'green') or C(L["Ignore busy followers"],'red'))
-	if (GMF and GMF:IsShown()) then
-		self:RefreshMissions()
+	if (skipBusy) then
+		GMF.GCIgnore.text:SetTextColor(C:Green())
+	else
+		GMF.GCIgnore.text:SetTextColor(C:Red())
 	end
+	self:RefreshMissions()
 end
 function addon:ApplyMOVEPANEL(value)
 	if (not GMF) then return end
 	if (value) then
+		GMF.GCLock.text:SetTextColor(C:Green())
 		GMF:SetMovable(true)
 		GMF:RegisterForDrag("LeftButton")
 		GMF:SetScript("OnDragStart",function(frame) frame:StartMoving() end)
 		GMF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 	else
+		GMF.GCLock.text:SetTextColor(C:Red())
 		GMF:SetScript("OnDragStart",nil)
 		GMF:SetScript("OnDragStop",nil)
 		GMF:ClearAllPoints()
 		GMF:SetPoint("CENTER",UIParent)
 		GMF:SetMovable(false)
+	end
+end
+local elapsed=0
+function addon:Menu(frame,ts,...)
+	elapsed=elapsed+ts
+	if (elapsed>10) then
+		if (not self:IsAvailableMission()) then
+			GMF.GCIgnore:Disable()
+		else
+			GMF.GCIgnore:Enable()
+		end
+		elapsed=0
 	end
 end
 function addon:OnInitialized()
@@ -432,22 +455,66 @@ function addon:OnInitialized()
 	self.OptionsTable.args.on=nil
 	self.OptionsTable.args.off=nil
 	self.OptionsTable.args.standby=nil
-	self:RegisterEvent("ADDON_LOADED")
 	self:AddToggle("MOVEPANEL",true,L["Makes Garrison Mission Panel Movable"]).width="full"
 	self:AddToggle("IGM",false,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL).width="full"
 	self:loadHelp()
 	self.DbDefaults.global["*"]={}
 	self.db:RegisterDefaults(self.DbDefaults)
 	skipBusy=self:GetBoolean("IGM")
+	self:MasterPlanDetection(true)
+	self:FillFollowersList()
+	self:CacheFollowers()
+	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip",function(id) self:TooltipAdder(id) end)
+	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
+	self:HookScript(GMF,"OnHide","CleanUp")
+	local f=GMF:CreateFontString()
+	f:SetFontObject(GameFontNormalSmall)
+	--f:SetHeight(32)
+	f:SetText(me .. L[" Options:"])
+	--f:SetTextColor(C:Azure())
+	f:Show()
+	GMF.GCLabel=f
+	local b=CreateFrame("CheckButton","GACOptions",GMF,"UICheckButtonTemplate")
+	b.text:SetText(L["Ignore busy followers"])
+	b:SetChecked(self:GetBoolean('IGM'))
+	b:SetScript("OnCLick",function(b) self:ApplyIGM(b:GetChecked()) end)
+	b:Show()
+	GMF.GCIgnore=b
+	self:ApplyIGM(self:GetBoolean('IGM'))
+	local l=CreateFrame("CheckButton","GACLock",GMF,"UICheckButtonTemplate")
+	l.text:SetText(L["Unlock Panel"])
+	l:SetChecked(self:GetBoolean('MOVEPANEL'))
+	l:SetScript("OnCLick",function(b) self:ApplyMOVEPANEL(b:GetChecked()) end)
+	l:Show()
+	f:SetPoint("BOTTOMLEFT",GMF,"TOPLEFT",10,15)
+	b:SetPoint("TOPLEFT",f,"TOPRIGHT",10,10)
+	l:SetPoint("TOPLEFT",b,"TOPRIGHT",10+b.text:GetWidth(),0)
+	GMF.GCLock=l
+	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
+	-- Forcing refresh when needed without possibly disrupting Blizzard Logic
+	self:SecureHook("GarrisonMissionPage_Close","RefreshMissions") -- Missino started
+	self:SecureHook("GarrisonMissionFrame_HideCompleteMissions","RefreshMissions")	-- Mission reward completed
+	self:SafeHookScript(GMFMissions,"OnUpdate","Menu")
 --@debug@
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
 	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
 	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGEDE",print)
+	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
 	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
 	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
 	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
-	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
-	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
+	self:SafeHookScript("GarrisonMissionFrameTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab2","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
+	self:SafeHookScript(GMFMissions,"OnShow","SetUp")
+	self:SafeHookScript("GarrisonMissionFrameFollowers","OnShow")
+	--self:SafeHookScript("GarrisonMissionFrameFollowers","OnHide")
+	self:SafeHookScript(GMFFollowers,"OnHide")
+	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
+	self:SafeHookScript("Pippo","OnHide")
 --@end-debug@
 	return true
 end
@@ -457,12 +524,24 @@ function addon:ScriptTrace(hook,frame,...)
 	print("Triggered " .. C(hook,"red").." script on",C(frame,"Azure"),...)
 --@end-debug@
 end
+function addon:IsProgressMission()
+	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrameScrollChild:IsShown() and GMFMissions.showInProgress
+end
+function addon:IsAvailableMission()
+	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrameScrollChild:IsShown() and not GMFMissions.showInProgress
+end
+function addon:IsFollowerList()
+	return GMF:IsShown() and GMFFollowers:IsShown()
+end
+function addon:IsRewardPage()
+	return GMF:IsShown()
+end
+function addon:IsMissionPage()
+	return GMF:IsShown() and GMFMissionPage:IsSHown()
+end
 function addon:AddPerc(b,...)
 	if (GMFMissions.CompleteDialog:IsShown()) then return end
 	if (b and b.info and b.info.missionID and b.info.missionID ) then
-		if (b:GetName()=="GarrisonMissionFrameMissionsListScrollFrameButton1") then
-			GMF.Ignore:Hide()
-		end
 		if (GMF.MissionTab.MissionList.showInProgress) then
 			if (b.ProgressHidden) then
 				return
@@ -477,10 +556,6 @@ function addon:AddPerc(b,...)
 				return
 			end
 
-		end
-		if (b:GetName()=="GarrisonMissionFrameMissionsListScrollFrameButton1") then
-			self:SetUp()
-			GMF.Ignore:Show()
 		end
 		local missionID=b.info.missionID
 		local Perc=successes[missionID] or -2
@@ -541,27 +616,26 @@ function addon:SetUp(full)
 --@end-debug@
 	self:CacheFollowers()
 end
-
 function addon:RefreshMissions()
-	if (GMF:IsShown()) then
+	print("Refresh missions called")
+	if (self:IsAvailableMission()) then
 		wipe(successes)
 		GarrisonMissionList_UpdateMissions()
 	end
 end
 function addon:SafeHookScript(frame,hook,method)
---@debug@
-	print("DummyHook:",frame,hook)
---@end-debug@
-	local name=frame
+	local name="Unknown"
 	if (type(frame)=="string") then
+		name=frame
 		frame=_G[frame]
 	else
 		if (frame and frame.GetName) then
 			name=frame:GetName()
-		else
-			name="Unknown"
 		end
 	end
+--@debug@
+	print("DummyHook:",name,hook)
+--@end-debug@
 	if (frame) then
 		if (method) then
 			self:HookScript(frame,hook,method)
@@ -607,63 +681,14 @@ function addon:MasterPlanDetection(novar,...)
 		else
 			if (_G.MasterPlanConfig or _G.MasterPlanData ) then
 				masterplan=true
-				self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
+				self:SecureHook("GarrisonMissionList_UpdateMissions","RestoreTooltip")
 			end
 		end
 	end
 	pcall(self.FixButtons,self)
 end
-function addon:Init()
-	GMF=GarrisonMissionFrame
-	GMFFollowers=GarrisonMissionFrameFollowers
-	GMFMissions=GarrisonMissionFrameMissions
-	GMFTab1=GarrisonMissionFrameTab1
-	GMFTab2=GarrisonMissionFrameTab2
-	GMFMissionsTab1=GarrisonMissionFrameMissionsTab1
-	GMFMissionsTab2=GarrisonMissionFrameMissionsTab2
-	if (not GMF or not GMFFollowers or not GMFMissions or not GMFTab1 or not GMFTab2 or not GMFMissionsTab1 or not GMFMissionsTab2) then
-		print("Lagging badly, retrying in 2 seconds")
-		self:ScheduleTimer("Init",2)
-		return
-	end
-	self:MasterPlanDetection(true)
-	self:ScheduleTimer("MasterPlanDetection",1)
-	self:FillFollowersList()
-	self:CacheFollowers()
-	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip",function(id) self:TooltipAdder(id) end)
-	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
-	self:HookScript(GMF,"OnHide","CleanUp")
-	--self:HookScript(GMF,"OnShow","FillFollowersList")
-	--self:HookScript(GMFMissions.CompleteDialog,"OnHide","OnMissionCompleteClose")
-	local b=CreateFrame("CheckButton","GACOptions",GMF,"UICheckButtonTemplate")
-	b.text:SetTextColor(1,1,1)
-	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
-	b:SetChecked(self:GetBoolean('IGM'))
-	b:SetScript("OnCLick",function(b) self:ApplyIGM(b:GetChecked()) end)
-	b:SetPoint("TOPLEFT",42,3)
-	GMF.Ignore=b
-	self:ApplyIGM(self:GetBoolean("IGM"))
-	b:Show()
-	self:SafeHookScript("GarrisonMissionFrameMissionsTab2","OnClick",function () GMF.Ignore:Hide() end)
-	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",function() wipe(successes) end)
---@debug@
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
-	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
-	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
-	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
-	self:SafeHookScript("GarrisonMissionFrameTab1","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameTab2","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
-	self:SafeHookScript(GMFMissions,"OnShow","SetUp")
-	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
-	self:SafeHookScript(GMFFollowers,"OnHide")
-	self:SafeHookScript("Pippo","OnHide")
---@end-debug@
-end
 --@do-not-package@
+_G.GAC=addon
 --[[
 Garrison page structure
 Tab selection:

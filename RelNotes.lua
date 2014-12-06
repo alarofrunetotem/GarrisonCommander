@@ -22,6 +22,8 @@ Fix: GarrisonCommander was unwilling triggering a mission reordering.
 Fix: First mission list button was opening the wrong mission
 Feature: Reduced memory footprint
 Feature: You can switch between considering busy follower or not via a checkbox in main mission panel
+Feature: Follower are now assigned to mission giving priority to highest level
+Feature: GarrisonCommander is now load on demand when opening Garrison interface
 ]])
 self:RelNotes(1,1,5,[[
 Fix: Possible clash with another addon
