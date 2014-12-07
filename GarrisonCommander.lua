@@ -225,7 +225,7 @@ function addon:TooltipAdder(missionID,skipTT)
 		follower.rank=follower.level < 100 and follower.level or follower.iLevel
 		if (not follower.isCollected) then break end
 		follower.status=C_Garrison.GetFollowerStatus(follower.followerID)
-		followers[index].status=follower.status		
+		followers[index].status=follower.status
 		if (not follower.status) then
 			availableFollowers=availableFollowers+1
 		end
@@ -500,9 +500,9 @@ function addon:OnInitialized()
 	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
 	self:SafeHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
 	self:SafeHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
-	self:SafeHookScript(GMFMissions,"OnShow","SetUp")
-	self:SafeHookScript("GarrisonMissionFrameFollowers","OnShow")
-	--self:SafeHookScript("GarrisonMissionFrameFollowers","OnHide")
+	self:SafeHookScript(GMFMissions,"OnShow")
+	self:SafeHookScript(GMFMissions,"OnHide")
+	self:SafeHookScript(GMFFollowers,"OnShow")
 	self:SafeHookScript(GMFFollowers,"OnHide")
 	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
 --@end-debug@
@@ -621,18 +621,21 @@ function addon:SafeHookScript(frame,hook,method)
 			name=frame:GetName()
 		end
 	end
---@debug@
-	print("DummyHook:",name,hook)
---@end-debug@
 	if (frame) then
 		if (method) then
-			self:HookScript(frame,hook,method)
+			local rc,msg=pcall(self.HookScript,self,frame,hook,method)
+			--@debug@
+			if (not rc) then
+				print("ERROR attempting hook:",name,hook,":",msg)
+			end
 		else
+			print("DummyHook:",name,hook)
 			self:HookScript(frame,hook,function(...) self:ScriptTrace(name,hook,...) end)
+			--@end-debug@
 		end
 --@debug@
 	else
-		print(C("Attempted hook for non exixtent:","red"),name,hook)
+		print(C("Attempted hook for non existent:","red"),name,hook)
 --@end-debug@
 	end
 end
