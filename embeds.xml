@@ -14,4 +14,5 @@
 	<Include file="libs\AlarShared-3.0\lib.xml"/>
 	<Include file="libs\LibDeformat-3.0\lib.xml"/>
 	<Include file="libs\LibItemUpgradeInfo-1.0\LibItemUpgradeInfo-1.0.xml"/>
+	<Include file="libs\LibInit\LibInit.xml"/>
 </Ui>

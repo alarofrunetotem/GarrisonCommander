@@ -1,4 +1,5 @@
 local __FILE__=tostring(debugstack(1,2,0):match("(.*):1:")) -- MUST BE LINE 1
+print("Loading GarrisonCommander")
 local toc=select(4,GetBuildInfo())
 local me, ns = ...
 local pp=print
@@ -69,6 +70,7 @@ local requested={}
 local threats={}
 local availableFollowers=0
 local skipBusy
+local wipe=wipe
 local GMF=GarrisonMissionFrame
 local GMFFollowers=GarrisonMissionFrameFollowers
 local GMFMissions=GarrisonMissionFrameMissions
@@ -79,6 +81,7 @@ local GMFTab1=GarrisonMissionFrameTab1
 local GMFTab2=GarrisonMissionFrameTab2
 local GMFMissionsTab1=GarrisonMissionFrameMissionsTab1
 local GMFMissionsTab2=GarrisonMissionFrameMissionsTab2
+local GarrisonMissionFrameMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
 local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
 local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
 local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
@@ -451,11 +454,44 @@ function addon:OnInitialized()
 	self.db:RegisterDefaults(self.DbDefaults)
 	skipBusy=self:GetBoolean("IGM")
 	self:MasterPlanDetection(true)
-	self:FillFollowersList()
+	self:ScheduleTimer("MasterPlanDetection",2)
+	pcall(self.FillFollowersList,self)
 	self:CacheFollowers()
 	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip",function(id) self:TooltipAdder(id) end)
 	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
 	self:HookScript(GMF,"OnHide","CleanUp")
+	self:Options()
+	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
+	-- Forcing refresh when needed without possibly disrupting Blizzard Logic
+	self:SecureHook("GarrisonMissionPage_Close","RefreshMissions") -- Missino started
+	self:SecureHook("GarrisonMissionFrame_HideCompleteMissions","RefreshMissions")	-- Mission reward completed
+	self:CacheFollowers()
+	self:RegisterEvent("GARRISON_MISSION_STARTED","RefreshMissions")
+
+--@debug@
+	--Only Used for development
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
+	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGEDE",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
+	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
+	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
+	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED",print)
+	self:SafeHookScript("GarrisonMissionFrameTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab2","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
+	self:SafeHookScript(GMFMissions,"OnShow")
+	self:SafeHookScript(GMFMissions,"OnHide")
+	self:SafeHookScript(GMFFollowers,"OnShow")
+	self:SafeHookScript(GMFFollowers,"OnHide")
+	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
+--@end-debug@
+	return true
+end
+function addon:Options()
 	local f=GMF:CreateFontString()
 	f:SetFontObject(GameFontNormalSmall)
 	--f:SetHeight(32)
@@ -475,38 +511,21 @@ function addon:OnInitialized()
 	l:SetChecked(self:GetBoolean('MOVEPANEL'))
 	l:SetScript("OnCLick",function(b) self:ApplyMOVEPANEL(b:GetChecked()) end)
 	l:Show()
+	GMF.GCLock=l
+--@debug@
+	local s=CreateFrame("Frame","GACStatus",GMF)
+	s:SetHeight(32)
+	local st=s:CreateFontString()
+	s.text=st
+	st:SetFontObject(GameFontNormalSmall)
+	st:Show()
+	st:SetAllPoints()
 	f:SetPoint("BOTTOMLEFT",GMF,"TOPLEFT",10,15)
 	b:SetPoint("TOPLEFT",f,"TOPRIGHT",10,10)
 	l:SetPoint("TOPLEFT",b,"TOPRIGHT",10+b.text:GetWidth(),0)
-	GMF.GCLock=l
-	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
-	-- Forcing refresh when needed without possibly disrupting Blizzard Logic
-	self:SecureHook("GarrisonMissionPage_Close","RefreshMissions") -- Missino started
-	self:SecureHook("GarrisonMissionFrame_HideCompleteMissions","RefreshMissions")	-- Mission reward completed
-	self:CacheFollowers()
-
---@debug@
-	--Only Used for development
-	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
-	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
-	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGEDE",print)
-	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
-	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
-	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
-	self:SafeHookScript("GarrisonMissionFrameTab1","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameTab2","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameMissionsTab1","OnCLick")
-	self:SafeHookScript("GarrisonMissionFrameMissionsTab3","OnCLick")
-	self:SafeHookScript(GMFMissions,"OnShow")
-	self:SafeHookScript(GMFMissions,"OnHide")
-	self:SafeHookScript(GMFFollowers,"OnShow")
-	self:SafeHookScript(GMFFollowers,"OnHide")
-	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
+	s:SetPoint("TOPLEFT",l,"TOPRIGHT",10+l.text:GetWidth(),0)
+	self:HookScript(s,"OnUpdate","Status")
 --@end-debug@
-	return true
 end
 
 function addon:ScriptTrace(hook,frame,...)
@@ -514,20 +533,31 @@ function addon:ScriptTrace(hook,frame,...)
 	print("Triggered " .. C(hook,"red").." script on",C(frame,"Azure"),...)
 --@end-debug@
 end
+function addon:Status(frame)
+	frame.text:SetText(format("PM:%s AM:%s FL:%s RP:%s MP:%s",
+		self:IsProgressMission() and 'Yes' or 'Not',
+		self:IsAvailableMission() and 'Yes' or 'Not',
+		self:IsFollowerList() and 'Yes' or 'Not',
+		self:IsRewardPage() and 'Yes' or 'Not',
+		self:IsMissionPage() and 'Yes' or 'Not')
+	)
+	frame:SetWidth(frame.text:GetWidth())
+end
 function addon:IsProgressMission()
-	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrameScrollChild:IsShown() and GMFMissions.showInProgress
+	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrame:IsShown() and GMFMissions.showInProgress and not GMFFollowers:IsShown() and not GMF.MissionComplete:IsShown()
 end
 function addon:IsAvailableMission()
-	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrameScrollChild:IsShown() and not GMFMissions.showInProgress
+	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrame:IsShown() and not GMFMissions.showInProgress  and not GMFFollowers:IsShown() and not GMF.MissionComplete:IsShown()
 end
 function addon:IsFollowerList()
 	return GMF:IsShown() and GMFFollowers:IsShown()
 end
+--GMFMissions.CompleteDialog
 function addon:IsRewardPage()
-	return GMF:IsShown()
+	return GMF:IsShown() and GMF.MissionComplete:IsShown() and not GMFFollowers:IsShown()
 end
 function addon:IsMissionPage()
-	return GMF:IsShown() and GMFMissionPage:IsSHown()
+	return GMF:IsShown() and GMFMissionPage:IsShown() and GMFFollowers:IsShown()
 end
 function addon:AddPerc(b,...)
 	if (GMFMissions.CompleteDialog:IsShown()) then return end
@@ -601,11 +631,12 @@ end
 function addon:CleanUp()
 	collectgarbage("step",10)
 end
+
 function addon:RefreshMissions()
---@debug@
-	print("Refresh missions called")
---@end-debug@
 	if (self:IsAvailableMission()) then
+		--@debug@
+			print("Refresh missions called")
+		--@end-debug@
 		self:CacheFollowers()
 		wipe(successes)
 		GarrisonMissionList_UpdateMissions()
@@ -668,13 +699,14 @@ function addon:MasterPlanDetection(novar,...)
 	if (loadable or reason=="DEMAND_LOADED") then
 		if (novar) then
 			masterplan=true
-			return
 		else
 			if (_G.MasterPlanConfig or _G.MasterPlanData ) then
 				masterplan=true
-				self:SecureHook("GarrisonMissionList_UpdateMissions","RestoreTooltip")
 			end
 		end
+	end
+	if (masterplan and not self:IsHooked("GarrisonMissionList_UpdateMissions")) then
+		self:SecureHook("GarrisonMissionList_UpdateMissions","RestoreTooltip")
 	end
 	pcall(self.FixButtons,self)
 end

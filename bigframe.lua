@@ -1,16 +1,13 @@
-local __FILE__=tostring(debugstack(1,2,0):match("(.*):1:")) -- MUST BE LINE 1
-local toc=select(4,GetBuildInfo())
 local me, ns = ...
-local pp=print
-if (LibDebug) then LibDebug() end
-local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
-local C=LibStub("AlarCrayon-3.0"):GetColorTable()
-local addon=LibStub("AlarLoader-3.0")(__FILE__,me,ns):CreateAddon(me,true) --#Addon
+local addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0') --#Addon
+local C=addon:GetColorTable()
+local L=addon:GetLocale()
 local print=ns.print or print
 local debug=ns.debug or print
 local dump=ns.dump or print
+local pairs=pairs
+print("Loaded bigframe")
 --@debug@
-ns.debugEnable('on')
 local function tcopy(obj, seen)
 	if type(obj) ~= 'table' then return obj end
 	if seen and seen[obj] then return seen[obj] end
@@ -63,6 +60,7 @@ local function capitalize(s)
 	return strupper(s:sub(1,1))..strlower(s:sub(2))
 end
 -- Name is here just for doc, I will be using the localized one
+
 local abilities={
 	{
 		["name"] = "Wild Aggression",
@@ -102,55 +100,188 @@ local abilities={
 		["icon"] = "Interface\\ICONS\\SPELL_HOLY_BORROWEDTIME.BLP",
 	}, -- [10]
 }
-local masterplan
-local followers={}
-local dirty={}
-local successes={}
-local requested={}
-local missionSlots={}
-local availableFollowers=0 -- Total numner of non in mission followers
-local GMF
-local GMFFollowers
-local GMFMissions
-local GMFTab1
-local GMFTab2
-local GMFTab3
-local GMFMissionsTab1
-local GMFMissionsTab2
-local GMFMissionsTab3
-local GMFMissionsListScrollFrame
-local GMFMissionsListScrollFrameScrollChild
-local GMFFollowerPage
-local GMFMissionPage
-local GMFList
-local G
-local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
-local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
-local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
-local GARRISON_FOLLOWER_EXHAUSTED=GARRISON_FOLLOWER_EXHAUSTED -- "Recovering (1 Day)"
+--- upvalues
+local AVAILABLE=AVAILABLE -- "Available"
+local BUTTON_INFO=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS.. " " .. GARRISON_MISSION_PERCENT_CHANCE
+local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
+local G=C_Garrison
 local GARRISON_BUILDING_SELECT_FOLLOWER_TITLE=GARRISON_BUILDING_SELECT_FOLLOWER_TITLE -- "Select a Follower";
 local GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP=GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP -- "Click here to assign a Follower";
+local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
 local GARRISON_FOLLOWER_CAN_COUNTER=GARRISON_FOLLOWER_CAN_COUNTER -- "This follower can counter:"
+local GARRISON_FOLLOWER_EXHAUSTED=GARRISON_FOLLOWER_EXHAUSTED -- "Recovering (1 Day)"
+local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
+local GARRISON_FOLLOWER_IN_PARTY=GARRISON_FOLLOWER_IN_PARTY
+local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
+local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
+local GARRISON_MISSION_PERCENT_CHANCE=GARRISON_MISSION_PERCENT_CHANCE .. " (Estimated)"
 local GARRISON_MISSION_SUCCESS=GARRISON_MISSION_SUCCESS -- "Success"
 local GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS -- "%d Follower mission";
-local UNKNOWN_CHANCE=GARRISON_MISSION_PERCENT_CHANCE:gsub('%%d%%%%',UNKNOWN)
-local GARRISON_MISSION_PERCENT_CHANCE=GARRISON_MISSION_PERCENT_CHANCE .. " (Estimated)"
-local BUTTON_INFO=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS.. " " .. GARRISON_MISSION_PERCENT_CHANCE
-local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
 local GARRISON_PARTY_NOT_FULL_TOOLTIP=GARRISON_PARTY_NOT_FULL_TOOLTIP -- "You do not have enough followers on this mission."
-local AVAILABLE=AVAILABLE -- "Available"
-local PARTY=PARTY -- "Party"
-local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
-local SPELL_TARGET_TYPE4_DESC=capitalize(SPELL_TARGET_TYPE4_DESC) -- party member
-local SPELL_TARGET_TYPE1_DESC=capitalize(SPELL_TARGET_TYPE1_DESC) -- any
-local ANYONE='('..SPELL_TARGET_TYPE1_DESC..')'
+local GMF=GarrisonMissionFrame
+local GMFFollowerPage=GMF.FollowerTab
+local GMFFollowers=GarrisonMissionFrameFollowers
+local GMFMissionPage=GMF.MissionTab
+local GMFMissionPageFollowers = GMFMissionPage.MissionPage.Followers
+local GMFMissions=GarrisonMissionFrameMissions
+local GMFMissionsTab1=GarrisonMissionFrameMissionsTab1
+local GMFMissionsTab2=GarrisonMissionFrameMissionsTab2
+local GMFMissionsTab3=GarrisonMissionFrameMissionsTab2
+local GMFRewardPage=GMFMissions.MissionComplete
+local GMFRewardSplash=GMFMissions.CompleteDialog
+local GMFMissionsListScrollFrameScrollChild=GarrisonMissionFrameMissionsListScrollFrameScrollChild
+local GMFMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
+local GMFTab1=GarrisonMissionFrameTab1
+local GMFTab2=GarrisonMissionFrameTab2
+local GMFTab3=GarrisonMissionFrameTab3
+local GarrisonMissionFrameMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE .. ' ' .. GARRISON_FOLLOWERS
 local IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE.. ' ' .. GARRISON_FOLLOWER_INACTIVE .. ',' .. GARRISON_FOLLOWER_ON_MISSION ..',' .. GARRISON_FOLLOWER_WORKING.. ','.. GARRISON_FOLLOWER_EXHAUSTED .. ' ' .. GARRISON_FOLLOWERS
+local PARTY=PARTY -- "Party"
+local SPELL_TARGET_TYPE1_DESC=capitalize(SPELL_TARGET_TYPE1_DESC) -- any
+local SPELL_TARGET_TYPE4_DESC=capitalize(SPELL_TARGET_TYPE4_DESC) -- party member
+local ANYONE='('..SPELL_TARGET_TYPE1_DESC..')'
+local UNKNOWN_CHANCE=GARRISON_MISSION_PERCENT_CHANCE:gsub('%%d%%%%',UNKNOWN)
 IGNORE_UNAIVALABLE_FOLLOWERS=capitalize(IGNORE_UNAIVALABLE_FOLLOWERS)
 IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=capitalize(IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
+-- Panel sizes
+local BIGSIZEW=1500
+local BIGSIZEH=662
+local SIZEW=950
+local SIZEH=662
+local BIGBUTTON=BIGSIZEW-700
+local SMALLBUTTON=BIGSIZEW-900
 local GameTooltip=GameTooltip
-local GetItemQualityColor=GetItemQualityColor
-local timers={}
+-- Want to know what I call!!
+local GarrisonMissionButton_OnEnter=GarrisonMissionButton_OnEnter
+local GarrisonFollowerList_UpdateFollowers=GarrisonFollowerList_UpdateFollowers
+local GarrisonMissionList_UpdateMissions=GarrisonMissionList_UpdateMissions
+local GarrisonMissionPage_ClearFollower=GarrisonMissionPage_ClearFollower
+local GarrisonMissionPage_UpdateMissionForParty=GarrisonMissionPage_UpdateMissionForParty
+local GarrisonMissionPage_SetFollower=GarrisonMissionPage_SetFollower
+
+local ITEM_QUALITY_COLORS=ITEM_QUALITY_COLORS
+function addon:GetDifficultyColor(perc)
+	if(perc >90) then
+		return QuestDifficultyColors['standard']
+	elseif (perc >74) then
+		return QuestDifficultyColors['difficult']
+	elseif(perc>49) then
+		return QuestDifficultyColors['verydifficult']
+	elseif(perc >20) then
+		return QuestDifficultyColors['impossible']
+	else
+		return ITEM_QUALITY_COLORS[4]
+	end
+end
+if (LibDebug) then LibDebug() end
+----- Local variables
+local masterplan
+local availableFollowers=0 -- Total numner of non in mission followers
+local followersCache={}
+local followersCacheIndex={}
+local dirty=false
+--- Parties storage
+--
+local parties=setmetatable({},{
+	__index=function(t,k) rawset(t,k,{members={},perc=0,full=false}) return t[k] end
+})
+
+--- Follower Missions Info
+--
+local followerMissions=setmetatable({},{
+	__index=function(t,k) rawset(t,k,{}) return t[k] end
+})
+
+-----------------------------------------------------
+-- Temporary party management
+local openParty,isInParty,pushFollower,removeFollower,closeParty,roomInParty,storeFollowers
+
+do
+	local ID,frames,members,maxFollowers=0,{},{},1
+	---@function [parent=#local] openParty
+	function openParty(missionID,followers)
+		if (#frames > 0 or #members > 0) then
+			error("Unbalanced openParty/closeParty")
+		end
+		maxFollowers=followers
+		frames={GetFramesRegisteredForEvent('GARRISON_FOLLOWER_LIST_UPDATE')}
+		for i=1,#frames do
+			frames[i]:UnregisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+		end
+		ID=missionID
+	end
+	---@function [parent=#local] isInParty
+	function isInParty(followerID)
+		for i=1,maxFollowers do
+			if (followerID==members[i]) then return true end
+		end
+	end
+	---@function [parent=#local] roomInParty
+	function roomInParty()
+		return not members[maxFollowers]
+	end
+	---@function [parent=#local] pushFollower
+	function pushFollower(followerID)
+		if (followerID:sub(1,2) ~= '0x') then error(followerID .. "is not an id") end
+		if (roomInParty()) then
+			local rc,code=pcall (C_Garrison.AddFollowerToMission,ID,followerID)
+			if (rc and code) then
+				tinsert(members,followerID)
+				return true
+--@debug@
+			else
+				print("Error adding ", followerID,"to",ID,code)
+--@end-debug@
+			end
+		end
+	end
+	---@function [parent=#local] removeFollowers
+	function removeFollower(followerID)
+		for i=1,maxFollowers do
+			if (followerID==members[i]) then
+				tremove(members,i)
+				local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,ID,followerID)
+--@debug@
+				if (not rc) then print("Error removing", members[i],"from",ID,code) end
+--@end-debug@
+			return true end
+		end
+	end
+
+	---@function [parent=#local] storeFollowers
+	function storeFollowers(table)
+		wipe(table)
+		for i=1,#members do
+			tinsert(table,members[i])
+		end
+		return #table
+	end
+
+	---@function [parent=#local] closeParty
+	function closeParty()
+		local perc=select(4,G.GetPartyMissionInfo(ID))
+		for i=1,3 do
+			if (members[i]) then
+				local rc,code=pcall(C_Garrison.RemoveFollowerFromMission,ID,members[i])
+--@debug@
+				if (not rc) then print("Error popping ", members[i]," from ",ID,code) end
+--@end-debug@
+
+			else
+				break
+			end
+		end
+		for i=1,#frames do
+			frames[i]:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+		end
+		wipe(frames)
+		wipe(members)
+		return perc
+	end
+end
+-- ProgressBar
+
 function addon:AddLine(icon,name,status,quality,...)
 	local r2,g2,b2=C.Red()
 	local q=ITEM_QUALITY_COLORS[quality or 1] or {}
@@ -163,19 +294,8 @@ function addon:AddLine(icon,name,status,quality,...)
 	--GameTooltip:AddTexture(icon)
 	GameTooltip:AddDoubleLine(icon and "|T" .. tostring(icon) .. ":0|t  " .. name or name, status,q.r,q.g,q.b,r2,g2,b2)
 end
-function addon:GetDifficultyColor(perc)
-	local difficulty='trivial'
-	if(perc >90) then
-		difficulty='standard'
-	elseif (perc >74) then
-		difficulty='difficult'
-	elseif(perc>49) then
-		difficulty='verydifficult'
-	elseif(perc >20) then
-		difficulty='impossible'
-	end
-	return QuestDifficultyColors[difficulty]
-end
+
+
 function addon:RestoreTooltip()
 	local self = GMF.MissionTab.MissionList;
 	local scrollFrame = self.listScroll;
@@ -195,80 +315,83 @@ local function cmp(a,b)
 	if (a.bias~=b.bias) then return (a.bias>b.bias) end
 	if (a.rank ~= b.rank) then return (a.rank > b.rank) end
 	return a.quality > b.quality
-
-
 end
 
 
-function addon:MatchMaker(missionID)
-	local mission=self:GetMissionData(missionID)
-	-- mission
-	-- 	.description
-	--	.cost
-	--	.duration
-	--	.duratonSeconds
-	--	.level
-	--	.type
-	--	.locPrefix
-	--	.rewards= {
-	--		[rewardid]={
-	--			itemId
-	--			quantity
-	--		}
-	--	}
-	--	.numRewards
-	--	.numFollowers
-	--	.state
-	--	.iLevel
-	--	.name
-	--	.followers {} (empty for available
-	--	.location
-	--	.isRare
-	--	.typeAtlas
-	--	.missionID
+function addon:FillCounters(missionID,mission)
+--[[
+	[12]={
+		description="Iron Horde raiders have descended on nearby draenei villages. Find the raiders' camp and raid it. Turnabout, they say, is fair play.",
+		cost=15,
+		duration="4 hr",
+		slots={
+			["Minion Swarms"]=1,
+			Type=1,
+			["Deadly Minions"]=1
+		},
+		durationSeconds=14400,
+		party={
+			party2="<empty>",
+			party1="<empty>"
+		},
+		level=100,
+		type="Combat",
+		counters={
+			["0x00000000001BE95D"]={
+				[1]={
+					counterIcon="Interface\\ICONS\\Ability_Rogue_FanofKnives.blp",
+					name="Minion Swarms",
+					counterName="Fan of Knives",
+					icon="Interface\\ICONS\\Spell_DeathKnight_ArmyOfTheDead.blp",
+					description="An enemy with many allies.  Susceptible to area-of-effect damage."
+				}
+			},
+			["0x00000000002D61EB"]={
+				[1]={
+					counterIcon="Interface\\ICONS\\Spell_Shaman_Hex.blp",
+					name="Deadly Minions",
+					counterName="Hex",
+					icon="Interface\\ICONS\\Achievement_Boss_TwinOrcBrutes.blp",
+					description="An enemy with powerful allies that should be neutralized."
+				}
+			}
+		},
+		traits={
+			["0x00000000001BE95D"]={
+				[1]={
+					traitID=236,
+					icon="Interface\\ICONS\\Item_Hearthstone_Card.blp"
+				}
+			}
+		},
+		locPrefix="GarrMissionLocation-Nagrand",
+		rewards={
+			[795]={
+				itemID=120301,
+				quantity=1
+			}
+		},
+		numRewards=1,
+		numFollowers=2,
+		state=-2,
+		iLevel=0,
+		name="Raiding the Raiders",
+		followers={
+		},
+		location="Nagrand",
+		isRare=false,
+		typeAtlas="GarrMission_MissionIcon-Combat",
+		missionID=380
+	}
+}
+--]]
 	if (not mission) then return end
-	print(C(mission.name,'Yellow'))
-	local slots=missionSlots[missionID]
-	if (not slots) then
-		slots={counters={}}
-		local enemies=select(8,G.GetMissionInfo(missionID))
-		for i=1,#enemies do
-			print(C(enemies[i].name,'Red'))
-			local mechanics=enemies[i].mechanics
-			for _,mechanic in pairs(mechanics) do
-				slots[mechanic.name]= (slots[mechanic] or 0) +1
-			end
-		end
-		slots[TYPE]=1
-	end
-	--slots[n]={
-	--	portraitFileDataID
-	--	displayID
-	--	name
-	--	mechanics={
-	--		[abilityID]={
-	--			description
-	--			name
-	--			icon
-	--		}
-	--	}
-	print(mission.name)
-	if (slots.counters[1]) then
-		DevTools_Dump(slots)
-		return
-	end
-	print("Threats")
-	for x,y in pairs(slots) do
-		print("Slot",x,y)
-	end
-	print("Abilities")
+	local slots=mission.slots
+	wipe(mission.counters)
 	for id,d in pairs(G.GetBuffedFollowersForMission(missionID)) do
-		local level=self:GetFollowerData(id,'level')
-		local bias= G.GetFollowerBiasForMission(missionID,id);
-		local name=self:GetFollowerData(id,'name')
-		local iLevel=self:GetFollowerData(id,'iLevel')
+		local rank=self:GetFollowerData(id,'rank')
 		local quality=self:GetFollowerData(id,'quality')
-		print(C(name,'azure'),level,bias)
+		local bias= G.GetFollowerBiasForMission(missionID,id);
 		for i,l in pairs(d) do
 			-- i is meaningful
 			-- l.counterIcon
@@ -276,53 +399,148 @@ function addon:MatchMaker(missionID)
 			-- l.counterName
 			-- l.icon
 			-- l.description
-			print("Counters",l.name)
-			tinsert(slots.counters,{name=l.name,icon=l.icon,follower=id,bias=bias,rank=level<100 and level or iLevel,quality=quality})
+			tinsert(mission.counters,{name=l.name,follower=id,bias=bias,rank=rank,quality=quality})
+			followerMissions[id][missionID]=1+ (tonumber(followerMissions[id][missionID]) or 0)
 		end
 	end
-	print("Env")
 	for id,d in pairs(G.GetFollowersTraitsForMission(missionID)) do
 		local level=self:GetFollowerData(id,'level')
 		local bias= G.GetFollowerBiasForMission(missionID,id);
-		local name=self:GetFollowerData(id,'name')
-		print(C(name,'azure'),level,bias)
+		local rank=self:GetFollowerData(id,'rank')
+		local quality=self:GetFollowerData(id,'quality')
 		for i,l in pairs(d) do
 			--l.traitID
 			--l.icon
 			if (l.traitID ~= 236) then
-				tinsert(slots.counters,{name=TYPE,icon=l.icon,level=level,follower=id})
+				followerMissions[id][missionID]=1+ (tonumber(followerMissions[id][missionID]) or 0)
+				tinsert(mission.counters,{name=TYPE,follower=id,bias=bias,rank=rank,quality=quality})
 			end
 		end
 	end
-	table.sort(slots,cmp)
-	missionSlots[missionID]=slots
+	table.sort(mission.counters,cmp)
+end
+function addon:Check(missionID)
 
 end
-function addon:PrefillMissionPage(missionPage)
-	if (not IsControlKeyDown()) then return end
-	local missionInfo = missionPage.missionInfo;
-	if ( not missionPage.missionInfo or not missionPage:IsVisible() ) then
-		return;
+function addon:MatchMaker(missionID,mission,party,skipbusy)
+	if (not mission) then return end
+	if (GMFRewardSplash:IsShown()) then return end
+
+	local dbg=missionID==(tonumber(_G.MW) or 0)
+	if dbg then print(C("Matchmaker debug for " .. mission.name,"Yellow")) end
+	if (not skipbusy) then
+		skipbusy=self:GetBoolean("IGM")
 	end
-	local ID=missionInfo.missionID
-	local slot=missionSlots[ID]
-	if (slot) then
-		local menaces=copy(slot)
-		DevTools_Dump(slot.counters)
-		for i=1,#slot.counters do
-			local f=slot.counters[i]
-			print("Considering ",self:GetFollowerData(f.follower,'name'),"for",f.name)
-			if (menaces[f.name] and menaces[f.name]) then
-				print("IS",f.name)
-				if (self:GetFollowerStatus(f.follower)==AVAILABLE) then
-					--GarrisonMissionPage_AddFollower(f.follower)
-					print("Just addedd ",self:GetFollowerData(f.follower,'name'),"for",f.name)
+	local slots=mission.slots
+	if (slots) then
+		local countered=new()
+		local counters=mission.counters
+		if (dbg) then print("Preparying party") end
+		openParty(missionID,mission.numFollowers)
+		for i=1,#counters do
+			local f=counters[i]
+			local menace=f.name
+			countered[menace]=countered[menace] or slots[menace] or 0
+			if (countered[menace] > 0) then
+				if (dbg) then print("Considering ",self:GetFollowerData(f.follower,'name'),"for",menace) end
+				if (roomInParty() and self:GetFollowerStatusForMission(f.follower,skipbusy) and pushFollower(f.follower)) then
+					if (dbg) then print("Taken ",self:GetFollowerData(f.follower,'name'),"for",menace) end
+					countered[menace]=countered[menace]-1
 				end
 			end
 		end
+		del(countered)
+		local perc=select(4,G.GetPartyMissionInfo(missionID)) -- If percentage is already 100, I'll try and add the most useless character
+		local candidateMissions=10000
+		local candidateRank=10000
+		local candidateQuality=9999
+		for x=1,3 do
+			if dbg then print("Party filling") end
+			if (not roomInParty()) then break end
+			if dbg then print("Party is not full") end
+			local candidate
+			local candidatePerc=perc
+			for _,data in pairs(followersCache) do
+				local followerID=data.followerID
+				if (not isInParty(followerID) and self:GetFollowerStatusForMission(followerID,skipbusy)) then
+					local missions=#followerMissions[followerID]
+					local rank=data.rank
+					local quality=data.quality
+					if (dbg) then print("Verifying",self:GetFollowerData(followerID,'name'),missions,rank,quality) end
+					local skipMinimize
+					if (perc<=100) then
+						pushFollower(followerID)
+						local newperc=select(4,G.GetPartyMissionInfo(missionID))
+						removeFollower(followerID)
+						if (newperc > candidatePerc) then
+							candidatePerc=newperc
+							candidate=followerID
+							candidateMissions=missions
+							candidateRank=rank
+							candidateQuality=quality
+							skipMinimize=true -- Improvement, go with him
+						elseif (newperc < candidatePerc) then
+							skipMinimize=true -- Deprovement, go away
+						end
+					end
+					if (not skipMinimize) then
+						if (missions<candidateMissions) then
+							candidate=followerID
+							candidateMissions=missions
+							candidateRank=rank
+							candidateQuality=quality
+						elseif(missions==candidateMissions and rank<candidateRank) then
+							candidate=followerID
+							candidateMissions=missions
+							candidateRank=rank
+							candidateQuality=quality
+						elseif(missions==candidateMissions and rank==candidateRank and quality<candidateQuality) then
+							candidate=followerID
+							candidateMissions=missions
+							candidateRank=rank
+							candidateQuality=quality
+						end
+					end
+				end
+			end
+			if (candidate) then
+				pushFollower(candidate)
+				perc=select(4,G.GetPartyMissionInfo(missionID))
+			end
+
+		end
+		storeFollowers(party.members)
+		party.full= not roomInParty()
+		party.perc=closeParty()
+		if (dbg) then print(C("Matchmaker end","silver")) end
 	end
 end
-function addon:TooltipAdder(missionID,skipTT)
+function addon:TooltipAdder(missionID)
+	local mission=self:GetMissionData(missionID)
+--@debug@
+	GameTooltip:AddLine("ID:" .. tostring(missionID))
+	if (not mission) then GameTooltip:AddLine("E dove minchia è finita??") return end
+--@end-debug@
+	local party=parties[missionID]
+	GameTooltip:AddDoubleLine("Base",mission.basePerc)
+	GameTooltip:AddDoubleLine("Free",party.perc)
+	for i=1,mission.numFollowers do
+		local fid=party.members[i]
+		if (fid) then
+			GameTooltip:AddLine(self:GetFollowerData(fid,'name'))
+		end
+	end
+	if (IsAltKeyDown()) then
+		print("Alt down")
+		_G.MW=missionID
+		wipe(parties[missionID])
+		self:RenderButton(GetMouseFocus(),true)
+		_G.MW=nil
+	end
+
+end
+
+function addon:TooltipAdderx(missionID,skipTT)
 --@debug@
 	if (not skipTT) then GameTooltip:AddLine("ID:" .. tostring(missionID)) end
 --@end-debug@
@@ -527,36 +745,34 @@ function addon:TooltipAdder(missionID,skipTT)
 end
 function addon:FillFollowersList()
 	if (GarrisonFollowerList_UpdateFollowers) then
-		GarrisonFollowerList_UpdateFollowers(GarrisonMissionFrame.FollowerList)
+		GarrisonFollowerList_UpdateFollowers(GMF.FollowerList)
 	end
 end
-function addon:CacheFollowers()
-	followers=G.GetFollowers()
-end
-function addon:GetRunningMissionData()
-	local list=GarrisonMissionFrame.MissionTab.MissionList
-	G.GetInProgressMissions(list.inProgressMissions);
-	if (#list.inProgressMissions > 0) then
-		for i,mission in pairs(list.inProgressMissions) do
-			for _,id in pairs(mission.followers) do
-				timers[id]=mission.timeLeft
-			end
-		end
+local function switch(obj,value)
+	if (not obj) then return end
+	if (value) then
+		obj.text:SetTextColor(C:Green())
+	else
+		obj.text:SetTextColor(C:Silver())
 	end
+	obj:SetChecked(value)
 end
-function addon:ADDON_LOADED(event,addon)
-	if (addon=="Blizzard_GarrisonUI") then
-		self:UnregisterEvent("ADDON_LOADED")
-		self:Init()
-	end
+function addon:ApplyIGM(value)
+	if (not GMF) then return end
+	print("ApplyIGM")
+	dirty=true
+	switch(GMF.gcIGM,value)
+	self:RefreshMissions("Checked")
 end
-
 function addon:ApplyMOVEPANEL(value)
 	if (not GMF) then return end
+	print("ApplyMOVEPANEL",GMF.gcMOVEPANEL,value)
+	switch(GMF.gcMOVEPANEL,value)
 	if (value) then
 		GMF:SetMovable(true)
+		GMF:SetResizable(true)
 		GMF:RegisterForDrag("LeftButton")
-		GMF:SetScript("OnDragStart",function(frame) frame:StartMoving() end)
+		GMF:SetScript("OnDragStart",function(frame) if (IsShiftKeyDown()) then frame:StartSizing("BOTTOMRIGHT") else frame:StartMoving() end end)
 		GMF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 	else
 		GMF:SetScript("OnDragStart",nil)
@@ -567,48 +783,308 @@ function addon:ApplyMOVEPANEL(value)
 	end
 end
 
+function addon:RefreshMissions(event)
+--@debug@
+	print("Refreshing due to",event)
+--@end-debug@
+	if (self:IsAvailableMissionPage()) then
+		availableFollowers=0
+		self:PrefillMissionList()
+		wipe(parties)
+		--@debug@
+			print("Refresh missions called")
+		--@end-debug@
+		GarrisonMissionList_UpdateMissions()
+	end
+end
+function addon:FixButtons()
+	local self = GMF.MissionTab.MissionList
+	local scrollFrame = self.listScroll
+	local buttons = scrollFrame.buttons
+	if (masterplan) then
+		for i =1,#buttons do
+			local b=buttons[i]
+			b.Success:ClearAllPoints()
+			if (b.Expire) then
+				b.Success:SetPoint("TOPLEFT",b.Expire,"TOPRIGHT",5,0)
+			else
+				b.Success:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",200,-3)
+			end
+			b.NotEnough:SetFontObject("GameFontNormalSmall2")
+			b.NotEnough:ClearAllPoints()
+			b.NotEnough:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
+		end
+	else
+		for i =1,#buttons do
+			local b=buttons[i]
+			b.Success:ClearAllPoints()
+			b.Success:SetPoint("BOTTOMLEFT",b.Title,"TOPLEFT",0,3)
+			b.NotEnough:SetFontObject("GameFontNormalSmall")
+			b.NotEnough:SetPoint("TOPLEFT",b.Title,"BOTTOMLEFT",0,-3)
+		end
+	end
+end
+function addon:FixForSure()
+	local rc=pcall(self.FixButtons,self)
+	if (not rc) then
+		self:ScheduleTimer("FixForSure",1)
+	end
+end
+function addon:MasterPlanDetection(novar,...)
+	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
+	masterplan=false
+	if (loadable or reason=="DEMAND_LOADED") then
+		masterplan=true
+		print("Rehooking tooltip")
+		self:SecureHook("GarrisonMissionList_UpdateMissions","RestoreTooltip")
+		self:FixForSure()
+	end
+end
+function addon:PrefillMissionList()
+--@debug@
+	local start=GetTime()
+	print("Start")
+	--for x=1,10 do -- stress test
+--@end-debug@
+	local t=new()
+	G.GetAvailableMissions(t)
+	for index=1,#t do
+		local id=t[index].missionID
+		self:BuildMissionCache(id,t[index])
+	end
+	del(t)
+--@debug@
+	--end
+	print("Done in",GetTime()-start)
+--@end-debug@
+end
+function addon:BuildMissionCache(id,data)
+	if (not	self.db.char.seen[id]) then
+		self.db.char.seen[id]=time()
+	end
+	local missionCache=self.db.char.missionsCache[id]
+	if (missionCache.name=="<newmission>") then
+		for k,v in pairs(missionCache) do
+			if (data[k]) then missionCache[k]=data[k]end
+		end
+		missionCache.rank=missionCache.level < 100 and missionCache.level or missionCache.iLevel
+		missionCache.seen=time()
+	end
+	missionCache.xp=true
+	missionCache.resources=false
+	for k,v in pairs(data.rewards) do
+		if (not v.followerXP) then missionCache.xp=false end
+		if (v.currencyID and v.currencyID==824) then missionCache.resource=false end
+	end
+	local slots=missionCache.slots
+	local enemies=select(8,G.GetMissionInfo(id))
+	for i=1,#enemies do
+		local mechanics=enemies[i].mechanics
+		for _,mechanic in pairs(mechanics) do
+			slots[mechanic.name]= (slots[mechanic] or 0) +1
+		end
+	end
+	slots[TYPE]=1
+	self:FillCounters(id,missionCache)
+	--self:MatchMaker(id,missionCache)
+	missionCache.basePerc=select(4,G.GetPartyMissionInfo(id))
+end
+function addon:SetDbDefaults(default)
+
+	default.global=default.global or {}
+	default.global["*"]={}
+	default.char=default.char or {}
+	default.char.seen={}
+	default.char.missionsCache={
+		["*"]={
+			missionID=0,
+			counters={},
+			slots={},
+			numFollowers=0,
+			name="<newmission>",
+			basePerc=0,
+			durationSeconds=0,
+			rewards={},
+			level=0,
+			iLevel=0
+		}
+	}
+	default.char.lastnumericversion=0
+end
+function addon:SetClean()
+	dirty=false
+end
+function addon:UseCommonProfile()
+	return true
+end
+function addon:OnInitializedx()
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
+	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_ADDED",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_REMOVED",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
+	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
+	self:RegisterEvent("GARRISON_MISSION_STARTED",print)
+	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
+	self:RegisterEvent("GARRISON_UPDATE",print)
+	self:RegisterEvent("GARRISON_USE_PARTY_GARRISON_CHANGED",print)
+	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED",print)
+	self:RegisterEvent("GARRISON_MISSION_NPC_CLOSED",print)
+	for i=1,20 do
+		self:SafeHookScript("GarrisonMissionFrameFollowersListScrollFrameButton"..i,"OnClick",print)
+	end
+	print("Ho registrato in allegria")
+end
 function addon:OnInitialized()
 --@debug@
 	LoadAddOn("Blizzard_DebugTools")
 --@end-debug@
-	self.OptionsTable.args.on=nil
-	self.OptionsTable.args.off=nil
-	self.OptionsTable.args.standby=nil
-	self:RegisterEvent("ADDON_LOADED")
+	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED",print)
+	self:RegisterEvent("GARRISON_MISSION_NPC_CLOSED",print)
+--@debug@
+	--Only Used for development
+	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE",print) --This event is quite useless, fires too often
+	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_ADDED",print)
+	self:RegisterEvent("GARRISON_FOLLOWER_REMOVED",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT",print)
+	self:RegisterEvent("GARRISON_MISSION_FINISHED",print)
+	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE",print)
+	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE",print)
+	self:RegisterEvent("GARRISON_UPDATE",print)
+	self:RegisterEvent("GARRISON_USE_PARTY_GARRISON_CHANGED",print)
+	self:RegisterEvent("GARRISON_MISSION_STARTED")
+	self:SafeHookScript("GarrisonMissionFrameTab1","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab2","OnCLick")
+	self:SafeHookScript("GarrisonMissionFrameTab3","OnCLick")
+	self:SafeHookScript(GMFMissions,"OnHide")
+	self:SafeHookScript(GMFFollowers,"OnHide")
+	self:SafeHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick")
+--@end-debug@
+	self:SafeHookScript("GarrisonMissionFrame","OnShow","SetUp",true)
 	self:AddToggle("MOVEPANEL",true,L["Makes Garrison Mission Panel Movable"]).width="full"
-	self:AddToggle("IGM",false,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL).width="full"
-	self:loadHelp()
-	self.DbDefaults.global["*"]={}
-	self.db:RegisterDefaults(self.DbDefaults)
+	self:AddToggle("IGM",true,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL).width="full"
+	self:AddToggle("BIGPANEL",true,L["Uses a bigger mission panel"],L["Show a party preview"]).width="full"
 	return true
+end
+function addon:GARRISON_MISSION_STARTED(event,missionid)
+--@debug@
+	print(event,missionid)
+--@end-debug@
+	wipe(self.db.char.missionsCache[missionid])
+	self.db.char.seen[missionid]=nil
+	dirty=true
+	self:RefreshMissions(event)
+end
+function addon:Options()
+	local f=GMF:CreateFontString()
+	f:SetFontObject(GameFontNormalSmall)
+	--f:SetHeight(32)
+	f:SetText(me .. L[" Options:"])
+	--f:SetTextColor(C:Azure())
+	f:Show()
+	GMF.GCLabel=f
+	local b=CreateFrame("CheckButton","gcIGM",GMF,"UICheckButtonTemplate")
+	b.text:SetText(L["Ignore busy followers"])
+	b:SetScript("OnCLick",function(b) self:Trigger('IGM',b:GetChecked()) end)
+	b:Show()
+	GMF.gcIGM=b
+	local l=CreateFrame("CheckButton","gcMOVEPANEL",GMF,"UICheckButtonTemplate")
+	l.text:SetText(L["Unlock Panel"])
+	l:SetScript("OnCLick",function(b) self:Trigger('MOVEPANEL',b:GetChecked()) end)
+	l:Show()
+	GMF.gcMOVEPANEL=l
+	self:ApplyIGM(self:GetBoolean('IGM'))
+	self:ApplyMOVEPANEL(self:GetBoolean('MOVEPANEL'))
+--@debug@
+	local s=CreateFrame("Frame","GACStatus",GMF)
+	s:SetHeight(32)
+	local st=s:CreateFontString()
+	s.text=st
+	st:SetFontObject(GameFontNormalSmall)
+	st:Show()
+	st:SetAllPoints()
+	f:SetPoint("BOTTOMLEFT",GMF,"TOPLEFT",10,15)
+	b:SetPoint("TOPLEFT",f,"TOPRIGHT",10,10)
+	l:SetPoint("TOPLEFT",b,"TOPRIGHT",10+b.text:GetWidth(),0)
+	s:SetPoint("TOPLEFT",l,"TOPRIGHT",10+l.text:GetWidth(),0)
+	self:HookScript(s,"OnUpdate","Status")
+--@end-debug@
 end
 
 function addon:ScriptTrace(hook,frame,...)
 --@debug@
-	print(C(frame:GetName(),"Azure") .. ": " .. C(hook,"red") .. "(",...)
+	print("Triggered " .. C(hook,"red").." script on",C(frame,"Azure"),...)
 --@end-debug@
 end
-function addon:postHookScript(frame,hook,method)
-	if (method) then
-		self:HookScript(frame,hook,
-		function(frame,...)
-			local t={self.hooks[frame][hook](frame,...)}
-			self[method](self,frame,...)
-			return unpack(t)
-		end)
-	else
-		return self:SecureHookScript(frame,hook,function(...) addon:ScriptTrace(hook,...) end)
-	end
+
+function addon:Status(frame)
+	frame.text:SetText(format("PM:%s AM:%s FL:%s RP:%s MP:%s Av Fol: %d",
+		self:IsProgressMissionPage() and 'Yes' or 'Not',
+		self:IsAvailableMissionPage() and 'Yes' or 'Not',
+		self:IsFollowerList() and 'Yes' or 'Not',
+		self:IsRewardPage() and 'Yes' or 'Not',
+		self:IsMissionPage() and 'Yes' or 'Not'),
+		availableFollowers
+	)
+	frame:SetWidth(frame.text:GetWidth())
 end
-function addon:preHookScript(frame,hook,method)
-	if (method) then
-		self:HookScript(frame,hook,
-		function(frame,...)
-			self[method](self,frame,...)
-			return self.hooks[frame][hook](frame,...)
-		end)
+function addon:IsProgressMissionPage()
+	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrame:IsShown() and GMFMissions.showInProgress and not GMFFollowers:IsShown() and not GMF.MissionComplete:IsShown()
+end
+function addon:IsAvailableMissionPage()
+	return GMF:IsShown() and GarrisonMissionFrameMissionsListScrollFrame:IsShown() and not GMFMissions.showInProgress  and not GMFFollowers:IsShown() and not GMF.MissionComplete:IsShown()
+end
+function addon:IsFollowerList()
+	return GMF:IsShown() and GMFFollowers:IsShown()
+end
+--GMFMissions.CompleteDialog
+function addon:IsRewardPage()
+	return GMF:IsShown() and GMF.MissionComplete:IsShown()
+
+end
+function addon:IsMissionPage()
+	return GMF:IsShown() and GMFMissionPage:IsShown() and GMFFollowers:IsShown()
+end
+function addon:SafeHookScript(frame,hook,method,postHook)
+	local name="Unknown"
+	if (type(frame)=="string") then
+		name=frame
+		frame=_G[frame]
 	else
-		return self:SecureHookScript(frame,hook,function(...) addon:ScriptTrace(hook,...) end)
+		if (frame and frame.GetName) then
+			name=frame:GetName()
+		end
+	end
+	if (frame) then
+		if (method) then
+			if (postHook) then
+				self:SecureHookScript(frame,hook,method)
+--@debug@
+				print("PostHooked",name,hook)
+--@end-debug@
+			else
+				self:HookScript(frame,hook,method)
+--@debug@
+				print("PreHooked",name,hook)
+--@end-debug@
+			end
+		else
+			if (postHook) then
+				self:SecureHookScript(frame,hook,function(...) self:ScriptTrace(name,hook,...) end)
+				print("DummyPostHooked:",name,hook)
+			else
+				self:HookScript(frame,hook,function(...) self:ScriptTrace(name,hook,...) end)
+				print("DummyPreHooked:",name,hook)
+			end
+		end
+--@debug@
+	else
+		print(C("Attempted hook for non existent:","red"),name,hook)
+--@end-debug@
 	end
 end
 function addon:AddPerc(b,...)
@@ -680,46 +1156,48 @@ function addon:AddPerc(b,...)
 		b.ProgressHidden=false
 	end
 end
+function addon:SetUp(...)
+	self:Options()
+	self:MasterPlanDetection()
+	self:StartUp()
+end
+function addon:StartUp(...)
+	self:Unhook(GMF,"OnShow")
+	self:GrowPanel(self:GetBoolean("BIGPANEL"))
+	self:SecureHook("GarrisonMissionFrame_CheckCompleteMissions",function(...) print("GarrisonMissionFrame_CheckCompleteMissions",...) end)
+	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip",function(id) self:TooltipAdder(id) end)
+	self:SecureHook("GarrisonMissionButton_SetRewards","RenderButton")
+	self:HookScript(GMF,"OnHide","CleanUp")
+	-- Forcing refresh when needed without possibly disrupting Blizzard Logic
+	self:SecureHook("GarrisonMissionFrame_HideCompleteMissions",function() addon:RefreshMissions("MissionCompleteClose") end)	-- Mission reward completed
+	self:SafeHookScript(GMFMissions,"OnShow",function (f,...) print(f:GetName(),'OnShow') self:GrowPanel(true) end )
+	self:SafeHookScript(GMFFollowers,"OnShow",function (f,...) print(f:GetName(),'OnShow') self:GrowPanel(false) end )
+	self:SecureHook("GarrisonMissionPage_ShowMission","UpdateMissionPage")
+	self:RefreshMissions()
+end
 function addon:CleanUp()
+	self:UnhookAll()
+	self:SafeHookScript("GarrisonMissionFrame","OnSHow","StartUp",true)
 	collectgarbage("collect")
 end
-function addon:SetUp()
-	local start=GetTime()
---@debug@
-	print("Addon setup")
---@end-debug@
-	self:CacheFollowers()
-	local list=GarrisonMissionFrame.MissionTab.MissionList
-	G.GetAvailableMissions(list.availableMissions)
-	if (#list.availableMissions > 0) then
-		for i,mission in pairs(list.availableMissions) do
-			self:TooltipAdder(mission.missionID,true)
+function addon:GetFollowerData(key,subkey)
+	local k=followersCacheIndex[key]
+	if (not followersCache[1]) then
+		followersCache=G.GetFollowers()
+		for i,v in pairs(followersCache) do
+			if (not v.isCollected) then
+				followersCache[i]=nil
+			else
+				v.rank=v.level==100 and v.iLevel or v.level
+			end
 		end
 	end
---@debug@
-	print("Done in",format("%.3f",GetTime()-start))
---@end-debug@
-	dirty=false
-end
-function addon:SetDirty(...)
---@debug@
-	print("Dirty",...)
---@end-debug@
-	dirty=true
-end
-local followersCache={}
-local missionCache={}
-function addon:GetFollowerData(key,subkey)
-	local k=followersCache[key]
-	if (not followers[1]) then
-		followers=G.GetFollowers()
-	end
-	local t=followers
+	local t=followersCache
 	if (not k) then
 		for i=1,#t do
 			if (t[i] and (t[i].followerID == key or t[i].name==key)) then
-				followersCache[t[i].followerID]=i
-				followersCache[t[i].name]=i
+				followersCacheIndex[t[i].followerID]=i
+				followersCacheIndex[t[i].name]=i
 				k=i
 				break
 			end
@@ -727,7 +1205,11 @@ function addon:GetFollowerData(key,subkey)
 	end
 	if (k) then
 		if (subkey) then
-			return t[k][subkey]
+			if (subkey=='rank') then
+				return t[k].level==100 and t[k].iLevel or t[k].level
+			else
+				return t[k][subkey]
+			end
 		else
 			return t[k]
 		end
@@ -736,22 +1218,18 @@ function addon:GetFollowerData(key,subkey)
 	end
 end
 function addon:GetMissionData(missionID)
-	local t=GMF.MissionTab.MissionList.availableMissions
-	local k=missionCache[missionID]
-	print(k,missionID,tostring(t))
-	if (not k or t[k].missionID ~= missionID) then
-		k=nil
-		for i=1,#t do
-			if (t[i].missionID == missionID) then
-				missionCache[missionID]=i
-				k=i
-			end
-		end
+	local missionCache=self.db.char.missionsCache[missionID]
+	if (missionCache.name=="<newmission>") then
+		print("Found a new mission",missionID,"Refreshing mission list")
+		self:PrefillMissionList()
 	end
-	if (k) then
-		return t[k]
+	return missionCache
+end
+function addon:GetFollowerStatusForMission(followerID,skipbusy)
+	if (not skipbusy) then
+		return true
 	else
-		return nil
+		return self:GetFollowerStatus(followerID) == AVAILABLE
 	end
 end
 function addon:GetFollowerStatus(followerID,withTime)
@@ -769,59 +1247,6 @@ function addon:GetFollowerStatus(followerID,withTime)
 	return status or AVAILABLE
 end
 
-function addon:Init()
-	G=C_Garrison
-	GMF=GarrisonMissionFrame
-	GMFFollowers=GarrisonMissionFrameFollowers
-	GMFMissions=GarrisonMissionFrameMissions
-	GMFTab1=GarrisonMissionFrameTab1
-	GMFTab2=GarrisonMissionFrameTab2
-	if (_G.GarrisonMissionFrameTab3) then GMFTab3=GarrisonMissionFrameTab3 end
-	GMFMissionsTab1=GarrisonMissionFrameMissionsTab1
-	GMFMissionsTab2=GarrisonMissionFrameMissionsTab2
-	if (_G.GarrisonMissionFrameMissionsTab3) then GMFMissionsTab3=GarrisonMissionFrameMissionsTab3 end
-	GMFMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
-	GMFMissionsListScrollFrameScrollChild=GarrisonMissionFrameMissionsListScrollFrameScrollChild
-	GMFFollowerPage=GMF.FollowerTab
-	GMFMissionPage=GMF.MissionTab.MissionPage
-	GMFList=GarrisonMissionFrame.MissionTab.MissionList
-	_G.GMFL=GMFList
-	if (not G or not GMF or not GMFFollowers or not GMFMissions or not GMFTab1 or not GMFTab2 or not GMFMissionsTab1 or not GMFMissionsTab2) then
-		print("Lagging badly, retrying in 2 seconds")
-		self:ScheduleTimer("Init",2)
-		return
-	end
-	self:FillFollowersList()
-	self:CacheFollowers()
-	self:SecureHook("GarrisonMissionButton_AddThreatsToTooltip",function(id) self:TooltipAdder(id) end)
-	self:SecureHook("GarrisonMissionButton_SetRewards","AddPerc")
-	self:SecureHook("GarrisonMissionPage_UpdateStartButton","PrefillMissionPage")
-	--self:SecureHook("GarrisonFollowerList_UpdateFollowers","CacheFollowers")
-	local _,_,_,loadable,reason=GetAddOnInfo("MasterPlan")
-	if (loadable or reason=="DEMAND_LOADED") then
-		masterplan=true
-		self:SecureHook("GarrisonMissionList_Update","RestoreTooltip")
-	end
-	--self:HookScript(GMFMissions,"OnShow","SetUp")
-	self:HookScript(GMF,"OnHide","CleanUp")
-	self:HookScript(GMF,"OnShow","GrowPanel")
-	self:HookScript(GMFTab1,"OnCLick","GrowPanel")
-	self:HookScript(GMFTab2,"OnCLick","GrowPanel")
-	if (GMFTab3) then self:HookScript(GMFTab3,"OnCLick","GrowPanel") end
-	--self:HookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","SetUp")
-	self:HookScript(GMF.MissionComplete,"OnHide","SetUp")
-	--self:HookScript(GMFFollowers,"OnHide","SetUp")
-	self:ApplyMOVEPANEL(self:GetBoolean("MOVEPANEL"))
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","SetDirty")
-	self:RegisterEvent("GARRISON_MISSION_FINISHED","SetDirty")
-	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","SetDirty")
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","SetDirty")
-	self:RegisterEvent("GARRISON_MISSION_LIST_UPDATE","SetDirty")
-	self:RegisterEvent("GARRISON_MISSION_STARTED","SetDirty")
-	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","ClearFollowers")
-	self:RegisterEvent("GARRISON_FOLLOWER_ADDED","ClearFollowers")
-	self:RegisterEvent("GARRISON_FOLLOWER_REMOVED","ClearFollowers")
-end
 function addon:ClearFollowers()
 	wipe(followers)
 end
@@ -843,74 +1268,123 @@ function addon:GarrisonMissionListTab_OnClick(frame, button)
 			GMF:SetWidth(930)
 	end
 end
-function addon:UpdateMissionPage(button)
-	DevTools_Dump(button.info)
-end
-function addon:GrowPanel(frame, button)
-	local id=frame:GetID()
-	print("Called  id=",id,GMF.MissionTab.MissionPage:IsShown(),"Frame:",frame:GetName())
-	if (id==1) then
-		self:CacheFollowers()
+function addon:DumpFollowerMissions()
+	for k,v in pairs(followerMissions) do
+		print(self:GetFollowerData(k,'name'))
+		for kk,vv in pairs(v) do
+			print(kk,vv)
+		end
 	end
-	--GarrisonMissionFrame_SelectTab(id);
-	local BIGSIZEW=1400
-	local BIGSIZEH=662
-	local SIZEW=950
-	local SIZEH=662
-	print(GMFMissions:IsShown(),GMFMissionPage:IsShown() )
-	if (GMFMissions:IsShown() and not GMFMissionPage:IsShown() ) then
-		GMF.FollowerList.showUncollected=false
+end
+function addon:UpdateMissionPage(missionInfo)
+--@debug@
+	print("UpdateMissionPage for",missionInfo.missionID)
+--@end-debug@
+	--DevTools_Dump(missionInfo)
+	--self:BuildMissionData(missionInfo.missionID.missionInfo)
+	local mission=self:GetMissionData(missionInfo.missionID)
+	local t=new()
+	t.members=new()
+	self:MatchMaker(mission.missionID,mission,t,true)
+	local members=t.members
+	for i=1,#members do
+		GarrisonMissionPage_ClearFollower(GMFMissionPageFollowers[i])
+	end
+	for i=1,#members do
+		local info=self:GetFollowerData(members[i])
+		print(members[i],info.name)
+		GarrisonMissionPage_SetFollower(GMFMissionPageFollowers[i],info)
+	end
+	GarrisonMissionPage_UpdateMissionForParty()
+	del(t.members)
+	del(t)
+end
+local firstcall=true
+function addon:GrowPanel(enlarge)
+	if (enlarge and not GMFRewardSplash:IsShown()) then
+		print("GrowPanel","big")
 		GMF:SetWidth(BIGSIZEW)
 		GMF:SetHeight(BIGSIZEH)
 		--GMFMissions:SetWidth(890)
 		GMFMissions:ClearAllPoints()
 		GMFMissions:SetPoint("TOPLEFT",GMF,25,-43)
 		GMFMissions:SetPoint("BOTTOMRIGHT",GMF,-25,20)
+		--GMFMissionsListScrollFrame:SetWidth(500)
 		GMFMissionsListScrollFrameScrollChild:ClearAllPoints()
 		GMFMissionsListScrollFrameScrollChild:SetPoint("TOPLEFT",GMFMissionsListScrollFrame)
 		GMFMissionsListScrollFrameScrollChild:SetPoint("BOTTOMRIGHT",GMFMissionsListScrollFrame)
-		for i,F in pairs(GMF.MissionTab.MissionList.listScroll.buttons) do
-			print("Version 2")
-			local PF=CreateFrame("Frame","GPF"..i,F,"GarrisonCommanderButtonsBackground")
-			F:SetWidth(BIGSIZEW-PF:GetWidth()-100)
-			PF:SetPoint("TOPLEFT",F,"TOPRIGHT")
-			if (not F.Party) then
-				F.Party={}
-				for i=1,3 do
-					local f=CreateFrame("Button",nil,F,"GarrisonMissionPageFollowerTemplate")
-					f:SetScale(0.9)
-					f:SetFrameStrata("HIGH")
-					F.Party[i]=f
-					f:ClearAllPoints()
-					if (i==1) then
-						f:SetPoint("BOTTOMLEFT",PF,"BOTTOMLEFT",20,4)
-					else
-						f:SetPoint("LEFT",F.Party[i-1],"RIGHT",12,0)
-					end
-				end
-				self:HookScript(F,"OnClick","UpdateMissionPage")
+		if (firstcall) then
+			local h=CreateFrame("Frame",nil,GMF,"UIPanelDialogTemplate")
+			h:SetFrameLevel(999)
+			h:SetWidth(400)
+			h:SetHeight(600)
+			h:SetFrameStrata("DIALOG")
+			h:SetFrameLevel(999)
+			h.title:SetText("Garrison Commander Help")
+			h:Show()
+			GMF.gcHELPDIALOG=h
+			local f=CreateFrame("Frame",nil,GMF)
+			local s=f:CreateFontString("GarrisonCommanderTitle","OVERLAY")
+			f:SetFrameStrata("HIGH")
+			f:SetFrameLevel(999)
+			s:SetFontObject("QuestTitleFontBlackShadow")
+			s:SetPoint("TOPLEFT")
+			s:SetPoint("BOTTOMRIGHT",-40,0)
+			f:SetHeight(50)
+			f:SetWidth(400)
+			s:SetText("Garrison Commander")
+			f:SetWidth(s:GetStringWidth())
+			f.text=s
+			f:SetPoint("TOP",GMF,"TOP",0,-15)
+			GMF.gcTITLE=f
+			local h=CreateFrame("Button",nil,f,"UIPanelCloseButton")
+			h:SetFrameLevel(999)
+			h:SetNormalTexture("interface\\buttons\\ui-microbutton-help-up")
+			h:SetPushedTexture("interface\\buttons\\ui-microbutton-help-down")
+			h:SetHighlightTexture("interface\\buttons\\ui-microbutton-hilight")
+			h:SetHeight(48)
+			h:SetWidth(32)
+			h:SetScript("OnClick",function() GMF.gcHELPDIALOG:SetPoint("TOP") GMF.gcHELPDIALOG:Show() end)
+			h:SetPoint("TOPRIGHT")
+			h:SetScript("OnEnter",function(this)
+				GameTooltip:SetOwner(this, "ANCHOR_CURSOR_RIGHT")
+				GameTooltip:SetText(L["Click to show help page"])
+				GameTooltip:Show()
 			end
+			)
+			h:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+			h.tooltip="tooltip"
+			h.toolTip="toolTip"
+			h.ToolTip="ToolTip"
+			h.Tooltip="Tooltip"
+			GMF.gcHELP=h
+			firstcall=nil
 		end
-		if (not GMF.Ignore) then
-			local b=CreateFrame("CheckButton","GACOptions",GMF,"UICheckButtonTemplate")
-			b.text:SetText(L["Only consider available followers"])
-			b:SetChecked(self:GetBoolean('IGM'))
-			b:SetScript("OnCLick",function(b) self:Apply("IGM",b:GetChecked()) end)
-			b:SetPoint("BOTTOMLEFT",SIZEW,1)
-			GMF.Ignore=b:GetChecked()
-		end
+		GMF.gcTITLE:Show()
 	else
-		GMF.FollowerList.showUncollected=true
+		print("GrowPanel","small")
 		GMF:SetWidth(SIZEW)
 		GMF:SetHeight(SIZEH)
+		if (GMF.gcTITLE) then GMF.gcTITLE:Hide() end
 	end
 end
-function addon:FillFollowerButton(frame,ID)
+function addon:FillFollowerButton(frame,ID,useful)
 	if (not frame) then return end
 	if (not ID) then
 		frame.PortraitFrame.Empty:Show()
-		frame.Name:Hide()
+		print("Requested",ID,type(ID))
+		if (type(ID)=="boolean") then
+			frame.Name:SetText(GARRISON_PARTY_NOT_FULL_TOOLTIP)
+			frame.Name:SetTextColor(C.Red())
+			frame.Name:Show()
+			frame.Name:SetWidth(200)
+		else
+			frame.Name:Hide()
+		end
 		frame.Class:Hide()
+		frame.PortraitFrame.LevelBorder:SetAtlas("GarrMission_PortraitRing_LevelBorder");
+		frame.PortraitFrame.LevelBorder:SetWidth(58);
+		frame:SetScript("OnEnter",nil)
 		return
 	end
 	local info=G.GetFollowerInfo(ID)
@@ -918,6 +1392,11 @@ function addon:FillFollowerButton(frame,ID)
 	frame.info=info
 	frame.Name:Show();
 	frame.Name:SetText(info.name);
+	if (useful) then
+		frame.Name:SetTextColor(C.Green())
+	else
+		frame.Name:SetTextColor(C.Yellow())
+	end
 	if (frame.Class) then
 		frame.Class:Show();
 		frame.Class:SetAtlas(info.classAtlas);
@@ -935,120 +1414,96 @@ function addon:FillFollowerButton(frame,ID)
 		showItemLevel = false;
 	end
 	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, showItemLevel);
+	frame:SetScript("OnEnter",GarrisonMissionPageFollowerFrame_OnEnter)
 end
-function addon:RenderButton(button)
-	if (not button or not button.Title) then return end
-	button.Title:SetFontObject("QuestFont_Large")
-	button.Summary:SetFontObject("GameFontNormal")
-	button.Summary:ClearAllPoints()
-	button.Summary:SetPoint("BOTTOMLEFT",button.Title,"TOPLEFT",0,5)
-	button.Title:SetWidth(200)
-	--button.Party[1]:SetPoint("TOPLEFT",button,"TOPRIGHT",10,-15)
-	local followerID="0x000000000002F5E1"
-	local inprogress=GMF.MissionTab.MissionList.showInProgress
-	local missionInfo=button.info
+function addon:BuildExtraButton(button)
+	local bg=CreateFrame("Button",nil,button,"GarrisonCommanderButtonsBackground")
+	bg:SetPoint("TOPLEFT",button,"TOPRIGHT")
+	bg:SetPoint("RIGHT",GarrisonMissionFrameMissionsListScrollFrame,"RIGHT",-30,0)
+	bg.button=button
+	bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
+	bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+	bg:SetScript("OnClick",function() bg.button:Click() end)
+	button.gcPANEL=bg
+	button.Party={}
 	for i=1,3 do
-		local frame=button.Party[i]
-		if (i>button.info.numFollowers) then
-			frame:Hide()
+		local f=CreateFrame("Button",nil,button,"GarrisonCommanderMissionPageFollowerTemplate")
+		f:RegisterForClicks()
+		f:SetScript("OnDragStart",nil)
+		f:SetScript("OnDragStop",nil)
+		f:SetScript("OnReceiveDrag",nil)
+		f:SetScript("OnClick",nil)
+		f:SetScale(0.8)
+		f:SetFrameStrata("HIGH")
+		button.Party[i]=f
+		f:ClearAllPoints()
+		if (i==1) then
+			f:SetPoint("BOTTOMLEFT",bg,"BOTTOMLEFT",200,4)
 		else
-			if (inprogress) then
+			f:SetPoint("LEFT",button.Party[i-1],"RIGHT",12,0)
+		end
+	end
+end
+function addon:RenderButton(button,dbg)
+	if (not button or not button.Title) then print("Called on I dunno what",button,button:GetName()) return end
+	if (self:IsRewardPage()) then return end
+	local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
+	button:SetWidth(width)
+	if (not button.gcPANEL) then
+		self:BuildExtraButton(button)
+	end
+	local panel=button.gcPANEL
+	local missionInfo=button.info
+	if (GMF.MissionTab.MissionList.showInProgress) then
+		if (not button.inProgressFresh) then
+			panel.Percent:SetText(UNKNOWN_CHANCE)
+			button.inProgressFresh=true
+			for i=1,3 do
+				local frame=button.Party[i]
 				if (missionInfo.followers[i]) then
 					self:FillFollowerButton(frame,missionInfo.followers[i])
+					frame:Show()
 				else
-					self:FillFollowerButton(frame)
+					frame:Hide()
 				end
-			elseif (missionFollower[missionInfo.missionID]) then
-				self:FillFollowerButton(frame,missionFollower[missionInfo.missionID][i])
+			end
+		end
+		return
+	end
+	button.inProgressFresh=false
+	local missionID=missionInfo.missionID
+	if (dbg) then print("RenderButton",missionID) end
+	local mission=self:GetMissionData(missionID)
+	local party=parties[missionID]
+	if (#party.members==0) then
+		self:MatchMaker(missionID,mission,party)
+	end
+	local perc=party.perc
+	for i=1,3 do
+		local frame=button.Party[i]
+		if (i>mission.numFollowers) then
+			frame:Hide()
+		else
+			if (party.members[i]) then
+				self:FillFollowerButton(frame,party.members[i])
 			else
-				self:FillFollowerButton(frame)
+				self:FillFollowerButton(frame,false)
 			end
 			frame:Show()
 		end
 	end
+	if (perc>=0) then
+		panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
+		local q=self:GetDifficultyColor(perc)
+		panel.Percent:SetTextColor(q.r,q.g,q.b)
+	else
+		panel.Percent:SetText(UNKNOWN_CHANCE)
+		panel.Percent:SetTextColor(C.Silver())
+	end
+	panel.Percent:Show()
 end
-
+_G.GAC=addon
 --@do-not-package@
-if (false) then
-	local ga=GarrisonMissionFrame
-	local gmm=GarrisonMissionFrameMissionsListScrollFrame
-	local gmf=GarrisonMissionFrameFollowersListScrollFrame
-	local gf=GarrisonMissionFrameFollowers
-	local gm=GarrisonMissionFrameMissions
-	local gfol=GarrisonMissionFrame.FollowerTab
-
-	if (not ga:IsMovable()) then
-
-		print(ga:GetWidth())
-	end
-	gm:ClearAllPoints()
-	gm:SetPoint("TOPRIGHT",ga,"TOPRIGHT",-30,-60)
-	gm:SetPoint("BOTTOMRIGHT",ga,"BOTTOMRIGHT",0,30)
-	gf:SetPoint("TOPLEFT",ga,"TOPLEFT",30,-60)
-	gf:SetPoint("BOTTOMLEFT",ga,"BOTTOMLEFT",0,60)
-	ga:SetHeight(800)
-
-	print(gm:GetName())
-	for i=1,gm:GetNumPoints() do
-		local a,f,r,x,y=gm:GetPoint(i)
-		print(a,f:GetName(),r,x,y)
-	end
-	print(gm:IsShown(),gm:GetWidth())
-	function GACTab(self)
-		print("Selected")
-		PlaySound("UI_Garrison_Nav_Tabs");
-		local id=self:GetID()
-		GarrisonMissionFrame_SelectTab(id);
-		if (id == 1)  then
-				ga:SetWidth(1600)
-				gm:SetWidth(890+1600-1250)
-				gf:Show()
-		else
-				ga:SetWidth(930)
-		end
-	end
-	function GACClick(self,button)
-		print(self:GetName(),self:GetID(),button)
-		if ( IsModifiedClick("CHATLINK") ) then
-				local missionLink = G.GetMissionLink(self.info.missionID);
-				if (missionLink) then
-					ChatEdit_InsertLink(missionLink);
-				end
-				return;
-		end
-		if (self.info.inProgress) then
-				return;
-		end
-		GarrisonMissionList_Update();
-		PlaySound("UI_Garrison_CommandTable_SelectMission");
-		GarrisonMissionFrame.MissionTab.MissionList:Hide();
-		GarrisonMissionFrame.MissionTab.MissionPage:Show();
-		GarrisonMissionPage_ShowMission(self.info);
-		GarrisonMissionFrame.followerCounters = G.GetBuffedFollowersForMission(self.info.missionID)
-		GarrisonMissionFrame.followerTraits = G.GetFollowersTraitsForMission(self.info.missionID);
-		GarrisonFollowerList_UpdateFollowers(GarrisonMissionFrame.FollowerList);
-
-	end
-	for i=1,8 do
-		local gname="GarrisonMissionFrameMissionsListScrollFrameButton"..i
-		local gbutton=_G[gname]
-		gbutton:SetScript("OnClick",GACClick)
-		gbutton:SetWidth(1200)
-		gbutton:SetHeight(80)
-		print(gbutton:GetHeight())
-			local f1=CreateFrame("Frame",gname..'Follower2',gbutton,"GarrisonMissionPageFollowerTemplate")
-			f1:ClearAllPoints()
-			f1:SetPoint("TOPLEFT",gbutton,"TOPLEFT",500,-10)
-		gbutton.follower1=f1
-		local f2=CreateFrame("Frame",gname..'Follower2',gbutton,"GarrisonMissionPageFollowerTemplate")
-		gbutton.follower2=f2
-		f2:SetPoint("TOPLEFT",f1,"TOPRIGHT",10,0)
-		local f3=CreateFrame("Frame",gname..'Follower2',gbutton,"GarrisonMissionPageFollowerTemplate")
-		gbutton.follower3=f3
-		f3:SetPoint("TOPLEFT",f2,"TOPRIGHT",10,0)
-	end
-end
---@end-do-not-package@
 --[[
 Garrison page structure
 Tab selection:
@@ -1252,4 +1707,3 @@ Dump: value=table returned by GetFollowerInfo for a collected follower
 	local location, xp, environment, environmentDesc, environmentTexture, locPrefix, isExhausting, enemies = G.GetMissionInfo(missionID)
 --]]
 --@end-do-not-package@
-_G.GAC=addon

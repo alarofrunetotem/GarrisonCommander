@@ -1,6 +1,7 @@
 local me,ns=...
-local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
-local hlp=LibStub("AceAddon-3.0"):GetAddon(me)
+local hlp=LibStub("LibInit"):GetAddon(me)
+if (not hlp) then return end
+local L=hlp:GetLocale()
 function hlp:loadHelp()
 self:HF_Title(me,"RELNOTES")
 self:HF_Paragraph("Description")

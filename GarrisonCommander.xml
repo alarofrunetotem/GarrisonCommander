@@ -1,9 +1,38 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
-	<Script file="GarrisonCommander.lua"/>
-	<Frame parentKey="PartyData" name="GarrisonCommanderButtonsBackground" virtual="true">
-		<Size x="530" y="80"/>
+	<Script file="bigframe.lua"/>
+	<Button name="GarrisonCommanderButtonsBackground" virtual="true">
+		<Size x="800" y="80"/>
 		<Layers>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Percent" inherits="NumberFont_Outline_Huge" justifyH="CENTER" justifyV="CENTER" text="100%" >
+					<Size x="100" y="60"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent" relativePoint="TOPLEFT" x="10" y="-10"/>
+					</Anchors>
+				</FontString>
+<!--
+				<FontString parentKey="Chance" inherits="GameFontHighlightSmall" justifyH="CENTER" justifyV="TOP" text="Chance (Estimated)">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.Percent" relativePoint="BOTTOMLEFT" y="-4"/>
+					</Anchors>
+					<Color r="0.745" g="0.745" b="0.745" a="1"/>
+				</FontString>
+-->
+				<Texture parentKey="XPBar">
+					<Size x="205" y="4"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.BG" relativePoint="BOTTOMLEFT" x="24" y="6"/>
+					</Anchors>
+					<Color r="0.212" g="0" b="0.337" a="1"/>
+				</Texture>
+				<FontString parentKey="Status" inherits="GameFontHighlightSmall" justifyH="LEFT">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.ILevel" relativePoint="TOPRIGHT" x="4" y="0"/>
+					</Anchors>
+					<Color r="0.698" g="0.941" b="1" a="1"/>
+				</FontString>
+			</Layer>
 			<Layer level="BACKGROUND">
 				<Texture atlas="GarrMission_MissionParchment" useAtlasSize="true" vertTile="true" horizTile="true">
 					<Anchors>
@@ -53,5 +82,16 @@
 				</Texture>
 			</Layer>
 		</Layers>
+	</Button>
+	<Frame name="GarrisonCommanderMissionPageFollowerTemplate" inherits="GarrisonMissionPageFollowerTemplate" virtual="true">
+		<Scripts>
+			<OnLoad/>
+			<OnDragStart/>
+			<OnDragStop />
+			<OnReceiveDrag/>
+			<OnEnter function="GarrisonMissionPageFollowerFrame_OnEnter"/>
+			<OnLeave function="GarrisonMissionPageFollowerFrame_OnLeave"/>
+			<OnMouseUp />
+		</Scripts>
 	</Frame>
 </Ui>
