@@ -6,7 +6,7 @@
 		<Layers>
 			<Layer level="ARTWORK">
 				<FontString parentKey="Percent" inherits="NumberFont_Outline_Huge" justifyH="CENTER" justifyV="CENTER" text="100%" >
-					<Size x="100" y="60"/>
+					<Size x="150" y="70"/>
 					<Anchors>
 						<Anchor point="TOPLEFT" relativeKey="$parent" relativePoint="TOPLEFT" x="10" y="-10"/>
 					</Anchors>

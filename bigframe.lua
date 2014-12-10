@@ -7,6 +7,12 @@ local debug=ns.debug or print
 local dump=ns.dump or print
 local pairs=pairs
 print("Loaded bigframe")
+---TODO:
+-- Colorare i seguaci in base ala disponbilita' (verdi disponibili, rossi in altre missioni. Magary gialli se working?)
+-- Memorizzare la percentuale di successo delle missioni partire, per visualizzarla nel pannello in progress
+-- Rifare il tooltip
+-- Decidere come (se) usare lo spazio che rimane a destra delle icone
+
 --@debug@
 local function tcopy(obj, seen)
 	if type(obj) ~= 'table' then return obj end
@@ -114,7 +120,7 @@ local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
 local GARRISON_FOLLOWER_IN_PARTY=GARRISON_FOLLOWER_IN_PARTY
 local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
 local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
-local GARRISON_MISSION_PERCENT_CHANCE=GARRISON_MISSION_PERCENT_CHANCE .. " (Estimated)"
+local GARRISON_MISSION_PERCENT_CHANCE=GARRISON_MISSION_PERCENT_CHANCE
 local GARRISON_MISSION_SUCCESS=GARRISON_MISSION_SUCCESS -- "Success"
 local GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS -- "%d Follower mission";
 local GARRISON_PARTY_NOT_FULL_TOOLTIP=GARRISON_PARTY_NOT_FULL_TOOLTIP -- "You do not have enough followers on this mission."
@@ -1333,7 +1339,6 @@ function addon:GrowPanel(enlarge)
 			f:SetHeight(50)
 			f:SetWidth(400)
 			s:SetText("Garrison Commander")
-			f:SetWidth(s:GetStringWidth())
 			f.text=s
 			f:SetPoint("TOP",GMF,"TOP",0,-15)
 			GMF.gcTITLE=f
@@ -1419,7 +1424,7 @@ end
 function addon:BuildExtraButton(button)
 	local bg=CreateFrame("Button",nil,button,"GarrisonCommanderButtonsBackground")
 	bg:SetPoint("TOPLEFT",button,"TOPRIGHT")
-	bg:SetPoint("RIGHT",GarrisonMissionFrameMissionsListScrollFrame,"RIGHT",-30,0)
+	bg:SetPoint("RIGHT",GarrisonMissionFrameMissionsListScrollFrame,"RIGHT",-25,0)
 	bg.button=button
 	bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
 	bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
@@ -1438,7 +1443,7 @@ function addon:BuildExtraButton(button)
 		button.Party[i]=f
 		f:ClearAllPoints()
 		if (i==1) then
-			f:SetPoint("BOTTOMLEFT",bg,"BOTTOMLEFT",200,4)
+			f:SetPoint("BOTTOMLEFT",bg.Percent,"BOTTOMRIGHT",10,10)
 		else
 			f:SetPoint("LEFT",button.Party[i-1],"RIGHT",12,0)
 		end
