@@ -5,15 +5,16 @@
 ## Notes-frFR: Vous aide au moment de choisir le droit utilisateur pour la bonne mission
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ @project-abbreviated-hash@
-## X-Version: 1.1.7
+## X-Version: 2.0.0
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
-## OptionalDeps: AlarArtRemover,MasterPlan
+## OptionalDeps:
 ## DefaultState: Enabled
 ## LoadOnDemand: 1
 ## LoadWith: Blizzard_GarrisonUI
 ## SavedVariables: dbGAC
+## SavedVariablesPerCharacter: dbGACperChar
 ## X-ID: GAC
 ## X-Database:dbGAC
 ## X-Category: Garrison
