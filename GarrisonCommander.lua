@@ -501,9 +501,9 @@ function addon:ApplyMSORT(value)
 	end
 	local func=self[value]
 	if (type(func)=="function") then
-		Garrison_SortMissions=self[value]
+		_G.Garrison_SortMissions=self[value]
 	else
-		Garrison_SortMissions=origGarrison_SortMissions
+		_G.Garrison_SortMissions=origGarrison_SortMissions
 	end
 	GarrisonMissionList_UpdateMissions()
 end
@@ -797,7 +797,7 @@ local function best(fid1,fid2,counters)
 	end
 	return fid1
 end
-function addon:CompleteParty(missionID,mission,skipbusy)
+function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 	local perc=select(4,G.GetPartyMissionInfo(missionID)) -- If percentage is already 100, I'll try and add the most useless character
 	local candidateMissions=10000
 	local candidateRank=10000
@@ -813,7 +813,7 @@ function addon:CompleteParty(missionID,mission,skipbusy)
 		for i=1,totFollowers do
 			local data=followersCache[i]
 			local followerID=data.followerID
-			if (not self:IsIgnored(followerID,missionID) and not isInParty(followerID) and self:GetFollowerStatusForMission(followerID,skipbusy)) then
+			if (not self:IsIgnored(followerID,missionID) and not(skipMaxed and data.maxed) and not isInParty(followerID) and self:GetFollowerStatusForMission(followerID,skipBusy)) then
 				local missions=#followerMissions[followerID]
 				local rank=data.rank
 				local quality=data.quality
@@ -871,17 +871,16 @@ function addon:CompleteParty(missionID,mission,skipbusy)
 		end
 	end
 end
-function addon:MatchMaker(missionID,mission,party,skipbusy)
+function addon:MatchMaker(missionID,mission,party)
+	if (GMFRewardSplash:IsShown()) then return end
 	if (not mission) then mission=self:GetMissionData(missionID) end
 	if (not party) then party=parties[missionID] end
-	if (not skipbusy) then skipbusy=self:GetBoolean("IGM") end
-	if (GMFRewardSplash:IsShown()) then return end
+	local skipBusy=addon:GetBoolean("IGM")
+	local skipMaxed=self:GetBoolean("IGP")
 	dbg=missionID==(tonumber(_G.MW) or 0)
-	local ignoreMaxed=self:GetBoolean("IGP")
 	local slots=mission.slots
 	local missionCounters=counters[missionID]
 	local ct=counterThreatIndex[missionID]
-	local skipbusy=addon:GetBoolean("IGM")
 	openParty(missionID,mission.numFollowers)
 	for i=1,#slots do
 		local threat=cleanicon(slots[i].icon)
@@ -891,15 +890,13 @@ function addon:MatchMaker(missionID,mission,party,skipbusy)
 			local followerID=missionCounters[candidates[i]].followerID
 			if (self:IsIgnored(followerID,missionID)) then
 				if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
+			elseif(not addon:GetFollowerStatusForMission(followerID,skipBusy)) then
+				if (dbg) then print("Skipped",n[followerID],"due to skipbusy" ) end
+			elseif (skipMaxed and self:GetFollowerData(followerID,'maxed')) then
+				if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
 			else
-				if (addon:GetFollowerStatusForMission(followerID,skipbusy)) then
-					if (ignoreMaxed and self:GetFollowerData(followerID,'maxed')) then
-						if (dbg) then print("Skipped",n[followerID],"due to level" ) end
-					else
-						choosen=best(choosen,candidates[i],missionCounters)
-						if (dbg) then print("Taken",n[missionCounters[choosen].followerID]) end
-					end
-				end
+				choosen=best(choosen,candidates[i],missionCounters)
+				if (dbg) then print("Taken",n[missionCounters[choosen].followerID]) end
 			end
 		end
 		if (choosen) then
@@ -912,7 +909,7 @@ function addon:MatchMaker(missionID,mission,party,skipbusy)
 			break
 		end
 	end
-	self:CompleteParty(missionID,mission,skipbusy)
+	self:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 	storeFollowers(party.members)
 	party.full= roomInParty()==0
 	party.perc=closeParty()
@@ -1017,6 +1014,10 @@ function addon:HookedGarrisonMissionButton_AddThreatsToTooltip(missionID)
 	local perc=parties[missionID].perc
 	local q=self:GetDifficultyColor(perc)
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
+	for _,i in pairs (dbcache.ignored[missionID]) do
+		GameTooltip:AddLine(L["You have ignored followers"])
+		break;
+	end
 end
 
 function addon:FillFollowersList()
@@ -1109,7 +1110,6 @@ function addon:BuildRunningMissionsCache()
 		running.duration=mission.durationSeconds
 		running.timeLeft=mission.timeLeft
 		if ((tonumber(running.started) or 0)==0) then running.started = time() - GarrisonTimeStringToSeconds(mission.timeLeft) end
-		local mission=cache.missions[missionID]
 		running.followers={}
 		for i=1,mission.numFollowers do
 			running.followers[i]=mission.followers[i]
@@ -1435,44 +1435,79 @@ end
 local helpwindow -- pseudo static
 function addon:ShowHelpWindow(button)
 	if (not helpwindow) then
-		local AG=LibStub("AceGUI-3.0")
-		helpwindow=AG:Create("Window")
-		local r=AG:Create("Label")
-		r:SetFullHeight(true)
-		r:SetFullWidth(true)
-		r:SetFontObject(GameFontNormal)
-		r:SetText([[
-Garrison Commander enhancec standard Garrison UI by adding a Menu header and  a secondary list of mission button to the right of the standard list.
-Secondary button list:
- * Time since the first time we saw this mission in log
- * Success percent with the current followers selection guidelines
- * A "Good" party composition, on each member countered mechanics are shown.
- *** Green border means full counter, Orange border low level counter
-Hovering on it shows a tooltip with:
- * Overall mission status
- * All members which can possibly play a role in the mission
-Standard button enhancement
- * In rewards, actual quantity is shown (xp, money and resources) ot iLevel (item rewards)
- * Countered status
-Menu Header:
- * Quick selection of which follower ignore for match making
- * Quick mission list order selection
-----------------------------------------------------------------------------------------------------------
-N.B. I dont love to replicate feature already found in other addons, but I was forced to replicate at least
-those given by MasterPlan because MasterPlan clashes with GarrisonCommander.
-
-			]])
-		helpwindow:AddChild(r)
-		helpwindow:SetTitle("Garrison Commander Help")
-		helpwindow:SetPoint("TOPLEFT",button,"TOPRIGHT",0,0)
+		local backdrop = {
+				bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
+				edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+				tile=true,
+				tileSize=16,
+				edgeSize=16,
+				insets={bottom=7,left=7,right=7,top=7}
+		}
+		local dialog = {
+			bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",
+			edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile=true,
+			tileSize=32,
+			edgeSize=32,
+			insets={bottom=5,left=5,right=5,top=5}
+		}
+		helpwindow=CreateFrame("Frame","GCHelp",GCF)
+		helpwindow:SetBackdrop(backdrop)
+		helpwindow:SetBackdropColor(1,1,1,1)
+		helpwindow:SetFrameStrata("TOOLTIP")
+		helpwindow:Show()
+		local html=CreateFrame("SimpleHTML","GCHelpHtml",helpwindow)
+		html:SetFontObject('h1',MovieSubtitleFont);
+		local f=MailTextFontNormal_KO
+		html:SetFontObject('h2',f);
+		html:SetFontObject('h3',f);
+		html:SetFontObject('p',f);
+		html:SetTextColor('h1',C.Red())
+		html:SetTextColor('h2',C.Orange())
+		html:SetTextColor('h3',C.Yellow())
+		html:SetTextColor('p',C.Yellow())
+		local text=[[<html><body>
+<h1 align="center">Garrison Commander Help</h1>
+<br/>
+<p>  GC enhances standard Garrison UI by adding a Menu header and  a secondary list of mission button to the right of the standard list.</p>
+<br/>
+<h2>  Secondary button list:</h2>
+<p>
+	* Time since the first time we saw this mission in log<br/>
+	* Success percent with the current followers selection guidelines<br/>
+	* A "Good" party composition, on each member countered mechanics are shown.<br/>
+	*** Green border means full counter, Orange border low level counter<br/>
+</p>
+<h2>Tooltip:</h2>
+<p>
+ * Overall mission status<br/>
+ * All members which can possibly play a role in the mission<br/>
+</p>
+<h2>Standard button enhancement:</h2>
+<p>
+ * In rewards, actual quantity is shown (xp, money and resources) ot iLevel (item rewards)<br/>
+ * Countered status<br/>
+</p>
+<h2>Menu Header:</h2>
+<p>
+ * Quick selection of which follower ignore for match making<br/>
+ * Quick mission list order selection<br/>
+</p>
+</body></html>
+]]
+		--html:SetTextColor('h1',C.Red())
+		--html:SetTextColor('h2',C.Orange())
+		helpwindow:SetWidth(600)
+		helpwindow:SetHeight(600)
+		html:SetPoint("TOPLEFT",5,-5)
+		html:SetWidth(590)
+		html:SetHeight(590)
+		helpwindow:SetPoint("TOPLEFT",button,"TOPRIGHT",0,-20)
+		html:SetText(text)
 		helpwindow:Show()
 		return
 	end
-	if (helpwindow:IsShown()) then
-		helpwindow:Hide()
-	else
-		helpwindow:Show()
-	end
+	if (helpwindow:IsShown()) then helpwindow:Hide() else helpwindow:Show() end
 end
 function addon:Toggle(button)
 	local f=button.Toggle
@@ -1589,12 +1624,6 @@ function addon:Options()
 	GCF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 	-- Adding a signture
 	local rel=base.Signature
-	GCF.Menu=self:CreateOptionsLayer('IGM','IGP','MOVEPANEL','MSORT')
-	GCF.Menu:SetParent(GCF)
-	GCF.Menu.frame:SetScale(0.6)
-	GCF.Menu:SetPoint("TOPLEFT",base.Signature,"TOPRIGHT",10,10)
-	GCF.Menu:SetPoint("BOTTOMRIGHT",base,"BOTTOMRIGHT",-30,0)
-	GCF.Menu:Show()
 	--rel=self:Option(base,rel,'IGM',L["Ignore busy followers"])
 	--rel=self:Option(base,rel,'IGP',L["Try not to use epic quality level 100 followers"])
 	--rel=self:Option(base,rel,'MOVEPANEL',L["Unlock Panel"])
@@ -1732,18 +1761,19 @@ function addon:HookedGarrisonMissionFrame_HideCompleteMissions()
 	self:BuildMissionsCache(true,true)
 end
 function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
+	if (not self:IsAvailableMissionPage()) then return end
 	local h=GarrisonFollowerTooltip:GetHeight()
 	local fs=GarrisonFollowerTooltip.fs
 	if (not fs) then
 		fs=GarrisonFollowerTooltip:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
 		GarrisonFollowerTooltip.fs=fs
 		fs:SetWidth(0)
-		fs:SetText(L["Click to see available missions"])
-		fs:SetTextColor(0,1,0)
+		fs:SetText(L["Left Click to see available missions"].."\n"..L["Right click to open ignore menu"])
+		fs:SetTextColor(C.Green())
 		fs:SetPoint("BOTTOMLEFT",GarrisonFollowerTooltip,"BOTTOMLEFT",5,5)
 		fs:SetPoint("BOTTOMRIGHT",GarrisonFollowerTooltip,"BOTTOMRIGHT",-5,5)
-		fs:SetHeight(15)
-		GarrisonFollowerTooltip:SetHeight(h+15)
+		fs:SetHeight(30)
+		GarrisonFollowerTooltip:SetHeight(h+30)
 	end
 	fs:Show()
 end
@@ -2003,6 +2033,12 @@ function addon:StartUp(...)
 --@end-debug@
 	self:Unhook(GMF,"OnShow")
 	self:PermanentEvents()
+	GCF.Menu=self:CreateOptionsLayer('IGM','IGP','MOVEPANEL','MSORT')
+	GCF.Menu:SetParent(GCF)
+	GCF.Menu.frame:SetScale(0.6)
+	GCF.Menu:SetPoint("TOPLEFT",GCF.Signature,"TOPRIGHT",10,10)
+	GCF.Menu:SetPoint("BOTTOMRIGHT",GCF,"BOTTOMRIGHT",-30,0)
+	GCF.Menu:Show()
 	self:GrowPanel()
 	self:SafeSecureHook("GarrisonMissionButton_OnClick","OnClick_GarrisonMissionButton")
 	self:SafeSecureHook("GarrisonMissionFrame_CheckCompleteMissions")
@@ -2109,6 +2145,7 @@ end
 function addon:CleanUp()
 	self:UnhookAll()
 	self:CancelAllTimers()
+	GCF.Menu:Release()
 	self:HookScript(GMF,"OnSHow","StartUp",true)
 	self:PermanentEvents() -- Reattaching permanent events
 	if (GarrisonFollowerTooltip.fs) then
@@ -2183,7 +2220,7 @@ function addon:GetMissionData(missionID,subkey)
 --@end-debug@
 		self:BuildMissionsCache()
 		self:FillCounters(missionID,cache.missions[missionID])
-		self:MatchMaker(missionID,cache.missions[missionID],parties[missionID],self:GetBoolean("IGM"))
+		self:MatchMaker(missionID,cache.missions[missionID])
 	end
 	if (subkey) then
 		return missionCache[subkey]
