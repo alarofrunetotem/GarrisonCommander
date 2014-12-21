@@ -23,7 +23,7 @@ self:Wiki([[
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
 self:RelNotes(2,0,0,[[
-Alpha release
+Alpha release, please open ticket on curseforge if you find a bug
 ]])
 self:RelNotes(1,1,7,[[
 Fix: Followers cache was not initialized
