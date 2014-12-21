@@ -52,7 +52,8 @@
 				</Texture>
 			</Layer>
 			<Layer level="BACKGROUND" textureSubLevel="3">
-				<Texture parentKey="IconBG" atlas="Garr_MissionList-IconBG" useAtlasSize="true">
+				<Texture parentKey="IconBG" atlas="Garr_MissionList-IconBG">
+					<Size x="90" y="80"/>
 					<Anchors>
 						<Anchor point="TOPLEFT" y="-1"/>
 					</Anchors>
@@ -126,7 +127,7 @@
 			</Layer>
 		</Layers>
 	</Frame>
-	<Frame name="GarrisonCommanderMissionPageFollowerTemplate" inherits="GarrisonMissionPageFollowerTemplate" virtual="true">
+	<Button name="GarrisonCommanderMissionPageFollowerTemplate" inherits="GarrisonMissionPageFollowerTemplate" virtual="true">
 		<Size x="170" y="58"/>
 		<Layers>
 			<Layer level="OVERLAY">
@@ -165,7 +166,7 @@
 			<OnLeave function="GarrisonMissionPageFollowerFrame_OnLeave"/>
 			<OnMouseUp />
 		</Scripts>
-	</Frame>
+	</Button>
 	<Button name="GarrisonCommanderMissionButton" inherits="GarrisonCommanderBackground" virtual="true">
 		<Size x="600" y="80"/>
 		<Layers>
@@ -185,15 +186,9 @@
 				</FontString>
 			</Layer>
 		</Layers>
-		<Frames>
-			<Frame parentArray="Party" name="$parentFollower" inherits="GarrisonCommanderMissionPageFollowerTemplate">
-				<Anchors>
-					<Anchor point="BOTTOMLEFT" relativeKey="$parent.Percent" relativePoint="BOTTOMRIGHT" x="40" y="0"/>
-				</Anchors>
-			</Frame>
-		</Frames>
 	</Button>
 	<Button name="GarrisonCommanderMissionListButtonTemplate" inherits="GarrisonMissionListButtonTemplate" virtual="true">
+		<Size x="450" y="80" />
 		<Layers>
 			<Layer level="OVERLAY" >
 				<FontString parentKey="NumMembers" inherits="GameFontHighlightSmall" justifyH="CENTER" justifyV="CENTER" maxLines="3" >
@@ -214,14 +209,148 @@
 		</Layers>
 	</Button>
 	<Frame name="GarrisonCommanderFollowerMissionList" virtual="true">
-		<Size x="400" y="400" />
+		<Size x="250" y="400" />
 		<Frames>
-			<Button parentArray="Missions" name="$parentMissions" inherits="GarrisonCommanderMissionListButtonTemplate" >
-				<Size x="450" y="80" />
+			<Frame parentKey="Header" name="$parentHeader" inherits="GarrisonCommanderMissionPageFollowerTemplate">
 				<Anchors>
-					<Anchor point="TOPLEFT" />
+					<Anchor point="TOPLEFT"/>
 				</Anchors>
-			</Button>
+			</Frame>
 		</Frames>
 	</Frame>
+	<Frame name="GarrisonCommanderMenu" virtual="true">
+		<Size>
+			<AbsDimension x="40" y="32"/>
+		</Size>
+		<Layers>
+			<Layer level="ARTWORK">
+				<Texture parentKey="Left" name="$parentLeft" file="Interface\Glues\CharacterCreate\CharacterCreate-LabelFrame">
+					<Size>
+						<AbsDimension x="25" y="64"/>
+					</Size>
+					<Anchors>
+						<Anchor point="TOPLEFT">
+							<Offset>
+								<AbsDimension x="0" y="17"/>
+							</Offset>
+						</Anchor>
+					</Anchors>
+					<TexCoords left="0" right="0.1953125" top="0" bottom="1"/>
+				</Texture>
+				<Texture parentKey="Middle" name="$parentMiddle" file="Interface\Glues\CharacterCreate\CharacterCreate-LabelFrame">
+					<Size>
+						<AbsDimension x="200" y="64"/>
+					</Size>
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentLeft" relativePoint="RIGHT"/>
+					</Anchors>
+					<TexCoords left="0.1953125" right="0.8046875" top="0" bottom="1"/>
+				</Texture>
+				<Texture parentKey="Right" name="$parentRight" file="Interface\Glues\CharacterCreate\CharacterCreate-LabelFrame">
+					<Size>
+						<AbsDimension x="25" y="64"/>
+					</Size>
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentMiddle" relativePoint="RIGHT"/>
+					</Anchors>
+					<TexCoords left="0.8046875" right="1" top="0" bottom="1"/>
+				</Texture>
+				<FontString parentKey="Text" name="$parentText" inherits="GameFontHighlightSmall" wordwrap="false" justifyH="RIGHT">
+					<Size>
+						<AbsDimension x="0" y="10"/>
+					</Size>
+					<Anchors>
+						<Anchor point="RIGHT" relativeTo="$parentRight">
+							<Offset>
+								<AbsDimension x="-43" y="2"/>
+							</Offset>
+						</Anchor>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture name="$parentIcon" hidden="true">
+					<Size>
+						<AbsDimension x="16" y="16"/>
+					</Size>
+					<Anchors>
+						<Anchor point="LEFT">
+							<Offset x="30" y="2"/>
+						</Anchor>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<Frames>
+			<Button parentKey="Button"  name="$parentButton" motionScriptsWhileDisabled="true" >
+				<Size>
+					<AbsDimension x="24" y="24"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPRIGHT" relativeTo="$parentRight">
+						<Offset>
+							<AbsDimension x="-16" y="-18"/>
+						</Offset>
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnEnter>
+						local parent = self:GetParent();
+						local myscript = parent:GetScript("OnEnter");
+						if(myscript ~= nil) then
+							myscript(parent);
+						end
+					</OnEnter>
+					<OnLeave>
+						local parent = self:GetParent();
+						local myscript = parent:GetScript("OnLeave");
+						if(myscript ~= nil) then
+							myscript(parent);
+						end
+					</OnLeave>
+					<OnClick>
+						EasyMenu(self:GetParent().menu, self:GetParent(), "cursor", 0, 0, "MENU", 4)
+					</OnClick>
+				</Scripts>
+				<NormalTexture name="$parentNormalTexture" file="Interface\ChatFrame\UI-ChatIcon-ScrollDown-Up">
+					<Size>
+						<AbsDimension x="24" y="24"/>
+					</Size>
+					<Anchors>
+						<Anchor point="RIGHT"/>
+					</Anchors>
+				</NormalTexture>
+				<PushedTexture name="$parentPushedTexture" file="Interface\ChatFrame\UI-ChatIcon-ScrollDown-Down">
+					<Size>
+						<AbsDimension x="24" y="24"/>
+					</Size>
+					<Anchors>
+						<Anchor point="RIGHT"/>
+					</Anchors>
+				</PushedTexture>
+				<DisabledTexture name="$parentDisabledTexture" file="Interface\ChatFrame\UI-ChatIcon-ScrollDown-Disabled">
+					<Size>
+						<AbsDimension x="24" y="24"/>
+					</Size>
+					<Anchors>
+						<Anchor point="RIGHT"/>
+					</Anchors>
+				</DisabledTexture>
+				<HighlightTexture name="$parentHighlightTexture" file="Interface\Buttons\UI-Common-MouseHilight" alphaMode="ADD">
+					<Size>
+						<AbsDimension x="24" y="24"/>
+					</Size>
+					<Anchors>
+						<Anchor point="RIGHT"/>
+					</Anchors>
+				</HighlightTexture>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnHide>
+				CloseDropDownMenus();
+			</OnHide>
+		</Scripts>
+	</Frame>
+
 </Ui>

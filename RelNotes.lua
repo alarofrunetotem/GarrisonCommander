@@ -1,6 +1,5 @@
 local me,ns=...
 local hlp=LibStub("LibInit"):GetAddon(me)
-if (not hlp) then return end
 local L=hlp:GetLocale()
 function hlp:loadHelp()
 self:HF_Title(me,"RELNOTES")

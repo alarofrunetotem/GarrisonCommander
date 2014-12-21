@@ -3,12 +3,14 @@ enable-nolib-creation: no
 
 externals:
 	libs/LibInit:
-		url: git://git.curseforge.net/wow/libinit/mainline.git/
+		url: git://git.curseforge.net/wow/libinit/mainline.git/LibInit
+	libs/Ace3:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk
+		tag: latest
 
 manual-changelog:
 		filename: CHANGELOG.txt
 		markup-type: creole
-
 
 ignore:
 - .buildpath

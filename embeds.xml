@@ -1,3 +1,4 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Include file="libs\LibDeformat-3.0\lib.xml"/>
 	<Include file="libs\LibInit\LibInit.xml"/>
 </Ui>
