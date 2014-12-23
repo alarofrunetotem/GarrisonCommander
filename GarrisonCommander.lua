@@ -1760,22 +1760,38 @@ end
 function addon:HookedGarrisonMissionFrame_HideCompleteMissions()
 	self:BuildMissionsCache(true,true)
 end
+
 function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
-	if (not self:IsAvailableMissionPage()) then return end
 	local h=GarrisonFollowerTooltip:GetHeight()
-	local fs=GarrisonFollowerTooltip.fs
-	if (not fs) then
-		fs=GarrisonFollowerTooltip:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-		GarrisonFollowerTooltip.fs=fs
+	local ft=GarrisonFollowerTooltip.ft
+	if (not ft) then
+		local backdrop = {
+			bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
+			edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+			tile=true,
+			tileSize=16,
+			edgeSize=16,
+			insets={bottom=3,left=3,right=3,top=3}
+		}
+		ft=CreateFrame("Frame",nil,GarrisonFollowerTooltip)
+		ft:SetBackdrop(backdrop)
+		ft:SetBackdropColor(1,1,1,1)
+		local fs=ft:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+		GarrisonFollowerTooltip.ft=ft
 		fs:SetWidth(0)
+		fs:SetHeight(0)
 		fs:SetText(L["Left Click to see available missions"].."\n"..L["Right click to open ignore menu"])
 		fs:SetTextColor(C.Green())
-		fs:SetPoint("BOTTOMLEFT",GarrisonFollowerTooltip,"BOTTOMLEFT",5,5)
-		fs:SetPoint("BOTTOMRIGHT",GarrisonFollowerTooltip,"BOTTOMRIGHT",-5,5)
-		fs:SetHeight(30)
-		GarrisonFollowerTooltip:SetHeight(h+30)
+		ft:SetPoint("TOPLEFT",GarrisonFollowerTooltip,"BOTTOMLEFT",5,5)
+		ft:SetPoint("TOPRIGHT",GarrisonFollowerTooltip,"BOTTOMRIGHT",-5,5)
+		ft:SetHeight(45)
+		fs:SetAllPoints()
 	end
-	fs:Show()
+	if (self:IsMissionPage()) then
+		ft:Hide()
+	else
+		ft:Show()
+	end
 end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
 --@debug@
