@@ -193,6 +193,9 @@ local BUSY_MESSAGE=format(BUSY_MESSAGE_FORMAT,MAXMISSIONS,MINPERC)
 
 local function splitFormat(base)
 	local i,s=base:find("|4.*:.*;")
+	if (not i) then
+		return base,base
+	end
 	local m0,m1=base:match("|4(.*):(.*);")
 	local G=base
 	local G1=G:sub(1,i-1)..m0..G:sub(s+1)

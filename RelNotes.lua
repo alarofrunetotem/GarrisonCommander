@@ -22,6 +22,9 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
+self:RelNotes(2,0,1)[[
+Fixed: RU,KR,CH (both traditional and simplified) locales where broken
+]]
 self:RelNotes(2,0,0,[[
 Gui totally redesigned, tons of feature added
 Check curse site for complete changelog
