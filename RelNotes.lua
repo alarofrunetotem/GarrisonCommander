@@ -24,6 +24,7 @@ typing /gac silent in chat will eliminate every chat messag from GarrisonCommand
 ]])
 self:RelNotes(2,0,1)[[
 Fixed: RU,KR,CH (both traditional and simplified) locales where broken
+Fixed: error when upgrading a follower for the first time
 ]]
 self:RelNotes(2,0,0,[[
 Gui totally redesigned, tons of feature added

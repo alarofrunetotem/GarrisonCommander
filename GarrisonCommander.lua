@@ -1809,6 +1809,7 @@ end
 -- Shamelessly stolen from Blizzard Code
 function addon:FillMissionButton(button)
 	local mission=button.info
+	if (not mission) then return end
 	button.Title:SetWidth(0);
 	button.Title:SetText(mission.name);
 	button.Level:SetText(mission.level);
