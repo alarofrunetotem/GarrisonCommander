@@ -22,6 +22,8 @@ local format=format
 local tostring=tostring
 local collectgarbage=collectgarbage
 local bigscreen=true
+local GMM=false
+local MP=false
 
 --@debug@
 if (LibDebug) then LibDebug() end
@@ -476,7 +478,8 @@ function addon:OnInitialized()
 	self:SafeHookScript("GarrisonMissionFrame","OnShow","SetUp",true)
 	self:AddToggle("MOVEPANEL",true,L["Unlock Garrison Panel"])
 	self:AddToggle("IGM",true,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
-	self:AddToggle("IGP",true,L["Ignore epic quality level 100 followers"],L["Level 100 epic followers are not used for match making. Useful when you level"])
+	self:AddToggle("IGP",true,L["Ignore epic quality level 100 followers"],L["Level 100 epic followers are not used for match making unless they are needed to fill up the roster."])
+	self:AddToggle("CKMP",true,L["Check on start if Master Plan is present and optionally disable it"],L["Master Plan disables most of GC features"])
 	self:AddSelect("MSORT","Garrison_SortMissions_Original",
 	{
 		Garrison_SortMissions_Original=L["Original method"],
@@ -489,16 +492,42 @@ function addon:OnInitialized()
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
 	self:Trigger("MSORT")
+	self:ScheduleTimer("CheckMP",1)
+	self:ScheduleTimer("CheckGMM",0.1)
 	return true
+end
+function addon:CheckMP()
+	if (IsAddOnLoaded("MasterPlan")) then
+		if (self:GetBoolean("CKMP")) then
+			self:Popup("Master Plan detected. Master plan trashes Garrison Commander.\nIf you want to see Garrison Commander interface, please disable Master Plan.\nShould I do it for you?",0,
+			function()
+				DisableAddOn("MasterPlan")
+				ReloadUI()
+			end,
+			function()
+				addon:SetBoolean("CKMP",false)
+			end
+			)
+		end
+		MP=true
+	else
+		MP=false
+		self:SetBoolean("CHECKMP",true)
+	end
+end
+function addon:CheckGMM()
+	if (IsAddOnLoaded("GarrisonMissionManager")) then
+		GMM=true
+		self:RefreshMission()
+	end
 end
 function addon:ApplyIGM(value)
 	self:BuildMissionsCache(false,true)
 	GarrisonMissionList_UpdateMissions()
 end
 function addon:ApplyBIGSCREEN(value)
-	if (value ~= bigscreen) then
 		if (value) then
-			wipe(dbcache.ignored[missionID]) -- we no longer have an interface to change this settings
+			wipe(dbcache.ignored) -- we no longer have an interface to change this settings
 		end
 		self:Popup(L["Must reload interface to apply"],0,
 			function(this)
@@ -506,7 +535,6 @@ function addon:ApplyBIGSCREEN(value)
 				ReloadUI()
 			end
 		)
-	end
 end
 function addon:ApplyIGP(value)
 	self:BuildMissionsCache(false,true)
@@ -899,6 +927,8 @@ function addon:MatchMaker(missionID,mission,party)
 	local slots=mission.slots
 	local missionCounters=counters[missionID]
 	local ct=counterThreatIndex[missionID]
+	local maxedSkipped=new()
+	local ignoredSkipped=new()
 	openParty(missionID,mission.numFollowers)
 	for i=1,#slots do
 		local threat=cleanicon(slots[i].icon)
@@ -906,11 +936,13 @@ function addon:MatchMaker(missionID,mission,party)
 		local choosen
 		for i=1,#candidates do
 			local followerID=missionCounters[candidates[i]].followerID
-			if (self:IsIgnored(followerID,missionID)) then
-				if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
-			elseif(not addon:GetFollowerStatusForMission(followerID,skipBusy)) then
+			if(not addon:GetFollowerStatusForMission(followerID,skipBusy)) then
 				if (dbg) then print("Skipped",n[followerID],"due to skipbusy" ) end
+			elseif (self:IsIgnored(followerID,missionID)) then
+				tinsert(ignoredSkipped,followerID)
+				if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
 			elseif (skipMaxed and self:GetFollowerData(followerID,'maxed')) then
+				tinsert(maxedSkipped,followerID)
 				if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
 			else
 				choosen=best(choosen,candidates[i],missionCounters)
@@ -928,6 +960,21 @@ function addon:MatchMaker(missionID,mission,party)
 		end
 	end
 	self:CompleteParty(missionID,mission,skipBusy,skipMaxed)
+	if (roomInParty()>0) then
+		--We try to use maxed, then ignored followers
+		for i=1,#maxedSkipped do
+			pushFollower(maxedSkipped[i])
+			if (roomInParty()==0) then
+				break
+			end
+		end
+		for i=1,#ignoredSkipped do
+			pushFollower(ignoredSkipped[i])
+			if (roomInParty()==0) then
+				break
+			end
+		end
+	end
 	storeFollowers(party.members)
 	party.full= roomInParty()==0
 	party.perc=closeParty()
@@ -942,7 +989,7 @@ function addon:GetCounterBias(missionID,threat)
 	local iter=genIteratorByThreat(missionID,cleanicon(tostring(threat)),new())
 	for i=1,iter() do
 		if (iter[i]) then
-			if (iter[i].bias > bias) then
+			if ((tonumber(iter[i].bias) or 0) > bias) then
 				if (inParty(missionID,iter[i].followerID)) then
 					bias=iter[i].bias
 					who=iter[i].name
@@ -1479,25 +1526,27 @@ function addon:ShowHelpWindow(button)
 			edgeSize=32,
 			insets={bottom=5,left=5,right=5,top=5}
 		}
-		helpwindow=CreateFrame("Frame","GCHelp",GCF)
+		helpwindow=CreateFrame("Frame",nil,GCF)
 		helpwindow:SetBackdrop(backdrop)
 		helpwindow:SetBackdropColor(1,1,1,1)
 		helpwindow:SetFrameStrata("TOOLTIP")
 		helpwindow:Show()
-		local html=CreateFrame("SimpleHTML","GCHelpHtml",helpwindow)
+		local html=CreateFrame("SimpleHTML",nil,helpwindow)
 		html:SetFontObject('h1',MovieSubtitleFont);
 		local f=MailTextFontNormal_KO
 		html:SetFontObject('h2',f);
 		html:SetFontObject('h3',f);
 		html:SetFontObject('p',f);
-		html:SetTextColor('h1',C.Red())
+		html:SetTextColor('h1',C.Blue())
 		html:SetTextColor('h2',C.Orange())
-		html:SetTextColor('h3',C.Yellow())
+		html:SetTextColor('h3',C.Red())
 		html:SetTextColor('p',C.Yellow())
 		local text=[[<html><body>
 <h1 align="center">Garrison Commander Help</h1>
 <br/>
-<p>  GC enhances standard Garrison UI by adding a Menu header and  a secondary list of mission button to the right of the standard list.</p>
+<p>  GC enhances standard Garrison UI by adding a Menu header and  a secondary list of mission button to the right of the standard list.<br/>
+Since 2.0.2, the "big screen" mode became optional. If you choosed to disable it, some feature described here will not be available
+</p>
 <br/>
 <h2>  Secondary button list:</h2>
 <p>
@@ -1521,20 +1570,35 @@ function addon:ShowHelpWindow(button)
  * Quick selection of which follower ignore for match making<br/>
  * Quick mission list order selection<br/>
 </p>
-<h2>Note</h2>
-<p>
-If you dont use big screen and have Master Plan installed, you must hover on percentage to get Garrison Commander Tooltip
-</p>
-</body></html>
 ]]
+if (MP) then
+text=text..[[
+<h3>Master Plan Detected</h3>
+<p>Master Plan hides Garrison Commander interface while retaining some of its features<br/>
+For example, when you click mission button, you will find your mission already populated by Garrison Commander, but you lose the ability to give Garrison Commander instructions about which followers it should choose.<br/>
+You should disable Master Plan in order to see Garrison Commander interface and decide which one do you prefer.
+</p>
+]]
+end
+if (GMM) then
+text=text..[[
+<h3>Garrison Mission Manager Detected</h3>
+<p>Garrison Mission Manager and Garrison Commander plays reasonably well together.<br/>
+The red button to the right of rewards is from GMM. It spills out of button, Yes, it's designed this way. Dunno why. Ask GMM author :)<br/>
+Same thing for the three red buttons in mission page.
+</p>
+]]
+end
+text=text.."</body></html>"
 		--html:SetTextColor('h1',C.Red())
 		--html:SetTextColor('h2',C.Orange())
-		helpwindow:SetWidth(600)
-		helpwindow:SetHeight(600)
-		html:SetPoint("TOPLEFT",5,-5)
-		html:SetWidth(590)
-		html:SetHeight(590)
-		helpwindow:SetPoint("TOPLEFT",button,"TOPRIGHT",0,-20)
+		helpwindow:SetWidth(800)
+		helpwindow:SetHeight(600+ (MP and 80 or 0) + (GMM and 70 or 0))
+		helpwindow:SetPoint("TOPLEFT",button,"TOPRIGHT",0,0)
+		html:ClearAllPoints()
+		html:SetWidth(helpwindow:GetWidth()-20)
+		html:SetHeight(helpwindow:GetHeight()-20)
+		html:SetPoint("TOPLEFT",helpwindow,"TOPLEFT",10,-10)
 		html:SetText(text)
 		helpwindow:Show()
 		return
@@ -2683,6 +2747,9 @@ function addon:OnClick_GCMissionButton(frame,button)
 end
 
 function addon:HookedGarrisonMissionButton_SetRewards(button,rewards,numRewards)
+	self:RenderButton(button,rewards,numRewards)
+end
+function addon:RenderButton(button,rewards,numRewards)
 	if (not button or not button.Title) then
 --@debug@
 		error(strconcat("Called on I dunno what ",tostring(button)," ", tostring(button:GetName())))
@@ -2694,7 +2761,7 @@ function addon:HookedGarrisonMissionButton_SetRewards(button,rewards,numRewards)
 		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
 		button:SetWidth(width)
 		button.LocBG:SetPoint("LEFT")
-		local tw=button:GetWidth()-165
+		local tw=button:GetWidth()-165 - (GMM and 65 or 0)
 		if ( button.Title:GetWidth() + button.Summary:GetWidth() + 8 < tw - numRewards * 65 ) then
 			button.Title:SetPoint("LEFT", 165, 0);
 			button.Summary:ClearAllPoints();

@@ -1,4 +1,7 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
+* 2.0.2
+Feature: new layout is now optional, you can revert to 1.1.8 leayout disabling "big screen"
+Fix: error "Message: ...rface\AddOns\GarrisonCommander\GarrisonCommander.lua:930: attempt to compare number with nil"
 * 2.0.1
 Fixed: RU,KR,CH (both traditional and simplified) locales where broken
 Fixed: error when upgrading a follower for the first time

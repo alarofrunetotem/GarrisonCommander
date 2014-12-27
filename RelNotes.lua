@@ -22,10 +22,14 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
-self:RelNotes(2,0,1)[[
+self:RelNotes(2,0,2,[[
+Feature: new layout is now optional, you can revert to 1.1.8 leayout disabling "big screen"
+Fix: error "Message: ...rface\AddOns\GarrisonCommander\GarrisonCommander.lua:930: attempt to compare number with nil"
+]])
+self:RelNotes(2,0,1,[[
 Fixed: RU,KR,CH (both traditional and simplified) locales where broken
 Fixed: error when upgrading a follower for the first time
-]]
+]])
 self:RelNotes(2,0,0,[[
 Gui totally redesigned, tons of feature added
 Check curse site for complete changelog
