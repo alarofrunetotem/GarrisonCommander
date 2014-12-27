@@ -22,8 +22,10 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
-self:RelNotes(2,0,2,[[
+self:RelNotes(2,1,0,[[
 Feature: new layout is now optional, you can revert to 1.1.8 leayout disabling "big screen"
+Feature: Mission page autopopulation is now optional
+Feature: If Master Plan is detecte, you can choose which layout you want between GC's one and MP's one
 Fix: error "Message: ...rface\AddOns\GarrisonCommander\GarrisonCommander.lua:930: attempt to compare number with nil"
 ]])
 self:RelNotes(2,0,1,[[

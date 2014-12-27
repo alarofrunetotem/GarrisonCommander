@@ -1,6 +1,8 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
 * 2.0.2
 Feature: new layout is now optional, you can revert to 1.1.8 leayout disabling "big screen"
+Feature: Mission page autopopulation is now optional
+Feature: If Master Plan is detecte, you can choose which layout you want between GC's one and MP's one
 Fix: error "Message: ...rface\AddOns\GarrisonCommander\GarrisonCommander.lua:930: attempt to compare number with nil"
 * 2.0.1
 Fixed: RU,KR,CH (both traditional and simplified) locales where broken
