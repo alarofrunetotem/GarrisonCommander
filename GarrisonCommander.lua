@@ -256,7 +256,7 @@ function addon:GetDifficultyColor(perc,usePurple)
 	elseif(perc >20) then
 		return QuestDifficultyColors['impossible']
 	else
-		return not usePurple and QuestDifficultyColors['trivial'] or C.Purple()
+		return not usePurple and QuestDifficultyColors['trivial'] or C.Purple
 	end
 end
 if (LibDebug) then LibDebug() end
