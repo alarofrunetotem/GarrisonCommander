@@ -29,6 +29,8 @@ local MPGoodGuy=false
 local ttcalled=false
 local rendercalled=false
 local MPPage
+local dbg=false
+
 --@debug@
 if (LibDebug) then LibDebug() end
 local function tcopy(obj, seen)
@@ -321,8 +323,10 @@ local parties=setmetatable({},{
 })
 local function inParty(missionID,followerID)
 	local members=parties[missionID].members
+	if (dbg) then print("Party check",missionID) end
 	for i=1,#members do
-		return members[i]==followerID
+		if (dbg) then print("Checking",members[i],"against",followerID) end
+		if (members[i]==followerID) then return true end
 	end
 end
 --- Follower Missions Info
@@ -453,6 +457,25 @@ function addon.Garrison_SortMissions_Chance(missionsList)
 	end
 	table.sort(missionsList, comparison);
 end
+function addon.Garrison_SortMissions_Age(missionsList)
+	local comparison
+	do
+		function comparison(mission1, mission2)
+			local p1=parties[mission1.missionID]
+			local p2=parties[mission2.missionID]
+			if (p2.full and not p1.full) then return false end
+			if (p1.full and not p2.full) then return true end
+			local age1=tonumber(dbcache.seen[mission1.missionID]) or 0
+			local age2=tonumber(dbcache.seen[mission2.missionID]) or 0
+			if (age1==age2) then
+				return strcmputf8i(mission1.name, mission2.name) < 0
+			else
+				return age1 < age2
+			end
+		end
+	end
+	table.sort(missionsList, comparison);
+end
 function addon.Garrison_SortMissions_Followers(missionsList)
 	local comparison
 	do
@@ -489,6 +512,7 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Original=L["Original method"],
 		Garrison_SortMissions_Chance=L["Success Chance"],
 		Garrison_SortMissions_Followers=L["Number of followers"],
+		Garrison_SortMissions_Age=L["Days since first seen"],
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
@@ -839,7 +863,6 @@ RareOverlay table
 Summary table
 HighlightTL table
 --]]
-local dbg=false
 local function best(fid1,fid2,counters)
 	if (not fid1) then return fid2 end
 	if (not fid2) then return fid1 end
@@ -1001,8 +1024,10 @@ function addon:GetCounterBias(missionID,threat)
 	local iter=genIteratorByThreat(missionID,cleanicon(tostring(threat)),new())
 	for i=1,iter() do
 		if (iter[i]) then
-			if ((tonumber(iter[i].bias) or -2) > bias) then
+			if ((tonumber(iter[i].bias) or -1) > bias) then
+				if (dbg) then print("Countered by",self:GetFollowerData(iter[i].followerID,'fullname'),iter[i].bias) end
 				if (inParty(missionID,iter[i].followerID)) then
+					if (dbg) then print("   Choosen",self:GetFollowerData(iter[i].followerID,'fullname')) end
 					bias=iter[i].bias
 					who=iter[i].name
 				end
@@ -1022,6 +1047,8 @@ function addon:AddLine(name,status)
 	GameTooltip:AddDoubleLine(name, status,nil,nil,nil,r2,g2,b2)
 end
 function addon:SetThreatColor(obj,missionID)
+	dbg=missionID==(tonumber(_G.MW) or 0)
+	if (dbg) then print("Evaluating ",missionID,obj.Icon:GetTexture()) end
 	local bias=self:GetCounterBias(missionID,obj.Icon:GetTexture())
 	local color=self:GetBiasColor(bias,nil,"Green")
 	local c=C[color]
@@ -2749,6 +2776,8 @@ function addon:RenderButton(button,rewards,numRewards)
 		local threatIndex=1
 		if (not GMF.MissionTab.MissionList.showInProgress) then
 			button.Env:Show()
+			dbg=missionID==(tonumber(_G.MW) or 0)
+			if (dbg) then self:DumpParty(missionID) end
 			for i=1,#slots do
 				local slot=slots[i]
 				if (slot.name==TYPE) then

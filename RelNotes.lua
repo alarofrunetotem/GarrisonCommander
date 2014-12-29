@@ -24,11 +24,12 @@ typing /gac silent in chat will eliminate every chat messag from GarrisonCommand
 ]])
 self:RelNotes(2,1,1,[[
 Feature: Countered mechanics are now shown in standard mission button both in big and small screen mode
+Feature: New sort method: mission age
 Fix: Changed key for "skip auto fill" from shift to ctrl. Now it works
-Fix: In mission page, counter ability were not show in follower icon
+Fix: In mission page, counter ability were not shown in follower icon
 ]])
 self:RelNotes(2,1,0,[[
-Feature: new layout is now optional, you can revert to 1.1.8 leayout disabling "big screen"
+Feature: new layout is now optional, you can revert to 1.1.8 layout disabling "big screen"
 Feature: Mission page autopopulation is now optional
 Feature: If Master Plan is detecte, you can choose which layout you want between GC's one and MP's one
 Fix: error "Message: ...rface\AddOns\GarrisonCommander\GarrisonCommander.lua:930: attempt to compare number with nil"
