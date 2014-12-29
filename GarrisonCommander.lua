@@ -1133,18 +1133,7 @@ function addon:RefreshMission(missionID)
 		GarrisonMissionList_UpdateMissions()
 	end
 end
---- Restrores Blizzard standard interface
 
-function addon:RefreshLayout()
-	for i=1,#GarrisonMissionFrameMissionsListScrollFrame.buttons do
-		local b=GarrisonMissionFrameMissionsListScrollFrame.buttons[i]
-		if (b.Party) then
-			for j=1,3 do
-				DevTools_Dump(b.Party[1])
-			end
-		end
-	end
-end
 function addon:BuildMissionsCache(fc,mm)
 --@debug@
 	local start=GetTime()
@@ -2704,7 +2693,9 @@ function addon:OnClick_GarrisonMissionButton(tab,button)
 	if (tab.fromFollowerPage) then
 		GarrisonMissionFrame_SelectTab(1)
 	else
+--@debug@
 		DevTools_Dump(tab.info)
+--@end-debug@
 		self:FillMissionPage(tab.info)
 	end
 end
@@ -2756,28 +2747,33 @@ function addon:RenderButton(button,rewards,numRewards)
 		end
 		local slots=self:GetMissionData(missionID,'slots')
 		local threatIndex=1
-		for i=1,#slots do
-			local slot=slots[i]
-			if (slot.name==TYPE) then
-				button.Env.Icon:SetTexture(slot.icon)
-				self:SetThreatColor(button.Env,missionID)
-			else
-				local th=button.GcThreats[threatIndex]
-				if (not th) then
-					th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-					th:SetWidth(20)
-					th:SetHeight(20)
-					button.GcThreats[threatIndex]=th
-					th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
+		if (not GMF.MissionTab.MissionList.showInProgress) then
+			button.Env:Show()
+			for i=1,#slots do
+				local slot=slots[i]
+				if (slot.name==TYPE) then
+					button.Env.Icon:SetTexture(slot.icon)
+					self:SetThreatColor(button.Env,missionID)
+				else
+					local th=button.GcThreats[threatIndex]
+					if (not th) then
+						th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+						th:SetWidth(20)
+						th:SetHeight(20)
+						button.GcThreats[threatIndex]=th
+						th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
+					end
+					threatIndex=threatIndex+1
+					th.Icon:SetTexture(slot.icon)
+					self:SetThreatColor(th,missionID)
+					th:Show()
 				end
-				threatIndex=threatIndex+1
-				th.Icon:SetTexture(slot.icon)
-				self:SetThreatColor(th,missionID)
-				th:Show()
 			end
+		else
+			button.Env:Hide()
 		end
 		for i=threatIndex,#button.GcThreats do
-			button.GcThreats[threatIndex]:Hide()
+			button.GcThreats[i]:Hide()
 		end
 	end
 	if (numRewards > 0) then
