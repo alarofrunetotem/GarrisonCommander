@@ -169,27 +169,27 @@
 		</Scripts>
 	</Button>
 	<Frame name="GarrisonCommanderMissionInfo" virtual="true">
-		<Size x="100" y="140" />
+		<Size x="150" y="140" />
 		<Layers>
 			<Layer level="ARTWORK">
-				<FontString parentKey="Age" inherits="GameFontHighlightSmall" justifyH="CENTER" justifyV="TOP" >
-					<Size x="100" y="40"/>
+				<FontString parentKey="Age" inherits="GameFontHighlightSmall" justifyH="RIGHT" justifyV="TOP" >
+					<Size x="150" y="40"/>
 					<Anchors>
 						<Anchor point="TOPLEFT" relativeKey="$parent" relativePoint="TOPLEFT" x="0" y="-5"/>
 					</Anchors>
 					<Color r="0.698" g="0.941" b="1" a="1"/>
 				</FontString>
-				<FontString parentKey="Followers" inherits="GameFontHighlightSmall" justifyH="CENTER" justifyV="CENTER" >
-					<Size x="100" y="40"/>
+				<FontString parentKey="Followers" inherits="GameFontHighlightSmall" justifyH="RIGHT" justifyV="CENTER" >
+					<Size x="150" y="40"/>
 					<Anchors>
-						<Anchor point="CENTER" relativeKey="$parent" relativePoint="CENTER" x="0" y="0"  />
+						<Anchor point="CENTER" relativeKey="$parent" relativePoint="CENTER" x="0" y="5"  />
 					</Anchors>
 					<Color r="0.698" g="0.941" b="1" a="1"/>
 				</FontString>
 				<FontString parentKey="Percent" inherits="NumberFontNormalHuge" justifyH="RIGHT" justifyV="BOTTOM" >
-					<Size x="100" y="50"/>
+					<Size x="150" y="50"/>
 					<Anchors>
-						<Anchor point="BOTTOMLEFT" relativeKey="$parent" relativePoint="BOTTOMLEFT" x="0" y="5"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent" relativePoint="BOTTOMRIGHT" x="0" y="5"/>
 					</Anchors>
 				</FontString>
 			</Layer>

@@ -22,6 +22,11 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
+self:RelNotes(2,1,1,[[
+Feature: Countered mechanics are now shown in standard mission button both in big and small screen mode
+Fix: Changed key for "skip auto fill" from shift to ctrl. Now it works
+Fix: In mission page, counter ability were not show in follower icon
+]])
 self:RelNotes(2,1,0,[[
 Feature: new layout is now optional, you can revert to 1.1.8 leayout disabling "big screen"
 Feature: Mission page autopopulation is now optional
