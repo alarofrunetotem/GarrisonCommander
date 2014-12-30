@@ -1,4 +1,5 @@
 local me, ns = ...
+local _G=_G
 local addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0') --#Addon
 local AceGUI=LibStub("AceGUI-3.0")
 local D=LibStub("LibDeformat-3.0")
@@ -239,7 +240,7 @@ local GCFMissions
 local GCFBusyStatus
 local GameTooltip=GameTooltip
 -- Want to know what I call!!
-local GarrisonMissionButton_OnEnter=GarrisonMissionButton_OnEnter
+--local GarrisonMissionButton_OnEnter=GarrisonMissionButton_OnEnter
 local GarrisonFollowerList_UpdateFollowers=GarrisonFollowerList_UpdateFollowers
 local GarrisonMissionList_UpdateMissions=GarrisonMissionList_UpdateMissions
 local GarrisonMissionPage_ClearFollower=GarrisonMissionPage_ClearFollower
@@ -435,6 +436,21 @@ do
 		return perc
 	end
 end
+--
+--@debug@
+local origGarrisonMissionButton_OnEnter = _G.GarrisonMissionButton_OnEnter
+function _G.GarrisonMissionButton_OnEnter(this,button)
+	origGarrisonMissionButton_OnEnter(this,button)
+	if (this.info.inProgress) then
+		GameTooltip:AddDoubleLine("ID:",this.info.missionID)
+		for i=1,#this.info.followers do
+			GameTooltip:AddDoubleLine("ID:",this.info.followers[i])
+			GameTooltip:AddDoubleLine("Name:",addon:GetFollowerData(this.info.followers[i],'fullname'))
+		end
+		GameTooltip:Show()
+	end
+end
+--@end-debug@
 -- These local will became conf var
 -- locally upvalued, doing my best to not interfere with other sorting modules,
 -- First time i am called to verride it I save it, so I give other modules a chance to hook it, too
@@ -1361,8 +1377,10 @@ function addon:SetClean()
 	dirty=false
 end
 function addon:wipe(i)
+--@debug@
 	DevTools_Dump(i)
 	self.privatedb:ResetDB()
+--@end-debug@
 end
 function addon:WipeMission(missionID)
 	cache.missions[missionID]=nil
@@ -2533,28 +2551,30 @@ function addon:RenderExtraButton(button,numRewards)
 	local missionID=missionInfo.missionID
 	panel.missionID=missionID
 	if (GMF.MissionTab.MissionList.showInProgress) then
-		if (not button.inProgressFresh) then
-			local perc=select(4,G.GetPartyMissionInfo(missionID))
-			panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
-			panel.Age:Hide()
-			local q=self:GetDifficultyColor(perc)
-			panel.Percent:SetTextColor(q.r,q.g,q.b)
-			button.inProgressFresh=true
-			if (bigscreen) then
-				for i=1,3 do
-					local frame=panel.Party[i]
-					if (missionInfo.followers[i]) then
-						self:FillFollowerButton(frame,missionInfo.followers[i],missionID)
-						frame:Show()
-					else
-						frame:Hide()
-					end
+		local perc=select(4,G.GetPartyMissionInfo(missionID))
+		panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
+		panel.Age:Hide()
+		local q=self:GetDifficultyColor(perc)
+		panel.Percent:SetTextColor(q.r,q.g,q.b)
+		if (bigscreen) then
+			for i=1,3 do
+				local frame=panel.Party[i]
+				if (missionInfo.followers[i]) then
+					self:FillFollowerButton(frame,missionInfo.followers[i],missionID)
+					frame:Show()
+				else
+					frame:Hide()
 				end
+			end
+			if ( missionInfo.locPrefix ) then
+				panel.LocBG:Show();
+				panel.LocBG:SetAtlas(missionInfo.locPrefix.."-List");
+			else
+				panel.LocBG:Hide();
 			end
 		end
 		return
 	end
-	button.inProgressFresh=false
 	local mission=self:GetMissionData(missionID)
 	local party=parties[missionID]
 	if (#party.members==0) then
