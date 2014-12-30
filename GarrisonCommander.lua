@@ -88,7 +88,7 @@ local function capitalize(s)
 end
 -- Name is here just for doc, I will be using the localized one
 
-local abilities={
+local _abilities={
 	{
 		["name"] = "Wild Aggression",
 		["icon"] = "Interface\\ICONS\\Spell_Nature_Reincarnation.blp",
@@ -127,6 +127,7 @@ local abilities={
 		["icon"] = "Interface\\ICONS\\SPELL_HOLY_BORROWEDTIME.BLP",
 	}, -- [10]
 }
+local abilities={}
 
 local function getAbilityName(texture)
 	for i=1,#abilities do
@@ -185,7 +186,7 @@ local GMFTab3=_G.GarrisonMissionFrameTab3
 local GarrisonFollowerTooltip=GarrisonFollowerTooltip
 local GarrisonMissionFrameMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE .. ' ' .. GARRISON_FOLLOWERS
-local IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE.. ' ' .. GARRISON_FOLLOWER_INACTIVE .. ',' .. GARRISON_FOLLOWER_ON_MISSION ..',' .. GARRISON_FOLLOWER_WORKING.. ','.. GARRISON_FOLLOWER_EXHAUSTED .. ' ' .. GARRISON_FOLLOWERS
+local IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL=IGNORE.. ' ' .. GARRISON_FOLLOWER_INACTIVE .. ',' .. GARRISON_FOLLOWER_ON_MISSION ..',' .. GARRISON_FOLLOWER_WORKING.. ' ' .. GARRISON_FOLLOWERS
 local PARTY=PARTY -- "Party"
 local SPELL_TARGET_TYPE1_DESC=capitalize(SPELL_TARGET_TYPE1_DESC) -- any
 local SPELL_TARGET_TYPE4_DESC=capitalize(SPELL_TARGET_TYPE4_DESC) -- party member
@@ -1278,7 +1279,7 @@ function addon:BuildMissionCache(id,data)
 			print("No type",id,data.name)
 --@end-debug@
 		else
-			self.db.global.types[type]={name=typeDesc,icon=typeIcon}
+			self.db.global.types[type]={name=type,description=typeDesc,icon=typeIcon}
 		end
 		wipe(mission.slots)
 		local slots=mission.slots
@@ -1286,12 +1287,12 @@ function addon:BuildMissionCache(id,data)
 		for i=1,#enemies do
 			local mechanics=enemies[i].mechanics
 			for i,mechanic in pairs(mechanics) do
-				tinsert(slots,{name=mechanic.name,icon=mechanic.icon})
-				self.db.global.abilities[mechanic.name]={desc=mechanic.description,icon=mechanic.icon}
+				tinsert(slots,mechanic)
+				self.db.global.abilities[mechanic.name]=mechanic
 			end
 		end
 		if (type) then
-			tinsert(slots,{name=TYPE,icon=typeIcon})
+			tinsert(slots,{name=TYPE,key=type,icon=typeIcon})
 		end
 	end
 	mission.basePerc=select(4,G.GetPartyMissionInfo(id))
@@ -2324,7 +2325,7 @@ function addon:GetFollowerStatus(followerID,withTime,colored)
 	local status=G.GetFollowerStatus(followerID)
 	if (status and status== GARRISON_FOLLOWER_ON_MISSION and withTime) then
 		local running=dbcache.running[dbcache.runningIndex[followerID]]
-		status=SecondsToTime(time()  - running.started + running.duration,true)
+		status=SecondsToTime(running.started + running.duration - time() ,true)
 	end
 -- The only case a follower appears in party is after a refused mission due to refresh triggered before GARRISON_FOLLOWER_LIST_UPDATE
 	if (status and status~=GARRISON_FOLLOWER_IN_PARTY) then
@@ -2716,9 +2717,12 @@ function addon:OpenMissionsTab()
 	GarrisonMissionFrame_SelectTab(1)
 end
 function addon:OnClick_GarrisonMissionButton(tab,button)
+--@debug@
 	trace("Clicked")
+--@end-debug@
 	if (tab.fromFollowerPage) then
 		GarrisonMissionFrame_SelectTab(1)
+		self:FillMissionPage(tab.info)
 	else
 --@debug@
 		DevTools_Dump(tab.info)
@@ -2764,7 +2768,7 @@ function addon:RenderButton(button,rewards,numRewards)
 		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
 	end
 	local missionID=button.info.missionID
-	if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator
+	if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator (Only MP <= 1.8)
 		if (not button.Env) then
 			button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
 			button.Env:SetWidth(20)
@@ -2783,6 +2787,9 @@ function addon:RenderButton(button,rewards,numRewards)
 				if (slot.name==TYPE) then
 					button.Env.Icon:SetTexture(slot.icon)
 					self:SetThreatColor(button.Env,missionID)
+					button.Env.info=self.db.global.types[slot.key]
+					button.Env:SetScript("OnEnter",GarrisonMissionMechanic_OnEnter)
+					button.Env:SetScript("OnLeave",function() GarrisonMissionMechanicTooltip:Hide() end)
 				else
 					local th=button.GcThreats[threatIndex]
 					if (not th) then
@@ -2791,6 +2798,9 @@ function addon:RenderButton(button,rewards,numRewards)
 						th:SetHeight(20)
 						button.GcThreats[threatIndex]=th
 						th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
+						th.info=slot
+						th:SetScript("OnEnter",GarrisonMissionMechanic_OnEnter)
+						th:SetScript("OnLeave",function() GarrisonMissionMechanicTooltip:Hide() end)
 					end
 					threatIndex=threatIndex+1
 					th.Icon:SetTexture(slot.icon)
