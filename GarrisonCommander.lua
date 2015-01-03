@@ -1834,6 +1834,7 @@ function addon:HookedGarrisonMissionFrame_HideCompleteMissions()
 	self:BuildMissionsCache(true,true)
 end
 
+
 function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
 	local h=GarrisonFollowerTooltip:GetHeight()
 	local ft=GarrisonFollowerTooltip.ft
@@ -2162,6 +2163,7 @@ function addon:StartUp(...)
 	self:SafeHookScript(GMFMissions,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GMFFollowers,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GCF,"OnHide","CleanUp",true)
+	self:SafeHookScript(GMF.MissionComplete.NextMissionButton,"OnClick","OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton",true)
 	-- Hooking mission buttons on click
 	for i=1,#GMFMissionListButtons do
 		local b=GMFMissionListButtons[i]
@@ -2744,6 +2746,12 @@ function addon:OpenFollowersTab()
 end
 function addon:OpenMissionsTab()
 	GarrisonMissionFrame_SelectTab(1)
+end
+function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(this,button)
+	local frame = GMF.MissionComplete
+	if (not frame:IsShown()) then
+		self:Trigger("MSORT")
+	end
 end
 function addon:OnClick_GarrisonMissionButton(tab,button)
 --@debug@
