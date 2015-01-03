@@ -1,14 +1,23 @@
 local me, ns = ...
 local _G=_G
+--@debug@
+	LoadAddOn("Blizzard_DebugTools")
+--@end-debug@
 local addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0') --#Addon
 local AceGUI=LibStub("AceGUI-3.0")
 local D=LibStub("LibDeformat-3.0")
 local C=addon:GetColorTable()
 local L=addon:GetLocale()
 local print=addon:Wrap("Print")
-local xprint=function(...) print("DBG",...) end
 local trace=addon:Wrap("Trace")
-local xprint=function() end
+--@debug@
+local xprint=function(...) print("DBG",...) end
+local xdump=function(d,t) print(t) DevTools_Dump(d) end
+local xtrace=trace
+xprint=function() end
+xdump=function() end
+xtrace=function() end
+--@end-debug@
 local pairs=pairs
 local select=select
 local next=next
@@ -87,71 +96,21 @@ local function capitalize(s)
 	s=tostring(s)
 	return strupper(s:sub(1,1))..strlower(s:sub(2))
 end
--- Name is here just for doc, I will be using the localized one
-
-local _abilities={
-	{
-		["name"] = "Wild Aggression",
-		["icon"] = "Interface\\ICONS\\Spell_Nature_Reincarnation.blp",
-	}, -- [1]
-	{
-		["name"] = "Massive Strike",
-		["icon"] = "Interface\\ICONS\\Ability_Warrior_SavageBlow.blp",
-	}, -- [2]
-	{
-		["name"] = "Group Damage",
-		["icon"] = "Interface\\ICONS\\Spell_Fire_SelfDestruct.blp",
-	}, -- [3]
-	{
-		["name"] = "Magic Debuff",
-		["icon"] = "Interface\\ICONS\\Spell_Shadow_ShadowWordPain.blp",
-	}, -- [4]
-	nil, -- [5]
-	{
-		["name"] = "Danger Zones",
-		["icon"] = "Interface\\ICONS\\spell_Shaman_Earthquake.blp",
-	}, -- [6]
-	{
-		["name"] = "Minion Swarms",
-		["icon"] = "Interface\\ICONS\\Spell_DeathKnight_ArmyOfTheDead.blp",
-	}, -- [7]
-	{
-		["name"] = "Powerful Spell",
-		["icon"] = "Interface\\ICONS\\Spell_Shadow_ShadowBolt.blp",
-	}, -- [8]
-	{
-		["name"] = "Deadly Minions",
-		["icon"] = "Interface\\ICONS\\Achievement_Boss_TwinOrcBrutes.blp",
-	}, -- [9]
-	{
-		["name"] = "Timed Battle",
-		["icon"] = "Interface\\ICONS\\SPELL_HOLY_BORROWEDTIME.BLP",
-	}, -- [10]
-}
-local abilities={}
-
-local function getAbilityName(texture)
-	for i=1,#abilities do
-		if (abilities[i] and abilities[i].icon==texture) then
-			return abilities[i].name
-		end
-	end
-	return "unknown"
-end
 --- upvalues
+--
 local AVAILABLE=AVAILABLE -- "Available"
 local BUTTON_INFO=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS.. " " .. GARRISON_MISSION_PERCENT_CHANCE
 local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
 local G=C_Garrison
-local GARRISON_BUILDING_SELECT_FOLLOWER_TITLE=GARRISON_BUILDING_SELECT_FOLLOWER_TITLE -- "Select a Follower";
-local GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP=GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP -- "Click here to assign a Follower";
-local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
-local GARRISON_FOLLOWER_CAN_COUNTER=GARRISON_FOLLOWER_CAN_COUNTER -- "This follower can counter:"
-local GARRISON_FOLLOWER_EXHAUSTED=GARRISON_FOLLOWER_EXHAUSTED -- "Recovering (1 Day)"
-local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
-local GARRISON_FOLLOWER_IN_PARTY=GARRISON_FOLLOWER_IN_PARTY
-local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
-local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
+--local GARRISON_BUILDING_SELECT_FOLLOWER_TITLE=GARRISON_BUILDING_SELECT_FOLLOWER_TITLE -- "Select a Follower";
+--local GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP=GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP -- "Click here to assign a Follower";
+--local GARRISON_FOLLOWERS=GARRISON_FOLLOWERS -- "Followers"
+--local GARRISON_FOLLOWER_CAN_COUNTER=GARRISON_FOLLOWER_CAN_COUNTER -- "This follower can counter:"
+--local GARRISON_FOLLOWER_EXHAUSTED=GARRISON_FOLLOWER_EXHAUSTED -- "Recovering (1 Day)"
+--local GARRISON_FOLLOWER_INACTIVE=GARRISON_FOLLOWER_INACTIVE --"Inactive"
+--local GARRISON_FOLLOWER_IN_PARTY=GARRISON_FOLLOWER_IN_PARTY
+--local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
+--local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
 local GARRISON_MISSION_PERCENT_CHANCE="%d%%"-- GARRISON_MISSION_PERCENT_CHANCE
 local GARRISON_MISSION_SUCCESS=GARRISON_MISSION_SUCCESS -- "Success"
 local GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS -- "%d Follower mission";
@@ -236,6 +195,8 @@ local FLSIZE=400
 local BIGBUTTON=BIGSIZEW-GCSIZE
 local SMALLBUTTON=BIGSIZEW-GCSIZE
 local GCF
+local GMC
+local GMCUsedFollowers={}
 local GCFMissions
 local GCFBusyStatus
 local GameTooltip=GameTooltip
@@ -250,6 +211,10 @@ local GarrisonMissionButton_SetRewards=GarrisonMissionButton_SetRewards
 local GetItemInfo=GetItemInfo
 local type=type
 local ITEM_QUALITY_COLORS=ITEM_QUALITY_COLORS
+function addon:GetDifficultyColors(perc,usePurple)
+	local q=self:GetDifficultyColor(perc,usePurple)
+	return q.r,q.g,q.b
+end
 function addon:GetDifficultyColor(perc,usePurple)
 	if(perc >90) then
 		return QuestDifficultyColors['standard']
@@ -317,6 +282,39 @@ local function genIteratorByThreat(missionID,threat,tbl)
 	end
 end
 
+--- Quick backdrop
+--
+local function addBackdrop(f)
+	local backdrop = {
+		bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
+		edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+		tile=true,
+		tileSize=16,
+		edgeSize=16,
+		insets={bottom=7,left=7,right=7,top=7}
+	}
+	f:SetBackdrop(backdrop)
+end
+
+--generic table scan
+
+local function inTable(table, value)
+	if (type(table)~='table') then return false end
+	if (#table > 0) then
+		for i=1,#table do
+			if (value==table[i]) then return true end
+		end
+	else
+		for k,v in pairs(table) do
+			if v == value then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+
 --- Parties storage
 --
 --
@@ -324,12 +322,7 @@ local parties=setmetatable({},{
 	__index=function(t,k) rawset(t,k,{members={},perc=0,full=false}) return t[k] end
 })
 local function inParty(missionID,followerID)
-	local members=parties[missionID].members
-	if (dbg) then print("Party check",missionID) end
-	for i=1,#members do
-		if (dbg) then print("Checking",members[i],"against",followerID) end
-		if (members[i]==followerID) then return true end
-	end
+	return inTable(parties[missionID].members,followerID)
 end
 --- Follower Missions Info
 --
@@ -343,7 +336,7 @@ local openParty,isInParty,pushFollower,removeFollower,closeParty,roomInParty,sto
 
 do
 	local ID,frames,members,maxFollowers=0,{},{},1
-	---@function [parent=#local] openParty
+	---@function [parent=#party] openParty
 	function openParty(missionID,followers)
 		if (#frames > 0 or #members > 0) then
 			error(format("Unbalanced openParty/closeParty %d %d",#frames,#members))
@@ -355,28 +348,26 @@ do
 		end
 		ID=missionID
 	end
-	---@function [parent=#local] isInParty
+	---@function [parent=#party] isInParty
 	function isInParty(followerID)
-		for i=1,maxFollowers do
-			if (followerID==members[i]) then return true end
-		end
+		return inTable(members,followerID)
 	end
 
-	---@function [parent=#local] roomInParty
+	---@function [parent=#party] roomInParty
 	function roomInParty()
 		return maxFollowers-#members
 	end
 
-	---@function [parent=#local] dumpParty
+	---@function [parent=#party] dumpParty
 	function dumpParty()
 		for i=1,3 do
 			if (members[i]) then
-				print(i,addob:GetFollowerData(members[i],'fullname'))
+				print(i,addon:GetFollowerData(members[i],'fullname'))
 			end
 		end
 	end
 
-	---@function [parent=#local] pushFollower
+	---@function [parent=#party] pushFollower
 	function pushFollower(followerID)
 		if (followerID:sub(1,2) ~= '0x') then trace(followerID .. "is not an id") end
 		if (roomInParty()>0) then
@@ -391,7 +382,7 @@ do
 			end
 		end
 	end
-	---@function [parent=#local] removeFollowers
+	---@function [parent=#party] removeFollowers
 	function removeFollower(followerID)
 		for i=1,maxFollowers do
 			if (followerID==members[i]) then
@@ -404,7 +395,7 @@ do
 		end
 	end
 
-	---@function [parent=#local] storeFollowers
+	---@function [parent=#party] storeFollowers
 	function storeFollowers(table)
 		wipe(table)
 		for i=1,#members do
@@ -413,7 +404,7 @@ do
 		return #table
 	end
 
-	---@function [parent=#local] closeParty
+	---@function [parent=#party] closeParty
 	function closeParty()
 		local perc=select(4,G.GetPartyMissionInfo(ID))
 		for i=1,3 do
@@ -508,13 +499,34 @@ function addon.Garrison_SortMissions_Followers(missionsList)
 	end
 	table.sort(missionsList, comparison);
 end
+function addon.Garrison_SortMissions_Xp(missionsList)
+	local comparison
+	do
+		function comparison(mission1, mission2)
+			local p1=addon:GetMissionData(mission1.missionID,'globalXp')
+			local p2=addon:GetMissionData(mission2.missionID,'globalXp')
+			if (p1==p2) then
+				return strcmputf8i(mission1.name, mission2.name) < 0
+			else
+				return p2 < p1
+			end
+		end
+	end
+	table.sort(missionsList, comparison);
+end
 
 function addon:OnInitialized()
 --@debug@
 	xprint("OnInitialized")
-	LoadAddOn("Blizzard_DebugTools")
 	self:DebugEvents()
 --@end-debug@
+	for _,b in ipairs(GMFMissionsListScrollFrame.buttons) do
+		local scale=0.8
+		local f,h,s=b.Title:GetFont()
+		b.Title:SetFont(f,h*scale,s)
+		local f,h,s=b.Summary:GetFont()
+		b.Summary:SetFont(f,h*scale,s)
+	end
 	self:CreatePrivateDb()
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
 	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
@@ -530,12 +542,14 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Chance=L["Success Chance"],
 		Garrison_SortMissions_Followers=L["Number of followers"],
 		Garrison_SortMissions_Age=L["Days since first seen"],
+		Garrison_SortMissions_Xp=L["Global approx. xp reward"],
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	bigscreen=self:GetBoolean("BIGSCREEN")
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
+	self:AddPrivateAction("ShowMissionControl",L["Mission control"],L["You can choose some criteria and have GC autosumbit missions for you"])
 	self:Trigger("MSORT")
 	return true
 end
@@ -973,7 +987,7 @@ function addon:MatchMaker(missionID,mission,party)
 	if (GMFRewardSplash:IsShown()) then return end
 	if (not mission) then mission=self:GetMissionData(missionID) end
 	if (not party) then party=parties[missionID] end
-	local skipBusy=addon:GetBoolean("IGM")
+	local skipBusy=self:GetBoolean("IGM")
 	local skipMaxed=self:GetBoolean("IGP")
 	dbg=missionID==(tonumber(_G.MW) or 0)
 	local slots=mission.slots
@@ -1276,23 +1290,49 @@ function addon:BuildMissionCache(id,data)
 			mission.name=G.GetMissionName(id)
 			mission.numFollowers=G.GetMissionMaxFollowers(id)
 			mission.durationSeconds=select(5,G.GetMissionTimers(id))
+			mission.cost=10
 		else
 			mission.name=data.name
 			mission.numFollowers=data.numFollowers
 			mission.durationSeconds=data.durationSeconds
-		end
-		mission.rank=mission.level < 100 and mission.level or mission.iLevel
-		mission.xp=true
-		mission.resources=false
-		for k,v in pairs(G.GetMissionRewardInfo(id)) do
-			if (not v.followerXP) then mission.xp=false end
-			if (v.currencyID and v.currencyID==GARRISON_CURRENCY) then mission.resource=false end
+			mission.cost=data.cost
 		end
 		local _,xp,type,typeDesc,typeIcon,locPrefix,_,enemies=G.GetMissionInfo(id)
+		mission.rank=mission.level < 100 and mission.level or mission.iLevel
+		mission.xp=xp
+		mission.xpBonus=0
+		mission.resources=0
+		mission.gold=0
+		mission.followerUpgrade=0
+		mission.itemLevel=0
+		for k,v in pairs(G.GetMissionRewardInfo(id)) do
+			if (v.followerXP) then mission.xpBonus=mission.xpBonus+v.followerXP end
+			if (v.currencyID and v.currencyID==GARRISON_CURRENCY) then mission.resources=v.quantity end
+			if (v.currencyID and v.currencyID==0) then mission.gold =mission.gold+v.quantity/10000 end
+			if (v.itemID) then
+				if (v.itemID~=120205) then
+					local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
+					if (itemName) then
+						if (itemLevel > 1 ) then
+							mission.itemLevel=itemLevel
+						else
+							mission.followerUpgrade=1
+						end
+					end
+				end
+			end
+		end
+		mission.totalXp=(tonumber(mission.xp) or 0) + (tonumber(mission.xpBonus) or 0)
+		mission.globalXp=mission.totalXp*mission.numFollowers
+		if (mission.resources==0 and mission.gold==0 and mission.itemLevel==0 and mission.followerUpgrade==0) then
+			mission.xpOnly=true
+		else
+			mission.xpOnly=false
+		end
 		mission.locPrefix=locPrefix
 		if (not type) then
 --@debug@
-			print("No type",id,data.name)
+			xprint("No type",id,data.name)
 --@end-debug@
 		else
 			self.db.global.types[type]={name=type,description=typeDesc,icon=typeIcon}
@@ -1343,6 +1383,13 @@ function addon:CreatePrivateDb()
 				},
 				runningIndex={
 					["*"]=0
+				},
+				missionControl={
+					allowedRewards = {},
+					itemPrio = {},
+					minimumChance = 75,
+					maxDuration = 24,
+					epicExp = false
 				}
 			}
 		},
@@ -1376,12 +1423,7 @@ end
 function addon:SetClean()
 	dirty=false
 end
-function addon:wipe(i)
---@debug@
-	DevTools_Dump(i)
-	self.privatedb:ResetDB()
---@end-debug@
-end
+
 function addon:WipeMission(missionID)
 	cache.missions[missionID]=nil
 	counters[missionID]=nil
@@ -1400,13 +1442,13 @@ function addon:EventGARRISON_MISSION_NPC_OPENED(event,...)
 --@debug@
 	xprint(event,...)
 --@end-debug@
-	GCF:Show()
+	if (GCF) then GCF:Show() end
 end
 function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
 --@debug@
 	xprint(event,...)
 --@end-debug@
-	GCF:Hide()
+	if (GCF) then GCF:Hide() end
 end
 ---
 --@param #string event GARRISON_MISSION_STARTED
@@ -1451,8 +1493,17 @@ end
 function addon:EventGARRISON_MISSION_FINISHED(event,missionID,...)
 --@debug@
 	xprint(event,missionID,...)
-	DevTools_Dump(G.GetPartyMissionInfo(missionID))
+	xdump(G.GetPartyMissionInfo(missionID))
 --@end-debug@
+end
+
+function addon:EventGARRISON_FOLLOWER_ADDED(event)
+	wipe(followersCache)
+	wipe(followersCacheIndex)
+end
+function addon:EventGARRISON_FOLLOWER_REMOVED(event)
+	wipe(followersCache)
+	wipe(followersCacheIndex)
 end
 
 function addon:EventGARRISON_MISSION_BONUS_ROLL_COMPLETE(event,missionID,completed,success)
@@ -1578,6 +1629,14 @@ function addon:Shrink(button)
 		f:SetHeight(f.savedHeight)
 	end
 end
+function addon:ShowMissionControl()
+	GarrisonMissionFrame_SelectTab(999)
+	GarrisonMissionFrame.FollowerTab:Hide()
+	GarrisonMissionFrame.FollowerList:Hide()
+	GarrisonMissionFrame.MissionTab:Hide()
+	GarrisonMissionFrame.TitleText:SetText("Garrison Commander Mission Control")
+	GMC:Show()
+end
 local helpwindow -- pseudo static
 function addon:ShowHelpWindow(button)
 	if (not helpwindow) then
@@ -1641,6 +1700,11 @@ Since 2.0.2, the "big screen" mode became optional. If you choosed to disable it
  * Quick selection of which follower ignore for match making<br/>
  * Quick mission list order selection<br/>
 </p>
+<h2>Mission Control:</h2>
+<p>Thanks to Motig which donated the code, we have an auto lancher for mission<br/>
+You specify some criteina mission should satisfy (success chance, rewards type etc) and matching missions will be autosubmitted<br/>
+BE WARNED, feature is |cffff0000EXPERIMENTAL|r</p>
+</br>
 ]]
 if (MP) then
 text=text..[[
@@ -1727,7 +1791,8 @@ function addon:CreateOptionsLayer(...)
 	function frame:Show() self.frame:Show() end
 	return frame
 end
-function addon:AddOptionToOptionsLayer(o,flag)
+function addon:AddOptionToOptionsLayer(o,flag,maxsize)
+	maxsize=tonumber(maxsize) or 120
 	if (not flag) then return end
 	local info=self:GetVarInfo(flag)
 	if (info) then
@@ -1739,13 +1804,25 @@ function addon:AddOptionToOptionsLayer(o,flag)
 			widget:SetValue(value)
 			local color=value and "Green" or "Silver"
 			widget:SetLabel(C(info.name,color))
-			widget:SetWidth(max(widget.text:GetStringWidth(),120))
+			widget:SetWidth(max(widget.text:GetStringWidth(),maxsize))
 		elseif(info.type=="select") then
 			widget=AceGUI:Create("Dropdown")
 			widget:SetValue(self:GetVar(flag))
 			widget:SetLabel(info.name)
 			widget:SetText(info.values[self:GetVar(flag)])
 			widget:SetList(info.values)
+			widget:SetWidth(maxsize)
+		elseif (info.type=="execute") then
+			widget=AceGUI:Create("Button")
+			widget:SetText(info.name)
+			widget:SetWidth(maxsize)
+			widget:SetCallback("OnClick",function(widget,event,value)
+				self[info.func](self,data,value)
+			end)
+		else
+			widget=AceGUI:Create("Label")
+			widget:SetText(info.name)
+			widget:SetWidth(maxsize)
 		end
 		widget:SetCallback("OnValueChanged",function(widget,event,value)
 			if (type(value=='boolean')) then
@@ -1771,7 +1848,7 @@ function addon:Options()
 	GCF=base
 	GCF:SetWidth(BIGSIZEW)
 	GCF:SetPoint("TOP",UIParent,0,-60)
-	base:SetHeight(40)
+	base:SetHeight(bigscreen and 40 or 80)
 	base:EnableMouse(true)
 	GCF:SetMovable(true)
 	GCF:RegisterForDrag("LeftButton")
@@ -1829,6 +1906,11 @@ function addon:IsRewardPage()
 end
 function addon:IsMissionPage()
 	return GMF:IsShown() and GMFMissionPage:IsShown() and GMFFollowers:IsShown()
+end
+function addon:HookedGarrisonMissionFrame_SelectTab()
+	GMC:Hide()
+	wipe(GMCUsedFollowers)
+
 end
 function addon:HookedGarrisonMissionFrame_HideCompleteMissions()
 	self:BuildMissionsCache(true,true)
@@ -1989,13 +2071,39 @@ function addon:ClonedGarrisonMissionButton_SetRewards(rewards, numRewards)
 end
 
 local Busystatusmessage
+function addon:BuildMiniMissionButton(frame,i,mission,scale,perc)
+	scale=scale or 0.6
+	local panel=frame.Missions[i]
+	if (not panel) then
+		panel=CreateFrame("Button",nil,frame,"GarrisonCommanderMissionListButtonTemplate")
+		if (i==1) then
+			panel:SetPoint("TOPLEFT",frame.Header,"BOTTOMLEFT")
+		else
+			panel:SetPoint("TOPLEFT",frame.Missions[i-1],"BOTTOMLEFT")
+			panel:SetPoint("TOPRIGHT",frame.Missions[i-1],"BOTTOMRIGHT")
+		end
+		tinsert(frame.Missions,panel)
+		--Creo una riga nuova
+		panel:SetScale(scale)
+		panel.LocBG:SetPoint("LEFT")
+	end
+	panel.info=mission
+	--panel.id=index[missionID]
+	self:FillMissionButton(panel)
+	local q=self:GetDifficultyColor(perc)
+	panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
+	panel.Percent:SetTextColor(q.r,q.g,q.b)
+	panel.NumMembers:SetFormattedText(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS,mission.numFollowers)
+	panel:Show()
+	return panel
+end
 function addon:HookedGarrisonFollowerPage_ShowFollower(frame,followerID)
 	local i=0
 	if (not self:IsFollowerList()) then return end
 	if (not GCFMissions.Missions) then GCFMissions.Missions={} end
 	if (not Busystatusmessage) then Busystatusmessage=C(BUSY_MESSAGE,"Red)") end
 	-- frame has every info you can need on a follower, but here I dont really need them, maybe just counters
-	--DevTools_Dump(table.Counters)
+	--xdump(table.Counters)
 	local followerName=self:GetFollowerData(followerID,'name')
 	repeat -- a poor man goto
 		if (type(frame.followerID)=="number") then
@@ -2085,7 +2193,7 @@ function addon:HookedGarrisonFollowerPage_ShowFollower(frame,followerID)
 					panel.LocBG:SetPoint("LEFT")
 				end
 				panel.info=mission
-				panel.id=index[missionID]
+				--panel.id=index[missionID]
 				self:FillMissionButton(panel)
 				local q=self:GetDifficultyColor(perc)
 				panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
@@ -2117,6 +2225,7 @@ function addon:SetUp(...)
 	self:CheckMP()
 	self:CheckGMM()
 	self:Options()
+	self:GMCBuildPanel()
 	self:StartUp()
 end
 local function restore()
@@ -2136,15 +2245,12 @@ function addon:StartUp(...)
 --@end-debug@
 	self:Unhook(GMF,"OnShow")
 	self:PermanentEvents()
-	GCF.Menu=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT')
+	GCF.Menu=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL')
+	self:AddOptionToOptionsLayer(GCF.Menu,'MSORT',200)
+	self:AddOptionToOptionsLayer(GCF.Menu,'ShowMissionControl',200)
 	GCF.Menu:SetParent(GCF)
 	GCF.Menu.frame:SetScale(0.6)
-	if (bigscreen) then
-		GCF.Menu:SetPoint("TOPLEFT",GCF.Signature,"TOPRIGHT",10,10)
-	else
-		GCF:SetHeight(60)
-		GCF.Menu:SetPoint("TOPLEFT",GCF,"TOPLEFT",0,-24)
-	end
+	GCF.Menu:SetPoint("TOPLEFT",GCF.Signature,"TOPRIGHT",10,10)
 	GCF.Menu:SetPoint("BOTTOMRIGHT",GCF,"BOTTOMRIGHT",-16,0)
 	GCF.Menu:Show()
 	self:GrowPanel()
@@ -2160,6 +2266,8 @@ function addon:StartUp(...)
 	self:SafeSecureHook("GarrisonMissionFrame_HideCompleteMissions")	-- Mission reward completed
 	self:SafeSecureHook("GarrisonMissionPage_ShowMission")
 	self:SafeSecureHook("GarrisonMissionList_UpdateMissions")
+	self:SafeSecureHook("GarrisonMissionFrame_SelectTab")
+
 	self:SafeHookScript(GMFMissions,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GMFFollowers,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GCF,"OnHide","CleanUp",true)
@@ -2344,6 +2452,9 @@ function addon:GetMissionData(missionID,subkey)
 	return missionCache
 end
 function addon:GetFollowerStatusForMission(followerID,skipbusy)
+	if (GMCUsedFollowers[followerID]) then
+		return false
+	end
 	if (not skipbusy) then
 		return true
 	else
@@ -2370,7 +2481,7 @@ function addon:FillMissionPage(missionInfo)
 --@debug@
 	xprint("UpdateMissionPage for",missionID,missionInfo.name,missionInfo.numFollowers)
 --@end-debug@
-	--DevTools_Dump(missionInfo)
+	--xdump(missionInfo)
 	--self:BuildMissionData(missionInfo.missionID.missionInfo)
 	GarrisonMissionPage_ClearParty()
 	local party=parties[missionID]
@@ -2452,15 +2563,19 @@ function addon:GetBiasColor(followerID,missionID,goodcolor)
 end
 function addon:FillFollowerButton(frame,followerID,missionID)
 	if (not frame) then return end
-	for i=1,#frame.Threats do
-		if (frame.Threats[i]) then frame.Threats[i]:Hide() end
+	if (bigscreen) then
+		for i=1,#frame.Threats do
+			if (frame.Threats[i]) then frame.Threats[i]:Hide() end
+		end
+		frame.NotFull:Hide()
 	end
-	frame.NotFull:Hide()
 	if (not followerID) then
 		frame.PortraitFrame.Empty:Show()
-		frame.Name:Hide()
-		frame.Class:Hide()
-		frame.Status:Hide()
+		if (bigscreen) then
+			frame.Name:Hide()
+			frame.Class:Hide()
+			frame.Status:Hide()
+		end
 		frame.PortraitFrame.LevelBorder:SetAtlas("GarrMission_PortraitRing_LevelBorder");
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		frame.PortraitFrame.Level:SetText("")
@@ -2472,12 +2587,14 @@ function addon:FillFollowerButton(frame,followerID,missionID)
 	--local info=followers[ID]
 	frame.info=info
 	frame.missionID=missionID
-	frame.Name:Show();
-	frame.Name:SetText(info.name);
-	local color=missionID and self:GetBiasColor(followerID,missionID,"White") or "Yellow"
-	frame.Name:SetTextColor(C[color]())
-	frame.Status:SetText(self:GetFollowerStatus(followerID,true,true))
-	frame.Status:Show()
+	if (bigscreen) then
+		frame.Name:Show()
+		frame.Name:SetText(info.name);
+		local color=missionID and self:GetBiasColor(followerID,missionID,"White") or "Yellow"
+		frame.Name:SetTextColor(C[color]())
+		frame.Status:SetText(self:GetFollowerStatus(followerID,true,true))
+		frame.Status:Show()
+	end
 	if (frame.Class) then
 		frame.Class:Show();
 		frame.Class:SetAtlas(info.classAtlas);
@@ -2496,22 +2613,24 @@ function addon:FillFollowerButton(frame,followerID,missionID)
 	end
 	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, showItemLevel);
 	-- Counters icon
-	if (missionID and not GMF.MissionTab.MissionList.showInProgress) then
-		local tohide=1
-		local missionCounters=counters[missionID]
-		local index=counterFollowerIndex[missionID][followerID]
-		for i=1,#index do
-			local k=index[i]
-			local t=frame.Threats[i]
-			local tx=missionCounters[k].icon
-			t.Icon:SetTexture(tx)
-			local color=self:GetBiasColor(missionCounters[k].bias,nil,"Green")
-			t.Border:SetVertexColor(C[color]())
-			t:Show()
-			tohide=i+1
+	if (bigscreen) then
+		if (missionID and not GMF.MissionTab.MissionList.showInProgress) then
+			local tohide=1
+			local missionCounters=counters[missionID]
+			local index=counterFollowerIndex[missionID][followerID]
+			for i=1,#index do
+				local k=index[i]
+				local t=frame.Threats[i]
+				local tx=missionCounters[k].icon
+				t.Icon:SetTexture(tx)
+				local color=self:GetBiasColor(missionCounters[k].bias,nil,"Green")
+				t.Border:SetVertexColor(C[color]())
+				t:Show()
+				tohide=i+1
+			end
+		else
+			frame.Status:Hide()
 		end
-	else
-		frame.Status:Hide()
 	end
 end
 -- pseudo static
@@ -2520,9 +2639,9 @@ function addon:BuildFollowersButtons(button,bg,limit)
 	if (bg.Party) then return end
 	bg.Party={}
 	for numMembers=1,3 do
-		local f=CreateFrame("Button",nil,bg,"GarrisonCommanderMissionPageFollowerTemplate")
+		local f=CreateFrame("Button",nil,bg,bigscreen and "GarrisonCommanderMissionPageFollowerTemplate" or "GarrisonCommanderMissionPageFollowerTemplateSmall" )
 		if (numMembers==1) then
-			f:SetPoint("BOTTOMLEFT",bg.Percent,"BOTTOMRIGHT",10,0)
+			f:SetPoint("BOTTOMLEFT",button.Rewards[1],"BOTTOMRIGHT",10,0)
 		else
 			f:SetPoint("LEFT",bg.Party[numMembers-1],"RIGHT",10,0)
 		end
@@ -2532,14 +2651,16 @@ function addon:BuildFollowersButtons(button,bg,limit)
 		f:SetScript("OnLeave",GarrisonMissionPageFollowerFrame_OnLeave)
 		f:RegisterForClicks("AnyUp")
 		f:SetScript("OnClick",function(...) self:OnClick_PartyMember(...) end)
-		for numThreats=1,4 do
-			local threatFrame =f.Threats[numThreats];
-			if ( not threatFrame ) then
-				threatFrame = CreateFrame("Frame", nil, f, "GarrisonAbilityCounterTemplate");
-				threatFrame:SetPoint("LEFT", f.Threats[numThreats - 1], "RIGHT", 10, 0);
-				tinsert(f.Threats, threatFrame);
+		if (bigscreen) then
+			for numThreats=1,4 do
+				local threatFrame =f.Threats[numThreats];
+				if ( not threatFrame ) then
+					threatFrame = CreateFrame("Frame", nil, f, "GarrisonAbilityCounterTemplate");
+					threatFrame:SetPoint("LEFT", f.Threats[numThreats - 1], "RIGHT", 10, 0);
+					tinsert(f.Threats, threatFrame);
+				end
+				threatFrame:Hide()
 			end
-			threatFrame:Hide()
 		end
 	end
 	for i=1,3 do bg.Party[i]:SetScale(0.9) end
@@ -2552,9 +2673,6 @@ function addon:BuildFollowersButtons(button,bg,limit)
 		button.Threats[1]:ClearAllPoints()
 		button.Threats[1]:SetPoint("TOPLEFT",165,0)
 	end
-
-
-
 end
 function addon:RenderExtraButton(button,numRewards)
 	local panel=button.gcPANEL
@@ -2577,14 +2695,13 @@ function addon:RenderExtraButton(button,numRewards)
 					frame:Hide()
 				end
 			end
-			if ( missionInfo.locPrefix ) then
-				panel.LocBG:Show();
-				panel.LocBG:SetAtlas(missionInfo.locPrefix.."-List");
-			else
-				panel.LocBG:Hide();
-			end
 		end
 		return
+	end
+	if (not bigscreen) then
+		local position=(numRewards * -65) - 180
+		panel.Party[1]:ClearAllPoints()
+		panel.Party[1]:SetPoint("BOTTOMLEFT",button.Rewards[1],"BOTTOMLEFT", position,0)
 	end
 	local mission=self:GetMissionData(missionID)
 	local party=parties[missionID]
@@ -2595,27 +2712,19 @@ function addon:RenderExtraButton(button,numRewards)
 	local perc=party.perc
 	local age=tonumber(dbcache.seen[missionID])
 	local notFull=false
-	if (bigscreen) then
-		for i=1,3 do
-			local frame=button.gcPANEL.Party[i]
-			if (i>mission.numFollowers) then
-				frame:Hide()
-			else
-				if (party.members[i]) then
-					self:FillFollowerButton(frame,party.members[i],missionID)
-					frame.NotFull:Hide()
-				else
-					self:FillFollowerButton(frame,false)
-					frame.NotFull:Show()
-				end
-				frame:Show()
-			end
-		end
-		if ( mission.locPrefix ) then
-			panel.LocBG:Show();
-			panel.LocBG:SetAtlas(mission.locPrefix.."-List");
+	for i=1,3 do
+		local frame=button.gcPANEL.Party[i]
+		if (i>mission.numFollowers) then
+			frame:Hide()
 		else
-			panel.LocBG:Hide();
+			if (party.members[i]) then
+				self:FillFollowerButton(frame,party.members[i],missionID)
+				if (bigscreen) then frame.NotFull:Hide() end
+			else
+				self:FillFollowerButton(frame,false)
+				if (bigscreen) then frame.NotFull:Show() end
+			end
+			frame:Show()
 		end
 	end
 	panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
@@ -2641,34 +2750,18 @@ function addon:RenderExtraButton(button,numRewards)
 	end
 	panel.Age:Show()
 	panel.Percent:Show()
-	if (not bigscreen) then
-		panel:SetPoint("TOPRIGHT",numRewards *-75 - (GMM and 65 or 0),0)
-		panel.Followers:SetFormattedText(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS,mission.numFollowers)
-	end
 end
 function addon:BuildExtraButton(button)
-	if (bigscreen) then
-		local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
-		bg:SetPoint("TOPLEFT",button,"TOPRIGHT")
-		bg:SetPoint("RIGHT",GarrisonMissionFrameMissionsListScrollFrame,"RIGHT",-25,0)
-		bg.button=button
-		bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
-		bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
-		bg:RegisterForClicks("AnyUp")
-		bg:SetScript("OnClick",function(...) self:OnClick_GCMissionButton(...) end)
-		button.gcPANEL=bg
-		if (not bg.Party) then self:BuildFollowersButtons(button,bg,3) end
-	else
-		local bg=button.GC
-		if (not bg) then
-			bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionInfo")
-			bg:SetHeight(button:GetHeight())
-			button.gcPANEL=bg
-			bg.button=button
-			bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button,"LeftUp") end)
-			bg:SetScript("OnLeave",function(this) GameTooltip:FadeOut() end)
-		end
-	end
+	local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
+	bg:SetPoint("TOPLEFT",button,"TOPLEFT",0,0)
+	bg:SetPoint("RIGHT",GarrisonMissionFrameMissionsListScrollFrame,"RIGHT",-25,0)
+	bg.button=button
+	bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
+	bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+	bg:RegisterForClicks("AnyUp")
+	bg:SetScript("OnClick",function(...) self:OnClick_GCMissionButton(...) end)
+	button.gcPANEL=bg
+	if (not bg.Party) then self:BuildFollowersButtons(button,bg,3) end
 end
 --function addon:GarrisonMissionButton_SetRewards(button,rewards,numrewards)
 --end
@@ -2754,15 +2847,18 @@ function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(th
 	end
 end
 function addon:OnClick_GarrisonMissionButton(tab,button)
+	if (GMF.MissionTab.MissionList.showInProgress) then
+		return
+	end
 --@debug@
-	trace("Clicked")
+	xtrace("Clicked")
 --@end-debug@
 	if (tab.fromFollowerPage) then
 		GarrisonMissionFrame_SelectTab(1)
 		self:FillMissionPage(tab.info)
 	else
 --@debug@
-		DevTools_Dump(tab.info)
+		xdump(tab.info)
 --@end-debug@
 		self:FillMissionPage(tab.info)
 	end
@@ -2787,69 +2883,84 @@ function addon:RenderButton(button,rewards,numRewards)
 		return
 --@end-debug@
 	end
-	--if (self:IsRewardPage()) then return end
+	local missionID=button.info.missionID
 	if (bigscreen) then
 		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
-		button:SetWidth(width)
-		button.LocBG:SetPoint("LEFT")
+		button:SetWidth(width+600)
+		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
-	local tw=button:GetWidth()-165 - (GMM and 65 or 0)
-	if ( button.Title:GetWidth() + button.Summary:GetWidth() + 8 < tw - numRewards * 65 ) then
-		button.Title:SetPoint("LEFT", 165, 5);
+	local tw=button:GetWidth() - 165 - 2  + select(4,button.Rewards[1]:GetPoint(1))
+	if (not button.xp) then
+		button.xp=button:CreateFontString(nil, "ARTWORK", "QuestMaprewardsFont")
+		button.xp:SetPoint("TOPRIGHT",button.Rewards[1],"TOPRIGHT")
+		button.xp:SetJustifyH("RIGHT")
+		button.xp:Show()
+
+	end
+	button.MissionType:SetPoint("TOPLEFT",5,-2)
+	button.xp:SetWidth(0)
+	if (not GMF.MissionTab.MissionList.showInProgress) then
+		button.xp:SetFormattedText("Xp: %d (approx)",self:GetMissionData(missionID,'globalXp'))
+		button.xp:SetTextColor(self:GetDifficultyColors(self:GetMissionData(missionID,'totalXp')/3000*100))
+	end
+	--button.Title:SetText("123456789012345678901234567890123456789012345678901234567890") -- Used for design
+	if (button.Title:GetWidth() + button.Summary:GetWidth() + button.xp:GetWidth() < tw - numRewards * 65 ) then
+		button.Title:SetPoint("LEFT", 165, bigscreen and 20 or 30);
 		button.Summary:ClearAllPoints();
 		button.Summary:SetPoint("BOTTOMLEFT", button.Title, "BOTTOMRIGHT", 8, 0);
 	else
-		button.Title:SetPoint("LEFT", 165, 25);
+		button.Title:SetPoint("LEFT", 165, 30);
 		button.Title:SetWidth(tw - numRewards * 65);
 		button.Summary:ClearAllPoints();
 		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
 	end
-	local missionID=button.info.missionID
-	if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator (Only MP <= 1.8)
-		if (not button.Env) then
-			button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-			button.Env:SetWidth(20)
-			button.Env:SetHeight(20)
-			button.Env:SetPoint("BOTTOMLEFT",button,165,8)
-			button.GcThreats={}
-		end
-		local slots=self:GetMissionData(missionID,'slots')
-		local threatIndex=1
-		if (not GMF.MissionTab.MissionList.showInProgress) then
-			button.Env:Show()
-			dbg=missionID==(tonumber(_G.MW) or 0)
-			if (dbg) then self:DumpParty(missionID) end
-			for i=1,#slots do
-				local slot=slots[i]
-				if (slot.name==TYPE) then
-					button.Env.Icon:SetTexture(slot.icon)
-					self:SetThreatColor(button.Env,missionID)
-					button.Env.info=self.db.global.types[slot.key]
-					button.Env:SetScript("OnEnter",GarrisonMissionMechanic_OnEnter)
-					button.Env:SetScript("OnLeave",function() GarrisonMissionMechanicTooltip:Hide() end)
-				else
-					local th=button.GcThreats[threatIndex]
-					if (not th) then
-						th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-						th:SetWidth(20)
-						th:SetHeight(20)
-						button.GcThreats[threatIndex]=th
-						th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
-						th.info=slot
-						th:SetScript("OnEnter",GarrisonMissionMechanic_OnEnter)
-						th:SetScript("OnLeave",function() GarrisonMissionMechanicTooltip:Hide() end)
-					end
-					threatIndex=threatIndex+1
-					th.Icon:SetTexture(slot.icon)
-					self:SetThreatColor(th,missionID)
-					th:Show()
-				end
+	if (not GMF.MissionTab.MissionList.showInProgress) then
+		if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator (Only MP <= 1.8)
+			if (not button.Env) then
+				button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+				button.Env:SetWidth(20)
+				button.Env:SetHeight(20)
+				button.Env:SetPoint("BOTTOMLEFT",button,165,8)
+				button.GcThreats={}
 			end
-		else
-			button.Env:Hide()
-		end
-		for i=threatIndex,#button.GcThreats do
-			button.GcThreats[i]:Hide()
+			local slots=self:GetMissionData(missionID,'slots')
+			local threatIndex=1
+			if (not GMF.MissionTab.MissionList.showInProgress) then
+				button.Env:Show()
+				dbg=missionID==(tonumber(_G.MW) or 0)
+				if (dbg) then self:DumpParty(missionID) end
+				for i=1,#slots do
+					local slot=slots[i]
+					if (slot.name==TYPE) then
+						button.Env.Icon:SetTexture(slot.icon)
+						self:SetThreatColor(button.Env,missionID)
+						button.Env.info=self.db.global.types[slot.key]
+						button.Env:SetScript("OnEnter",GarrisonMissionMechanic_OnEnter)
+						button.Env:SetScript("OnLeave",function() GarrisonMissionMechanicTooltip:Hide() end)
+					else
+						local th=button.GcThreats[threatIndex]
+						if (not th) then
+							th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+							th:SetWidth(20)
+							th:SetHeight(20)
+							button.GcThreats[threatIndex]=th
+							th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
+							th.info=slot
+							th:SetScript("OnEnter",GarrisonMissionMechanic_OnEnter)
+							th:SetScript("OnLeave",function() GarrisonMissionMechanicTooltip:Hide() end)
+						end
+						threatIndex=threatIndex+1
+						th.Icon:SetTexture(slot.icon)
+						self:SetThreatColor(th,missionID)
+						th:Show()
+					end
+				end
+			else
+				button.Env:Hide()
+			end
+			for i=threatIndex,#button.GcThreats do
+				button.GcThreats[i]:Hide()
+			end
 		end
 	end
 	if (numRewards > 0) then
@@ -2862,6 +2973,9 @@ function addon:RenderButton(button,rewards,numRewards)
 				Reward.Quantity:Show()
 			elseif (reward.currencyID==0) then
 				Reward.Quantity:SetFormattedText("%d",reward.quantity/10000)
+				Reward.Quantity:Show()
+			elseif (reward.itemID and reward.itemID==120205) then
+				Reward.Quantity:SetFormattedText("%d",self:GetMissionData(missionID,'xp'))
 				Reward.Quantity:Show()
 			elseif (reward.itemID and reward.quantity==1) then
 				local _,_,q,i=GetItemInfo(reward.itemID)
@@ -2887,6 +3001,7 @@ function addon:RenderButton(button,rewards,numRewards)
 	end
 	self:RenderExtraButton(button,numRewards)
 end
+
 --@do-not-package@
 _G.GAC=addon
 --[[
@@ -3231,3 +3346,490 @@ function addon:GMF_OnDragStop(frame)
 end
 
 --@end-do-not-package@
+-- Courtesy of Motig
+-- Concept and interface reused with permission
+-- Mission building rewritten from scratch
+local GMC_G = {}
+--GMC_G.frame = CreateFrame('FRAME')
+local aMissions={}
+local aMissionsIndex={}
+
+function addon:GMCCreateMissionList(workList)
+	--First get rid of unwanted rewards and missions that are too long
+	local settings=self.privatedb.profile.missionControl
+	local ar=settings.allowedRewards
+	wipe(workList)
+	for missionID,mission in pairs(cache.missions) do
+		local discarded=false
+		repeat
+			if (mission.durationSeconds > settings.maxDuration * 3600) then
+				xprint(missionID,"discarded due to len",mission.durationSeconds /3600)
+				break
+			end -- Mission too long, out of here
+			for k,v in pairs(ar) do
+				if (not v) then
+					if (mission[k] and mission[k]~=0) then -- we have a forbidden reward
+						discarded=true
+						break
+					end
+				end
+			end
+			if (not discarded) then
+				tinsert(workList,missionID)
+			end
+		until true
+	end
+	local function msort(i1,i2)
+		local m1=addon:GetMissionData(i1)
+		local m2=addon:GetMissionData(i2)
+		for i=1,#GMC.settings.itemPrio do
+			local criterium=GMC.settings.itemPrio[i]
+			xprint("Checking",criterium)
+			if (criterium) then
+				xprint(i1,i2,"Sorting on ",criterium,m1[criterium] , m2[criterium])
+				if (m1[criterium] ~= m2[criterium]) then
+					xprint(i1,i2,"Sorted on ",criterium,m1[criterium] , m2[criterium])
+					return m1[criterium] > m2[criterium]
+				end
+			end
+		end
+		xprint(i1,i2,"Sorted on level",m1.level , m2.level)
+		return m1.level > m2.level
+	end
+	table.sort(workList,msort)
+end
+
+
+---@function [parent=#GMC] runMission
+local function runMission(missionID)
+	xprint("Asked to start mission",missionID)
+	for i=1,#GMC.ml.Parties do
+		local party=GMC.ml.Parties[i]
+		xprint("Checking",party.missionID)
+		if (missionID and party.missionID==missionID or not missionID) then
+			local b=GMC.ml.Missions[i]
+			b:Disable()
+			b:SetAlpha(0.5)
+			b:SetScript("OnClick",nil)
+			if (party.full) then
+				for j=1,#party.members do
+					G.AddFollowerToMission(party.missionID, party.members[j])
+				end
+				G.StartMission(party.missionID)
+				PlaySound("UI_Garrison_CommandTable_MissionStart")
+			end
+		end
+	end
+end
+local timeElapsed=0
+local done=false
+local co=false
+function addon:GMCMissionPerformer(this,elapsed)
+	timeElapsed = timeElapsed + elapsed
+	if (#aMissions == 0 ) then
+		if timeElapsed >= 2 then
+			self:Unhook(GMC,"OnUpdate")
+			this.progressText:SetText(READY)
+			this.progressText:SetTextColor(C.Green())
+		end
+		return
+	end
+	if (timeElapsed >=0.25) then
+		if (not co) then
+			co=coroutine.wrap(self.GMCMissionAssign)
+		end
+		local rc,currentmission=pcall(co,self,this)
+		if (not rc) then
+			xprint("Coroutine error",currentmission)
+		end
+		if (currentmission and type(currentmission)=='number') then
+			this.progressText:SetFormattedText("Processing mission %d of %d",currentmission,#aMissions)
+			xprint("Coroutine returned",currentmission)
+		else
+			co=nil
+			xprint("Unhooking")
+			self:Unhook(GMC,"OnUpdate")
+			xdump(GMC.ml.parties)
+		end
+		timeElapsed=0
+	end
+end
+function addon:GMCMissionAssign(...)
+	local x=0
+	for i=1,#aMissions do
+		local missionID=aMissions[i]
+		local party={members={},perc=0}
+		local mission=GMF.MissionTab.MissionList.availableMissions[aMissionsIndex[missionID]]
+		addon:MatchMaker(missionID,nil,party) -- I need my mission data
+		if ( party.full and party.perc >= GMC.settings.minimumChance) then
+			x=x+1
+			local b=self:BuildMiniMissionButton(GMC.ml,x,mission,bigscreen and 1 or 0.9,party.perc)
+			b:SetScript("OnClick",function(...) runMission(missionID) end)
+			b:Enable()
+			b:SetAlpha(1)
+			for i=1,#party.members do
+				GMCUsedFollowers[party.members[i]]=true
+			end
+			party.missionID=missionID
+			GMC.ml.Parties[x]=party
+		end
+		coroutine.yield(i)
+	end
+end
+
+function addon:GMCBuildPanel()
+	GMC = CreateFrame('FRAME', 'GMCOptions', GarrisonMissionFrame)
+	GMC.settings=dbcache.missionControl
+	GMC:SetPoint('CENTER')
+	GMC:SetSize(GarrisonMissionFrame:GetWidth(), GarrisonMissionFrame:GetHeight())
+	GMC:Hide()
+	GMC.startButton = CreateFrame('BUTTON', 'GarrisonMissionControl_Start', GMC, 'GameMenuButtonTemplate')
+	GMC.startButton:SetText('Calculate')
+	GMC.startButton:SetWidth(148)
+	GMC.startButton:SetPoint('BOTTOMLEFT', 40,50)
+	GMC.startButton:SetScript('OnClick', function()
+		addon:GMCCreateMissionList(aMissions)
+		wipe(GMCUsedFollowers)
+		wipe(GMC.ml.Parties)
+		for i=1,#GMC.ml.Missions do GMC.ml.Missions[i]:Hide() end
+		if (#aMissions>0) then
+			GMC.progressText:SetFormattedText(L["Processing mission %d of %d"],1,#aMissions)
+			-- Preparo l'indice
+			local list=GMF.MissionTab.MissionList.availableMissions
+			for j=1,#list do
+				aMissionsIndex[list[j].missionID]=j
+			end
+		else
+			GMC.progressText:SetText("No mission matches your criteria")
+			GMC.progressText:SetTextColor(C.Red())
+		end
+		self:RawHookScript(GMC,'OnUpdate',"GMCMissionPerformer")
+		GMC.progressText:Show()
+	end)
+	GMC.startButton:SetScript('OnEnter', function() GameTooltip:SetOwner(GMC.startButton, 'ANCHOR_TOPRIGHT') GameTooltip:AddLine('Assign your followers to missions.') GameTooltip:Show() end)
+	GMC.startButton:SetScript('OnLeave', function() GameTooltip:Hide() end)
+	GMC.runButton = CreateFrame('BUTTON', 'GarrisonMissionControl_Start', GMC, 'GameMenuButtonTemplate')
+	GMC.runButton:SetText('Send all mission at once')
+	GMC.runButton:SetWidth(148)
+	GMC.runButton:SetPoint('BOTTOMLEFT', 240,50)
+	GMC.runButton:SetScript('OnClick', runMission)
+	GMC.runButton:Disable()
+	local chance=self:GMCBuildChance()
+	local duration=self:GMCBuildDuration()
+	local rewards=self:GMCBuildRewards()
+	local priorities=self:GMCBuildPriorities()
+	local list=self:GMCBuildMissionList()
+	duration:SetPoint("TOPLEFT",0,-50)
+	chance:SetPoint("TOPLEFT",duration,"TOPRIGHT",bigscreen and 50 or 10,0)
+	priorities:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",10,-10)
+	rewards:SetPoint("TOPLEFT",priorities,"TOPRIGHT",bigscreen and 50 or 10,0)
+	list:SetPoint("TOPLEFT",chance,"TOPRIGHT",bigscreen and 50 or 10,0)
+	list:SetPoint("RIGHT",GMF,-25,0)
+	self:GMCupdateOptions()
+end
+function addon:GMCBuildChance()
+	--Chance
+	GMC.cf = CreateFrame('FRAME', nil, GMC)
+	GMC.cf:SetSize(256, 180)
+
+	GMC.cp = GMC.cf:CreateTexture(nil, 'BACKGROUND')
+	GMC.cp:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
+	GMC.cp:SetAtlas('GarrMission-AllianceChest')
+	GMC.cp:SetSize(209-(209*0.25), 155-(155*0.25))
+	GMC.cp:SetPoint('CENTER', 0, 0)
+
+	GMC.cc = GMC.cf:CreateFontString()
+	GMC.cc:SetFontObject('GameFontNormalHuge')
+	GMC.cc:SetText('Success Chance')
+	GMC.cc:SetPoint('TOP', 0, -10)
+	GMC.cc:SetTextColor(1, 1, 1)
+
+	GMC.ct = GMC.cf:CreateFontString()
+	GMC.ct:SetFontObject('ZoneTextFont')
+	GMC.ct:SetText('50%')
+	GMC.ct:SetPoint('CENTER', 0, 0)
+	GMC.ct:SetTextColor(0, 1, 0)
+
+	GMC.cs = CreateFrame('Slider', 'GMC_Succes_Slider', GMC.cf, 'OptionsSliderTemplate')
+	GMC.cs:SetWidth(128)
+	GMC.cs:SetHeight(20)
+	GMC.cs:SetOrientation('HORIZONTAL')
+	GMC.cs:SetPoint('BOTTOM', 0, 0)
+	GMC.cs:SetMinMaxValues(0, 100)
+	--f.cs:SetValue(32)
+	GMC.cs:SetValueStep(1)
+	_G[GMC.cs:GetName() .. 'Low']:SetText('0')
+	_G[GMC.cs:GetName() .. 'High']:SetText('100')
+	_G[GMC.cs:GetName() .. 'Text']:SetText('Minimum chance to start mission.')
+	GMC.cs:SetScript('OnValueChanged', function(self, value)
+			local value = math.floor(value)
+			GMC.ct:SetText(value..'%')
+			GMC.settings.minimumChance = value
+	end)
+	return GMC.cf
+end
+function addon:GMCBuildDuration()
+	-- Duration
+	GMC.tf = CreateFrame('FRAME', nil, GMC)
+	GMC.tf:SetSize(256, 180)
+	GMC.tf:SetPoint('LEFT', 80, 120)
+
+	GMC.bg = GMC.tf:CreateTexture(nil, 'BACKGROUND')
+	GMC.bg:SetTexture('Interface\\Timer\\Challenges-Logo.blp')
+	GMC.bg:SetSize(100, 100)
+	GMC.bg:SetPoint('CENTER', 0, 0)
+	GMC.bg:SetBlendMode('ADD')
+
+	GMC.cf = GMC.tf:CreateTexture(nil, 'BACKGROUND')
+	--bb:SetTexture('Interface\\Timer\\Challenges-Logo.blp')
+	--bb:SetTexture('dungeons\\textures\\devices\\mm_clockface_01.blp')
+	GMC.cf:SetTexture('World\\Dungeon\\Challenge\\clockRunes.blp')
+	GMC.cf:SetSize(110, 110)
+	GMC.cf:SetPoint('CENTER', 0, 0)
+	GMC.cf:SetBlendMode('ADD')
+
+	GMC.mdt = GMC.tf:CreateFontString()
+	GMC.mdt:SetFontObject('GameFontNormalHuge')
+	GMC.mdt:SetText('Mission Duration')
+	GMC.mdt:SetPoint('TOP', 0, -10)
+	GMC.mdt:SetTextColor(1, 1, 1)
+
+	GMC.mt = GMC.tf:CreateFontString()
+	GMC.mt:SetFontObject('ZoneTextFont')
+	GMC.mt:SetText('24h')
+	GMC.mt:SetPoint('CENTER', 0, 0)
+	GMC.mt:SetTextColor(1, 1, 1)
+
+	GMC.ms = CreateFrame('Slider', 'GMC_Time_Slider', GMC.tf, 'OptionsSliderTemplate')
+	GMC.ms:SetWidth(128)
+	GMC.ms:SetHeight(20)
+	GMC.ms:SetOrientation('HORIZONTAL')
+	GMC.ms:SetPoint('BOTTOM', 0, 0)
+	GMC.ms:SetMinMaxValues(1, 24)
+	--f.ms:SetValue(24)
+	GMC.ms:SetValueStep(1)
+	_G[GMC.ms:GetName() .. 'Low']:SetText('1')
+	_G[GMC.ms:GetName() .. 'High']:SetText('24')
+	_G[GMC.ms:GetName() .. 'Text']:SetText('Maximum mission duration.')
+	GMC.ms:SetScript('OnValueChanged', function(self, value)
+			local value = math.floor(value)
+			local c = 1-(value*(1/24))
+			if c < 0.3 then c = 0.3 end
+			GMC.mt:SetTextColor(1, c, c)
+			GMC.mt:SetText(value..'h')
+			GMC.settings.maxDuration = value
+	end)
+	return GMC.tf
+end
+function addon:GMCBuildRewards()
+	--Allowed rewards
+	GMC.aif = CreateFrame('FRAME', nil, GMC)
+	GMC.aif:SetSize(256, 180)
+	GMC.aif:SetPoint('CENTER', 0, 120)
+
+	GMC.itf = GMC.aif:CreateFontString()
+	GMC.itf:SetFontObject('GameFontNormalHuge')
+	GMC.itf:SetText('Allowed Rewards')
+	GMC.itf:SetPoint('TOP', 0, -10)
+	GMC.itf:SetTextColor(1, 1, 1)
+
+	GMC.itf2 = GMC.aif:CreateFontString()
+	GMC.itf2:SetFontObject('GameFontHighlight')
+	GMC.itf2:SetText('Click to enable/disable a reward.')
+	GMC.itf2:SetPoint('BOTTOM', 0, 0)
+	GMC.itf2:SetTextColor(1, 1, 1)
+
+
+	local t = {
+		{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
+		{t = 'Enable/Disable other currency awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
+		{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xpBonus'},
+		{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerUpgrade'},
+		{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'itemLevel'}
+	}
+
+	GMC.ignoreFrames = {}
+	local y=14
+	for i = 1, 5 do
+			local x = -44 + (i-1) %3 *44
+			if i == 4 then y = -28 end
+			local frame = CreateFrame('BUTTON', nil, GMC.aif, 'ItemButtonTemplate')
+			frame:SetScale(1.5, 1.5)
+			frame:SetPoint('CENTER', x, y)
+			frame.icon:SetTexture(t[i].i)
+			frame.key=t[i].key
+			frame.tooltil=t[i].t
+			frame:SetScript('OnClick', function(self)
+				if not self.icon:IsDesaturated() then
+					self.icon:SetDesaturated(true)
+					GMC.settings.allowedRewards[self.key] = false
+				else
+					self.icon:SetDesaturated(false)
+					GMC.settings.allowedRewards[self.key]=true
+				end
+			end)
+			frame:SetScript('OnEnter', function(this)
+				GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
+				GameTooltip:AddLine(this.tooltip);
+				GameTooltip:Show()
+			end)
+
+			frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
+			GMC.ignoreFrames[i] = frame
+	end
+	return GMC.aif
+end
+local addPriorityRule,prioRefresh,removePriorityRule,prioMenu,prioTitles,prioCheck,prioVoices
+do
+-- 1 = item, 2 = folitem, 3 = exp, 4 = money, 5 = resource
+	prioTitles={
+		itemLevel="Gear Items",
+		followerUpgrade="Upgrade Items",
+		xpBonus="Follower XP Bonus",
+		gold="Gold Reward",
+		resources="Resource Rewards"
+	}
+	prioVoices=0
+	for _ in pairs(prioTitles) do prioVoices=prioVoices+1 end
+	prioMenu={}
+
+	---@function [parent=#GMC] prioRefresh
+	function prioRefresh()
+		for i=1,prioVoices do
+			local group=GMC.prioFrames[i]
+			local code=GMC.settings.itemPrio[i]
+			if (not code) then
+				group.text:Hide()
+				group.xbutton:Hide()
+				group.nr:Hide()
+			else
+				group.text:Show()
+				group.text:SetText(prioTitles[code])
+				group.xbutton:Show()
+				group.nr:Show()
+			end
+		end
+		GMC.abutton:Hide()
+		for i=1,prioVoices do
+			local group=GMC.prioFrames[i]
+			if (not group.text:IsShown()) then
+				group.nr:Show()
+				GMC.abutton:SetPoint("TOPLEFT",group.text)
+				GMC.abutton:Show()
+				break
+			end
+		end
+	end
+	---@function [parent=#GMC] addPriorityRule
+	function addPriorityRule(this,key)
+		tinsert(GMC.settings.itemPrio,key)
+		prioRefresh()
+	end
+	---@function [parent=#GMC] removePriorityRule
+	function removePriorityRule(index)
+		tremove(GMC.settings.itemPrio,index)
+		prioRefresh()
+	end
+
+end
+function addon:GMCBuildPriorities()
+	--Prio
+	GMC.pf = CreateFrame('FRAME', nil, GMC)
+	GMC.pf:SetSize(256, 240)
+
+	GMC.pft = GMC.pf:CreateFontString()
+	GMC.pft:SetFontObject('GameFontNormalHuge')
+	GMC.pft:SetText('Item Priority')
+	GMC.pft:SetPoint('TOP', 0, -10)
+	GMC.pft:SetTextColor(1, 1, 1)
+
+	GMC.pft2 = GMC.pf:CreateFontString()
+	GMC.pft2:SetFontObject('GameFontNormal')
+	GMC.pft2:SetText('Prioritize missions with certain a reward.')
+	GMC.pft2:SetPoint('BOTTOM', 0, 16)
+	GMC.pft2:SetTextColor(1, 1, 1)
+	GMC.pmf = CreateFrame("FRAME", "GMC_PRIO_MENU", GMC.pf, "UIDropDownMenuTemplate")
+
+
+	GMC.prioFrames = {}
+	GMC.prioFrames.selected = 0
+	for i = 1, prioVoices do
+		GMC.prioFrames[i] = {}
+		local this = GMC.prioFrames[i]
+		this.f = CreateFrame('FRAME', nil, GMC.pf)
+		this.f:SetSize(255, 32)
+		this.f:SetPoint('TOP', 0, -38-((i-1)*32))
+
+		this.nr = this.f:CreateFontString()
+		this.nr:SetFontObject('GameFontNormalHuge')
+		this.nr:SetText(i..'.')
+		this.nr:SetPoint('LEFT', 8, 0)
+		this.nr:SetTextColor(1, 1, 1)
+
+		this.text = this.f:CreateFontString()
+		this.text:SetFontObject('GameFontNormalLarge')
+		this.text:SetText('Def')
+		this.text:SetPoint('LEFT', 32, 0)
+		--this.text:SetTextColor(1, 1, 0)
+		this.text:SetJustifyH('LEFT')
+		this.text:Hide()
+
+		this.xbutton = CreateFrame('BUTTON', nil, this.f, 'GameMenuButtonTemplate')
+		this.xbutton:SetPoint('RIGHT', 0, 0)
+		this.xbutton:SetText('X')
+		this.xbutton:SetWidth(28)
+		this.xbutton:SetScript('OnClick', function() removePriorityRule(i)  end)
+		this.xbutton:Hide()
+	end
+
+	GMC.abutton = CreateFrame('BUTTON', nil, GMC.pmf, 'GameMenuButtonTemplate')
+	GMC.abutton:SetText(L['Add priority rule'])
+	GMC.abutton:SetWidth(128)
+	GMC.abutton:Hide()
+	GMC.abutton:SetScript('OnClick', function()
+		wipe(prioMenu)
+		tinsert(prioMenu,{text = L["Select an item to add as priority."], isTitle = true, isNotRadio=true,disabled=true, notCheckable=true,notClickable=true})
+		for k,v in pairs(prioTitles) do
+			tinsert(prioMenu,{text = v, func = addPriorityRule, notCheckable=true, isNotRadio=true, arg1 = k , disabled=inTable(GMC.settings.itemPrio,k)})
+		end
+		EasyMenu(prioMenu, GMC.pmf, "cursor", 0 , 0, "MENU")
+		end
+	)
+	return GMC.pf
+end
+function addon:GMCBuildMissionList()
+		-- Mission list on follower panels
+		local ml=CreateFrame("Frame",nil,GMC)
+		addBackdrop(ml)
+		ml:Show()
+		ml.Missions={}
+		ml.Parties={}
+		GMC.ml=ml
+		local fs=ml:CreateFontString(nil, "BACKGROUND", "GameFontNormalHugeBlack")
+		fs:SetPoint("TOPLEFT",0,-5)
+		fs:SetPoint("TOPRIGHT",0,-5)
+		fs:SetText(READY)
+		fs:SetTextColor(C.Green())
+		fs:SetHeight(30)
+		fs:SetJustifyV("CENTER")
+		fs:Show()
+		GMC.progressText=fs
+		GMC.ml.Header=fs
+		return GMC.ml
+end
+
+
+
+
+function addon:GMCupdateOptions()
+	GMC.cs:SetValue(GMC.settings.minimumChance)
+	GMC.ms:SetValue(GMC.settings.maxDuration)
+
+	for i = 1, 5 do
+		local icon=GMC.ignoreFrames[i]
+		if (not GMC.settings.allowedRewards[icon.key]) then
+			icon.icon:SetDesaturated(true)
+		end
+	end
+	prioRefresh()
+end
