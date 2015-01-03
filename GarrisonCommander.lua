@@ -2170,7 +2170,7 @@ function addon:StartUp(...)
 	self:ScheduleRepeatingTimer("Clock",1)
 	self:BuildMissionsCache(true,true)
 	self:BuildRunningMissionsCache()
-	GarrisonMissionList_UpdateMissions();
+	self:Trigger("MSORT")
 end
 -- probably not really needed, haven seen yet them firing out of garrison
 function addon:PermanentEvents()
