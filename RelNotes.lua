@@ -22,6 +22,10 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
+self:RelNotes(2,1,2,[[
+Fix: Mission should appear sorted as requested bith on startup and after a mission completion
+Fix: Removed a couple fo rare lua error
+]])
 self:RelNotes(2,1,1,[[
 Feature: Countered mechanics are now shown in standard mission button both in big and small screen mode
 Feature: New sort method: mission age

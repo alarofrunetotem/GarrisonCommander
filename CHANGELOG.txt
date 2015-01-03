@@ -1,4 +1,7 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
+* 2.1.2
+Fix: Mission should appear sorted as requested bith on startup and after a mission completion
+Fix: Removed a couple fo rare lua error
 * 2.1.1
 Feature: Countered mechanics are now shown in standard mission button both in big and small screen mode
 Feature: New sort method: mission age
