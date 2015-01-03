@@ -1482,7 +1482,14 @@ function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed
 	counters[missionID]=nil
 	parties[missionID]=nil
 end
-
+function addon:EventGARRISON_FOLLOWER_REMOVED()
+	wipe(followersCache)
+	wipe(followersCacheIndex)
+end
+function addon:EventGARRISON_FOLLOWER_REMOVED()
+	wipe(followersCache)
+	wipe(followersCacheIndex)
+end
 -----------------------------------------------------
 -- Coroutines data and clock management
 -----------------------------------------------------
@@ -2012,6 +2019,8 @@ function addon:HookedGarrisonFollowerPage_ShowFollower(frame,followerID)
 				for j=1,#list do
 					index[list[j].missionID]=j
 				end
+				local pos=index[missionID]
+				if (not pos) then return end
 				numFollowers=#list[index[missionID]].followers
 				tinsert(partyIndex,-missionID)
 				GCFBusyStatus:SetText(GARRISON_FOLLOWER_ON_MISSION)
@@ -2170,6 +2179,8 @@ function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
+	self:SafeRegisterEvent("GARRISON_FOLLOWER_ADDED")
+	self:SafeRegisterEvent("GARRISON_FOLLOWER_REMOVED")
 --@debug@
 	self:DebugEvents()
 --@end-debug@
@@ -2177,8 +2188,6 @@ end
 function addon:DebugEvents()
 	self:SafeRegisterEvent("GARRISON_MISSION_LIST_UPDATE")
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE") -- Should be used only when has true as parameter
-	self:SafeRegisterEvent("GARRISON_FOLLOWER_ADDED")
-	self:SafeRegisterEvent("GARRISON_FOLLOWER_REMOVED")
 	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 	self:SafeRegisterEvent("GARRISON_MISSION_FINISHED")
 	self:SafeRegisterEvent("GARRISON_UPDATE")
