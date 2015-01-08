@@ -1,0 +1,42 @@
+GarrisonMissionFrame_CheckCompleteMissions(OnShow) Controlla se sono presenti missione complete. Se è già mostrato GMF.MissionComplete ritorna
+	Viene chiamato
+	1) su onshow del pannello missioni con OnShow=true
+	2) sull'evento GARRISON_MISSION_FINISHED con OnSHow=false
+	- Inizializza GMF.MissionComplete.completeMissions
+	- Se ci sono missioni complete e GMF è mostrato
+		- le conta (#GMF.MissionComplete.completeMissions
+		- mostra GMF.MissionTab.MissionList.CompleteDialog
+		- MissionCompletePreload_LoadMission(id) id=missionID prima missione completata
+			- Usa una globale per la missione corrente, in modo da uscire se è sempre farlo sulla stessa
+			- Rimuove eventuali modelli già prensenti via MissionCompletePreload_Cancel
+			- Carica tutti i modelli necessari
+		- abilita il viewbutton GarrisonMissionFrameMissions.CompleteDialog.BorderFrame.ViewButton
+			- Onclick :
+				- GarrisonMissionFrame_ShowCompleteMissions
+					- continua a farsi rilanciare finché non ha finito di caricare i modelli, poi:
+					- Nasconde GMF.MissionTab.MissionList.CompleteDialog
+					- mostra GMF.MissionComplete GMF.MissionCompleteBackground
+					- GarrisonMissionComplete_Initialize(GMF.MissionComplete.completeMissions,GMF.MissionComplete.currentIndex)
+
+
+
+Altre utilities
+
+GarrisonMissionFrame_SelectTab(id): switcha fra missioni e followers
+	id è numerico, 1 mostra le missioni, altro mostra i followers
+
+GarrisonMissionList_SetTab(tab): switcha fra active e available
+	tab è l'oggetto tab "available" o "in progress" (GarrisonMissionFrameMissionsTab[12])
+
+Pannelli utili:
+
+GMF.MissionTab.MissionList.CompleteDialog.BorderFrame.LoadingFrame Loading col tondino
+
+
+Dump: value=C_Garrison.GetMissionRewardInfo(91)
+[1]={
+	[163]={
+		itemID=112848,
+		quantity=1
+	}
+}

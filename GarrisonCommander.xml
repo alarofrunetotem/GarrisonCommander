@@ -101,7 +101,7 @@
 			</Layer>
 		</Layers>
 	</Frame>
-	<Frame name="GarrisonCommanderTitle" inherits="GarrisonCommanderBackground" virtual="true">
+	<Frame name="GarrisonCommanderTitle" inherits="GarrisonCommanderBackground" enableMouse="treue" topevel="true" virtual="true">
 		<Size x="150" y="70"/>
 		<Frames>
 			<Button parentKey="help" inherits="UIPanelInfoButton">
@@ -208,25 +208,28 @@
 	<!--
 	inherits="GarrisonCommanderBackground"
 	-->
-	<Button name="GarrisonCommanderMissionButton"  virtual="true">
-		<Size x="1120" y="80"/>
+	<Frame name="GarrisonCommanderIndicators" toplevel="true" virtual="true">
+		<Size x="90" y="80"/>
 		<Layers>
 			<Layer level="ARTWORK">
 				<FontString parentKey="Age" inherits="GameFontHighlightSmall" justifyH="CENTER" justifyV="TOP" >
-					<Size x="60" y="70"/>
+					<Size x="90" y="70"/>
 					<Anchors>
-						<Anchor point="TOPLEFT" relativeKey="$parent" relativePoint="TOPLEFT" x="70" y="-5"/>
+						<Anchor point="TOPLEFT" relativeKey="$parent" relativePoint="TOPLEFT" x="0" y="-5"/>
 					</Anchors>
 					<Color r="0.698" g="0.941" b="1" a="1"/>
 				</FontString>
 				<FontString parentKey="Percent" inherits="NumberFontNormalHuge" justifyH="RIGHT" justifyV="BOTTOM" >
-					<Size x="60" y="70"/>
+					<Size x="90" y="70"/>
 					<Anchors>
-						<Anchor point="BOTTOMLEFT" relativeKey="$parent" relativePoint="BOTTOMLEFT" x="60" y="10"/>
+						<Anchor point="BOTTOMLEFT" relativeKey="$parent" relativePoint="BOTTOMLEFT" x="0" y="10"/>
 					</Anchors>
 				</FontString>
 			</Layer>
 		</Layers>
+	</Frame>
+	<Button name="GarrisonCommanderMissionButton"  virtual="true">
+		<Size x="510" y="80"/>
 	</Button>
 	<Button name="GarrisonCommanderMissionListButtonTemplate" inherits="GarrisonMissionListButtonTemplate" virtual="true">
 		<Size x="450" y="80" />
@@ -393,5 +396,20 @@
 			</OnHide>
 		</Scripts>
 	</Frame>
-
+	<Frame name="GarrisonCommanderLoadingFrame" inherits="LoadingSpinnerTemplate" hidden="true" virtual="true">
+		<Layers>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Label" inherits="GameFontHighlight" text="LFG_LIST_LOADING">
+					<Anchors>
+						<Anchor point="LEFT" relativePoint="RIGHT"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnLoad>
+				self.Anim:Play();
+			</OnLoad>
+		</Scripts>
+	</Frame>
 </Ui>
