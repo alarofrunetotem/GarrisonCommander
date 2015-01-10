@@ -1719,6 +1719,7 @@ function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
 	xprint("Created options ", o)
 	o:SetLayout("Flow")
+	o:SetCallback("OnRelease",function(widget) widget.frame:SetScale(1.0) print("Released") end)
 	o:SetCallback("OnClose",function(widget) widget.frame:SetScale(1.0) widget:Release() end)
 	for i=1,select('#',...) do
 		self:AddOptionToOptionsLayer(o,select(i,...))

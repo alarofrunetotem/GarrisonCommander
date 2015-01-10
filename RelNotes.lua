@@ -23,7 +23,8 @@ self:Wiki([[
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
 self:RelNotes(2,1,3,[[
-Fix: Another step in hide and seek with Master Plan. Use GC Interface now works also with MP 0.22.1. This fix also reenables Garrison Mission Manager
+Fix: Another step in hide and seek with Master Plan. Use GC Interface now works also with MP 0.22.1. This fix also reenables Garrison Mission Manager. Thanks to Careraider for pointing it
+Fix: A minor incompatibility wuth some addons was causing them to display very small menus in some options pages. Thanks to Goldshire for pointing it
 ]])
 self:RelNotes(2,1,2,[[
 Fix: Mission should appear sorted as requested bith on startup and after a mission completion
