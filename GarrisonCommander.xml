@@ -1,128 +1,31 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
 	<Script file="GarrisonCommander.lua"/>
-	<Frame name="GarrisonCommanderBackground" virtual ="true">
-		<Layers>
-			<Layer level="BACKGROUND">
-				<Texture atlas="GarrMission_MissionParchment" useAtlasSize="true" vertTile="true" horizTile="true">
-					<Anchors>
-						<Anchor point="TOPLEFT" x="3"/>
-						<Anchor point="BOTTOMRIGHT" x="-3"/>
-					</Anchors>
-				</Texture>
-			</Layer>
-			<Layer level="BORDER">
-				<Texture atlas="_GarrMission_TopBorder" useAtlasSize="true" horizTile="true">
-					<Anchors>
-						<Anchor point="TOPLEFT" x="20" y="4"/>
-						<Anchor point="TOPRIGHT" x="-20" y="4"/>
-					</Anchors>
-				</Texture>
-				<Texture atlas="_GarrMission_TopBorder" useAtlasSize="true" horizTile="true">
-					<Anchors>
-						<Anchor point="BOTTOMLEFT" x="20" y="-4"/>
-						<Anchor point="BOTTOMRIGHT" x="-20" y="-4"/>
-					</Anchors>
-					<TexCoords left="0.0" right="1.0" top="1.0" bottom="0.0"/>
-				</Texture>
-			</Layer>
-			<Layer level="BORDER" textureSubLevel="1">
-				<Texture atlas="GarrMission_TopBorderCorner" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="TOPLEFT" x="-5" y="4"/>
-					</Anchors>
-				</Texture>
-				<Texture atlas="GarrMission_TopBorderCorner" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="TOPRIGHT" x="4" y="4"/>
-					</Anchors>
-					<TexCoords left="1.0" right="0.0" top="0.0" bottom="1.0"/>
-				</Texture>
-				<Texture atlas="GarrMission_TopBorderCorner" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="BOTTOMLEFT" x="-5" y="-4"/>
-					</Anchors>
-					<TexCoords left="0.0" right="1.0" top="1.0" bottom="0.0"/>
-				</Texture>
-				<Texture atlas="GarrMission_TopBorderCorner" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="BOTTOMRIGHT" x="4" y="-4"/>
-					</Anchors>
-					<TexCoords left="1.0" right="0.0" top="1.0" bottom="0.0"/>
-				</Texture>
-			</Layer>
-			<Layer level="BACKGROUND" textureSubLevel="3">
-				<Texture parentKey="IconBG" atlas="Garr_MissionList-IconBG">
-					<Size x="90" y="80"/>
-					<Anchors>
-						<Anchor point="TOPLEFT" y="-1"/>
-					</Anchors>
-					<Color r="0" g="0" b="0" a="0.4"/>
-				</Texture>
-			</Layer>
-			<Layer level="ARTWORK" textureSubLevel="2">
-				<Texture parentKey="LocBG">
-					<Size x="792" y="78"/>
-					<Anchors>
-						<Anchor point="RIGHT"/>
-					</Anchors>
-				</Texture>
-			</Layer>
-				<Layer level="HIGHLIGHT" textureSubLevel="1">
-				<Texture parentKey="HighlightTL" atlas="GarrMission_TopBorderCorner-Highlight" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="TOPLEFT" x="-5" y="4"/>
-					</Anchors>
-				</Texture>
-				<Texture parentKey="HighlightTR" atlas="GarrMission_TopBorderCorner-Highlight" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="TOPRIGHT" x="4" y="4"/>
-					</Anchors>
-					<TexCoords left="1.0" right="0.0" top="0.0" bottom="1.0"/>
-				</Texture>
-				<Texture parentKey="HighlightBL" atlas="GarrMission_TopBorderCorner-Highlight" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="BOTTOMLEFT" x="-5" y="-4"/>
-					</Anchors>
-					<TexCoords left="0.0" right="1.0" top="1.0" bottom="0.0"/>
-				</Texture>
-				<Texture parentKey="HighlightBR" atlas="GarrMission_TopBorderCorner-Highlight" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="BOTTOMRIGHT" x="4" y="-4"/>
-					</Anchors>
-					<TexCoords left="1.0" right="0.0" top="1.0" bottom="0.0"/>
-				</Texture>
-				<Texture parentKey="Highlight" atlas="GarrMission_ListGlow-Highlight" useAtlasSize="true">
-					<Anchors>
-						<Anchor point="TOPLEFT" y="0"/>
-						<Anchor point="TOPRIGHT" y="0"/>
-					</Anchors>
-				</Texture>
-			</Layer>
-		</Layers>
-	</Frame>
-	<Frame name="GarrisonCommanderTitle" inherits="GarrisonCommanderBackground" enableMouse="treue" topevel="true" virtual="true">
-		<Size x="150" y="70"/>
+	<Frame name="GarrisonCommanderTitle" inherits="GarrisonUITemplate" enableMouse="true" topevel="true" virtual="true">
+		<Size x="150" y="80"/>
 		<Frames>
-			<Button parentKey="help" inherits="UIPanelInfoButton">
+			<Button parentKey="Help" inherits="UIPanelInfoButton" hidden="true">
 				<Anchors>
-					<Anchor point="TOPLEFT" x="0" y="0"/>
+					<Anchor point="RIGHT" x="0" y="0"/>
 				</Anchors>
+				<Scripts>
+					<OnLeave>GameTooltip:FadeOut()</OnLeave>
+				</Scripts>
 			</Button>
 		</Frames>
 		<Layers>
-			<Layer level="ARTWORK">
+			<Layer level="OVERLAY">
 				<Texture parentKey="Shield" file="Interface\ACHIEVEMENTFRAME\UI-ACHIEVEMENT-SHIELDS-NOPOINTS">
 					<Size x="32" y="32"/>
 					<Anchors>
-						<Anchor point="TOPLEFT" x="24" y="-5"/>
+						<Anchor point="TOPLEFT" x="-2" y="0"/>
 					</Anchors>
 					<TexCoords left="0" right="0.5" top="0.5" bottom="1"/>
 				</Texture>
-				<FontString parentKey="Signature" inherits="QuestTitleFontBlackShadow" justifyH="LEFT" justifyV="TOP" text="Garrison Commander" >
-					<Size x="100" y="64"/>
+				<FontString parentKey="Signature" inherits="QuestTitleFontBlackShadow" justifyH="RIGHT" justifyV="TOP" text="Garrison Commander" >
+					<Size x="400" y="80"/>
 					<Anchors>
-						<Anchor point="TOPLEFT" relativeKey="$parent.Shield" relativePoint="TOPRIGHT" x="5" y="0"/>
+						<Anchor point="TOPLEFT" relativeKey="$parent.Shield" relativePoint="TOPRIGHT" x="-25" y="-2"/>
 					</Anchors>
 				</FontString>
 			</Layer>
@@ -205,9 +108,6 @@
 			</Layer>
 		</Layers>
 	</Frame>
-	<!--
-	inherits="GarrisonCommanderBackground"
-	-->
 	<Frame name="GarrisonCommanderIndicators" toplevel="true" virtual="true">
 		<Size x="90" y="80"/>
 		<Layers>
