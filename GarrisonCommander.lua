@@ -1525,6 +1525,7 @@ function addon:Clock()
 		GarrisonMissionFrameMissionsListScrollFrame:Hide()
 	else
 		GarrisonMissionFrameMissionsListScrollFrame:Show()
+		GarrisonMissionFrameMissionsListScrollFrame:SetParent(GMF)
 	end
 --@debug@
 	for k,d in pairs(coroutines) do
