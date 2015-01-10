@@ -1,5 +1,6 @@
 local me, ns = ...
 local _G=_G
+local pp=print
 --@debug@
 	LoadAddOn("Blizzard_DebugTools")
 --@end-debug@
@@ -40,8 +41,8 @@ local ttcalled=false
 local rendercalled=false
 local MPPage
 local dbg=false
+local trc=false
 
---@debug@
 if (LibDebug) then LibDebug() end
 local function tcopy(obj, seen)
 	if type(obj) ~= 'table' then return obj end
@@ -552,6 +553,7 @@ function addon:OnInitialized()
 	self:AddPrivateAction("ShowMissionControl",L["Mission control"],L["You can choose some criteria and have GC autosumbit missions for you"])
 --@debug@
 	self:AddToggle("DBG",false, "Enable Debug")
+	self:AddToggle("TRC",false, "Enable Trace")
 --@end-debug@
 
 	self:Trigger("MSORT")
@@ -602,6 +604,10 @@ function addon:ApplyCKMP(value)
 end
 function addon:ApplyDBG(value)
 	dbg=value
+end
+function addon:ApplyTRC(value)
+	if self.__CHAT__ then local i=1 end
+	trc=value
 end
 function addon:ApplyBIGSCREEN(value)
 		if (value) then
@@ -1987,6 +1993,8 @@ function addon:GenerateMissionButton()
 			unique=unique+1
 			local frame=CreateFrame("Button","Pippo"..unique,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
 			local indicators=CreateFrame("Frame",nil,frame,"GarrisonCommanderIndicators")
+			frame.Title:SetFontObject("QuestFont_Shadow_Small")
+			frame.Summary:SetFontObject("QuestFont_Shadow_Small")
 			indicators:SetPoint("LEFT",65,0)
 			indicators.Age:Hide()
 			frame.Percent=indicators.Percent
@@ -2300,7 +2308,7 @@ function addon:FillMissionButton(button,gmc,...)
 			mission=self:GetMissionData(button.missionID)
 		end
 	end
-	if gmc then print("Arrivo da Mission control") end
+	if gmc then print("Arrivo da Mission control") print("Width is",button:GetWidth()) else print("Da dove arrivo?") end
 	if (not mission) then return end
 	button.Title:SetWidth(0);
 	button.Title:SetText(mission.name);
@@ -2599,6 +2607,7 @@ function addon:StartUp(...)
 	self:AddOptionToOptionsLayer(GCF.Menu,'ShowMissionControl',200)
 --@debug@
 	self:AddOptionToOptionsLayer(GCF.Menu,'DBG')
+	self:AddOptionToOptionsLayer(GCF.Menu,'TRC')
 --@end-debug@
 	GCF.Menu:SetParent(GCF)
 	GCF.Menu:SetFrameStrata(GCF:GetFrameStrata())
@@ -3902,7 +3911,7 @@ do
 			end
 			return
 		end
-		if (timeElapsed >=0.10) then
+		if (timeElapsed >=0.) then
 			currentMission=currentMission+1
 			if (currentMission > #aMissions) then
 				wipe(aMissions)
@@ -3939,9 +3948,9 @@ do
 					end
 					party.missionID=missionID
 					tinsert(GMC.ml.Parties,party)
-					mb:SetMission(mission)
 					GMC.ml.widget:PushChild(mb,missionID)
 					mb:SetFullWidth(true)
+					mb:SetMission(mission)
 					mb:SetCallback("OnClick",function(...)
 						addon:GMCRunMission(missionID)
 						GMC.ml.widget:RemoveChild(missionID)
@@ -4382,3 +4391,41 @@ function addon:GMCBuildMissionList()
 	return ml.widget
 
 end
+--@debug@
+--- Enable a trace for every function call. It's a VERY heavy debug
+--
+local function GetChatFrame(chat)
+	if (chat) then
+		for i=1,NUM_CHAT_WINDOWS do
+			local frame=_G["ChatFrame" .. i]
+			if (not frame) then break end
+			if (frame.AddMessage and frame.name==chat) then return frame end
+		end
+	end
+	return DEFAULT_CHAT_FRAME
+end
+local shadow={chat=GetChatFrame()}
+for k,v in pairs(addon) do
+	if (type(v))=="function" then
+		shadow[k]=v
+		addon[k]=nil
+	end
+end
+setmetatable(addon,{
+	__index=function(table,key)
+		if key=="__CHAT__" then
+			shadow.chat=GetChatFrame('aDebug')
+		end
+		if type(shadow[key]=="function") then
+			if (trc) then
+				local t=GetTime()
+				pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s]",t-floor(t),key))
+			end
+			return shadow[key]
+		else
+			return nil
+		end
+	end
+})
+
+--@end-debug@
