@@ -42,6 +42,7 @@ local rendercalled=false
 local MPPage
 local dbg=false
 local trc=false
+local pin=false
 
 if (LibDebug) then LibDebug() end
 local function tcopy(obj, seen)
@@ -173,6 +174,11 @@ local function splitFormat(base)
 	local G1=G:sub(1,i-1)..m0..G:sub(s+1)
 	local G2=G:sub(1,i-1)..m1..G:sub(s+1)
 	return G1,G2
+end
+local function ShowTT(this)
+	GameTooltip:SetOwner(this, "ANCHOR_TOPRIGHT")
+	GameTooltip:SetText(this.tooltip)
+	GameTooltip:Show()
 end
 
 local GARRISON_DURATION_DAY,GARRISON_DURATION_DAYS=splitFormat(GARRISON_DURATION_DAYS) -- "%d |4day:days;";
@@ -533,7 +539,11 @@ function addon:OnInitialized()
 	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED",function(...) GCF:Hide() end)
 	self:SafeHookScript("GarrisonMissionFrame","OnShow","SetUp",true)
+	self:AddLabel("Appearance")
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"])
+	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
+	self:AddToggle("PIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
+	self:AddLabel("Mission Panel")
 	self:AddToggle("IGM",true,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
 	self:AddToggle("IGP",true,L['Ignore "maxed"'],L["Level 100 epic followers are not used for xp only missions."])
 	self:AddToggle("NOFILL",false,L["Do not prefill mission page"],L["Disables automatic population of mission page screen. You can also press control while clicking to disable it for a single mission"])
@@ -546,12 +556,13 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Xp=L["Global approx. xp reward"],
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
-	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	bigscreen=self:GetBoolean("BIGSCREEN")
+	self:AddLabel("Followers Panel")
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
 	self:AddPrivateAction("ShowMissionControl",L["Mission control"],L["You can choose some criteria and have GC autosumbit missions for you"])
 --@debug@
+	self:AddLabel("Developers options")
 	self:AddToggle("DBG",false, "Enable Debug")
 	self:AddToggle("TRC",false, "Enable Trace")
 --@end-debug@
@@ -604,6 +615,9 @@ function addon:ApplyCKMP(value)
 end
 function addon:ApplyDBG(value)
 	dbg=value
+end
+function addon:ApplyPIN(value)
+	pin=value
 end
 function addon:ApplyTRC(value)
 	if self.__CHAT__ then local i=1 end
@@ -1603,6 +1617,8 @@ local coroutines={
 local lastmin=0
 local MPShown=nil
 local dbgFrame
+local lastCPU=0
+local startTime=GetTime()
 -- Keeping it as a nice example of coroutine management.. but not using it anymore
 function addon:Clock()
 	collectgarbage("step",20)
@@ -1610,9 +1626,9 @@ function addon:Clock()
 	if (not dbgFrame) then
 		dbgFrame=AceGUI:Create("Window")
 		dbgFrame:SetTitle("GC Performance")
-		dbgFrame:SetPoint("TOP")
-		dbgFrame:SetHeight(80)
-		dbgFrame:SetWidth(200)
+		dbgFrame:SetPoint("LEFT")
+		dbgFrame:SetHeight(60)
+		dbgFrame:SetWidth(350)
 		dbgFrame:SetLayout("fill")
 		dbgFrame.Text=AceGUI:Create("Label")
 		dbgFrame.Text:SetColor(1,0,0)
@@ -1624,7 +1640,13 @@ function addon:Clock()
 	end
 	UpdateAddOnCPUUsage()
 	UpdateAddOnMemoryUsage()
-	dbgFrame.Text:SetText(format("GC Cpu %3.2f Mem %4.3f ",GetAddOnCPUUsage("GarrisonCommander"),GetAddOnMemoryUsage("GarrisonCommander")/1024))
+	local cpu=GetAddOnCPUUsage("GarrisonCommander")
+	dbgFrame.Text:SetText(format("GC Cpu %3.2f/%2.2f/%2.2f Mem %4.3fMB ",
+		cpu,
+		cpu-lastCPU,cpu/(GetTime()-startTime),
+		GetAddOnMemoryUsage("GarrisonCommander")/1024)
+	)
+	lastCPU=cpu
 --@end-debug@
 	dbcache.lastseen=time()
 	if (not MP) then return end
@@ -1668,18 +1690,14 @@ function addon:ActivateButton(button,OnClick,Tooltiptext,persistent)
 	button:SetScript("OnClick",function(...) self[OnClick](self,...) end )
 	if (Tooltiptext) then
 		button.tooltip=Tooltiptext
-		button:SetScript("OnEnter",function(...) self:ShowTT(...) end )
+		button:SetScript("OnEnter",ShowTT)
 		button:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
 	else
 		button:SetScript("OnEnter",nil)
 		button:SetScript("OnLeave",nil)
 	end
 end
-function addon:ShowTT(this)
-	GameTooltip:SetOwner(this, "ANCHOR_CURSOR_RIGHT")
-	GameTooltip:SetText(this.tooltip)
-	GameTooltip:Show()
-end
+
 function addon:Shrink(button)
 	local f=button.Toggle
 	local name=f:GetName() or "Unnamed"
@@ -2051,40 +2069,16 @@ function addon:GMCBuildMiniMissionButton(frame,i,mission,scale,perc,offset)
 	return panel
 end
 
-
-local function GFC_Constructor()
-	local widget=setmetatable({},{__index=AceGUI:Create("SimpleGroup")})
-	function widget:DrawOn(frame,l,r)
-		self.frame:ClearAllPoints()
-		self.frame:SetPoint("TOPLEFT",frame,"TOPLEFT",l,0)
-		self.frame:SetPoint("BOTTOMRIGHT",frame,"TOPRIGHT",r,0)
-	end
-	function widget:OnRelease()
-		self.frame:ClearAllPoints()
-	end
-	if (false) then
-		AceGUI:RegisterWidgetType("GarrisonCommanderHeader",GFC_Constructor,1)
-		local layer=AceGUI:Create("GarrisonCommanderHeader")
-		layer:DrawOn(GCF)
-		layer:SetLayout("flow")
-		LibStub("AceConfigDialog-3.0"):Open(me,layer)
-	end
-	return widget
-end
-
 function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
+	print("OnCreate",o.frame:GetFrameStrata(),o.frame:GetFrameLevel())
 	o:SetLayout("Flow")
 	o:SetCallback("OnClose",function(widget) widget.frame:SetScale(1.0) widget:Release() end)
+	o:SetCallback("OnRelease",function(widget) widget.frame:SetScale(1.0) widget.frame:Show() print("OnRelease",widget.frame:GetFrameStrata(),widget.frame:GetFrameLevel()) end)
 	for i=1,select('#',...) do
 		self:AddOptionToOptionsLayer(o,select(i,...))
 	end
-	_G.TEST=o
-	local me=setmetatable({},{__index=o})
-	function me:Show() self.frame:Show() end
-	function me:SetFrameStrata(...) self.frame:SetFrameStrata(...) end
-	function me:SetFrameLevel(...) self.frame:SetFrameLevel(...) end
-	return me
+	return o
 end
 function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 	maxsize=tonumber(maxsize) or 150
@@ -2141,29 +2135,70 @@ function addon:Options()
 	-- Main Garrison Commander Header
 	GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
 	-- Removing wood corner. I do it here to not derive an xml frame. This shoud play better with ui extensions
+	GCF.CloseButton:Hide()
 	for _,f in pairs({GCF:GetRegions()}) do
 		if (f:GetObjectType()=="Texture" and f:GetAtlas()=="Garr_WoodFrameCorner") then f:Hide() end
 	end
 	GCF:SetFrameStrata(GMF:GetFrameStrata())
-	GCF:SetFrameLevel(GMF:GetFrameLevel()-1)
+	GCF:SetFrameLevel(GMF:GetFrameLevel()-2)
+	if (not bigscreen) then GCF:SetHeight(GCF:GetHeight()+35) end
+	local baseHeight=GCF:GetHeight()
+	local minHeight=47
 	GCF.CloseButton:SetScript("OnClick",nil)
+	GCF.Pin:SetAllPoints(GCF.CloseButton)
 	GCF:SetWidth(BIGSIZEW)
 	GCF:SetPoint("TOP",UIParent,0,-60)
-	if (not bigscreen) then GCF:SetHeight(GCF:GetHeight()+30) end
+	if (self:GetBoolean("PIN")) then
+		self:AddMenu()
+		GCF.Pin:SetChecked(true)
+	else
+		GCF:SetHeight(minHeight)
+		GCF.Pin:SetChecked(false)
+	end
+	do
+		local baseHeight=baseHeight
+		local minHeight=minHeight
+		local baseStrata=GCF:GetFrameStrata()
+		local baseLevel=GCF:GetFrameStrata()
+		local speed=2
+		local function shrink(this)
+			if (this.Menu) then this.Menu:Release() this.Menu=nil end
+			this:SetScript("OnUpdate",function(me,ts)
+				local h=me:GetHeight()
+				if (h<=45) then
+					me:SetHeight(45)
+					me:SetScript("OnUpdate",nil)
+				else
+					me:SetHeight(h-2)
+				end
+			end)
+		end
+		local function grow(this)
+			this:SetScript("OnUpdate",function(me,ts)
+				local h=me:GetHeight()
+				if (h>=baseHeight) then
+					me:SetScript("OnUpdate",nil)
+					me:SetHeight(baseHeight)
+					if (not me.Menu) then addon:AddMenu() end
+				else
+					me:SetHeight(h+2)
+				end
+			end)
+		end
+		GCF.Pin.tooltip=L["Toggles Garrison Commander Menu AutoHide on/off"]
+		GCF.Pin:SetScript("OnEnter",ShowTT)
+		GCF.Pin:SetScript("OnClick",function(this)
+			local value=this:GetChecked()
+			this:SetChecked(value)
+			addon:SetBoolean("PIN",value)
+			if (value) then grow(GCF) else shrink(GCF) end
+		end)
+	end
 	GCF:EnableMouse(true)
 	GCF:SetMovable(true)
 	GCF:RegisterForDrag("LeftButton")
 	GCF:SetScript("OnDragStart",function(frame)if (self:GetBoolean("MOVEPANEL")) then frame:StartMoving() end end)
 	GCF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
-	GCF.Help:SetScript("OnEnter",function(this)
-		GameTooltip:SetOwner(this,"ANCHOR_TOPLEFT")
-		GameTooltip:AddLine("Check the three tabs next to top right corner of this panel for Garrison Commander new features")
-		GameTooltip:Show()
-	end
-	)
-	GCF.Help:Show()
-
-
 	if (bigscreen) then
 		--MinimizeButton
 		-- It's not working well, now I dont have time to fix it
@@ -2570,6 +2605,7 @@ function addon:SetUp(...)
 	--tab:SetNormalTexture("World\\Dungeon\\Challenge\\clockRunes.blp")
 	--tab:SetNormalTexture("Interface\\Timer\\Challenges-Logo.blp")
 	tabMC:SetNormalTexture("Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME.blp")
+	self:MarkAsNew(tabMC,'MissionControl','New in 2.2.0! Try automatic mission management!')
 	tabMC:Show()
 	GMC.tabMC=tabMC
 	local tabCF=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
@@ -2592,6 +2628,28 @@ function addon:SetUp(...)
 	collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
+function addon:AddMenu()
+	print("Creating menu")
+	GCF.Menu=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL')
+	self:AddOptionToOptionsLayer(GCF.Menu,'MSORT')
+	self:AddOptionToOptionsLayer(GCF.Menu,'ShowMissionControl')
+--@debug@
+	self:AddOptionToOptionsLayer(GCF.Menu,'DBG')
+	self:AddOptionToOptionsLayer(GCF.Menu,'TRC')
+--@end-debug@
+	--GCF.Menu:SetParent(GCF)
+	local frame=GCF.Menu.frame
+	print(frame:GetFrameStrata())
+	print(frame:GetFrameLevel())
+	--frame:SetFrameStrata(GCF:GetFrameStrata())
+	--frame:SetFrameLevel(GCF:GetFrameLevel()+1)
+	--frame:SetScale(0.6)
+	GCF.Menu:SetPoint("TOPLEFT",GCF,"TOPLEFT",25,-20)
+	GCF.Menu:SetPoint("BOTTOMRIGHT",GCF,"BOTTOMRIGHT",-25,25)
+	frame:Show()
+	GCF.Menu:DoLayout()
+
+end
 ---
 -- Additional setup
 -- This method is called every time garrison mission panel is open because
@@ -2602,20 +2660,6 @@ function addon:StartUp(...)
 --@end-debug@
 	self:Unhook(GMF,"OnShow")
 	self:PermanentEvents()
-	GCF.Menu=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL')
-	self:AddOptionToOptionsLayer(GCF.Menu,'MSORT',200)
-	self:AddOptionToOptionsLayer(GCF.Menu,'ShowMissionControl',200)
---@debug@
-	self:AddOptionToOptionsLayer(GCF.Menu,'DBG')
-	self:AddOptionToOptionsLayer(GCF.Menu,'TRC')
---@end-debug@
-	GCF.Menu:SetParent(GCF)
-	GCF.Menu:SetFrameStrata(GCF:GetFrameStrata())
-	GCF.Menu:SetFrameLevel(GCF:GetFrameLevel()+1)
-	GCF.Menu.frame:SetScale(0.6)
-	GCF.Menu:SetPoint("TOPLEFT",GCF,"TOPLEFT",25,-25)
-	GCF.Menu:SetPoint("BOTTOMRIGHT",GCF,"BOTTOMRIGHT",-25,25)
-	GCF.Menu:Show()
 	self:GrowPanel()
 	self:SafeSecureHook("GarrisonMissionButton_AddThreatsToTooltip")
 	self:SafeSecureHook("GarrisonMissionButton_SetRewards")
@@ -2649,7 +2693,15 @@ function addon:StartUp(...)
 	self:BuildRunningMissionsCache()
 	self:Trigger("MSORT")
 end
--- probably not really needed, haven seen yet them firing out of garrison
+function addon:MarkAsNew(obj,key,message)
+	if (not db.news[key]) then
+		local f=CreateFrame("Frame",nil,obj,"GarrisonCommanderWhatsNew")
+		f.tooltip=message
+		f:SetPoint("BOTTOMLEFT",obj,"TOPRIGHT")
+		f:Show()
+	end
+end
+-- probably not really needed, havenr seen yet them firing out of garrison
 function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
@@ -2737,7 +2789,7 @@ end
 function addon:CleanUp()
 	self:UnhookAll()
 	self:CancelAllTimers()
-	GCF.Menu:Release()
+	if (GCF.Menu) then GCF.Menu:Release() GCF.Menu:Release() end
 	self:HookScript(GMF,"OnSHow","StartUp",true)
 	self:PermanentEvents() -- Reattaching permanent events
 	if (GarrisonFollowerTooltip.fs) then
@@ -2905,10 +2957,8 @@ function addon:GrowPanel()
 --		GMF:SetPoint("TOPRIGHT",GCF,"BOTTOMRIGHT",0,-25)
 	end
 	GMF:ClearAllPoints()
-	GMF:SetPoint("TOPLEFT",GCF,"BOTTOMLEFT",0,25)
-	GMF:SetPoint("TOPRIGHT",GCF,"BOTTOMRIGHT",0,25)
-	GMF.CloseButton:SetAllPoints(GCF.CloseButton)
-	GCF.CloseButton:Hide()
+	GMF:SetPoint("TOPLEFT",GCF,"BOTTOMLEFT",0,23)
+	GMF:SetPoint("TOPRIGHT",GCF,"BOTTOMRIGHT",0,23)
 end
 ---@function
 -- Return bias color for follower and mission
@@ -2948,10 +2998,12 @@ function addon:FillFollowerButton(frame,followerID,missionID)
 			frame.Name:Hide()
 			frame.Class:Hide()
 			frame.Status:Hide()
+			frame.PortraitFrame.Level:SetText("")
+		else
+			frame.PortraitFrame.Level:SetText(NONE)
 		end
 		frame.PortraitFrame.LevelBorder:SetAtlas("GarrMission_PortraitRing_LevelBorder");
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
-		frame.PortraitFrame.Level:SetText("")
 		--frame:SetScript("OnEnter",nil)
 		GarrisonFollowerPortrait_Set(frame.PortraitFrame.Portrait)
 		frame.info=nil
@@ -3289,7 +3341,6 @@ function addon:RenderButton(button,rewards,numRewards)
 		button:SetWidth(width+600)
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
-	local tw=button:GetWidth() - 165 - 2  + select(4,button.Rewards[1]:GetPoint(1))
 	if (not button.xp) then
 		button.xp=button:CreateFontString(nil, "ARTWORK", "QuestMaprewardsFont")
 		button.xp:SetPoint("TOPRIGHT",button.Rewards[1],"TOPRIGHT")
@@ -3302,15 +3353,19 @@ function addon:RenderButton(button,rewards,numRewards)
 	if (not GMF.MissionTab.MissionList.showInProgress) then
 		button.xp:SetFormattedText("Xp: %d (approx)",self:GetMissionData(missionID,'globalXp'))
 		button.xp:SetTextColor(self:GetDifficultyColors(self:GetMissionData(missionID,'totalXp')/3000*100))
+	else
+		button.xp:Hide()
 	end
 	--button.Title:SetText("123456789012345678901234567890123456789012345678901234567890") -- Used for design
-	if (button.Title:GetWidth() + button.Summary:GetWidth() + button.xp:GetWidth() < tw - numRewards * 65 ) then
-		button.Title:SetPoint("LEFT", 165, bigscreen and 20 or 30);
+	local offset= bigscreen and (numRewards *65) or (button.info.numFollowers+numRewards) *65
+	local tw=button:GetWidth() - 165
+	if (button.Title:GetWidth() + button.Summary:GetWidth() + button.xp:GetWidth() < (tw -offset) ) then
+		button.Title:SetPoint("LEFT", 165, 5);
 		button.Summary:ClearAllPoints();
 		button.Summary:SetPoint("BOTTOMLEFT", button.Title, "BOTTOMRIGHT", 8, 0);
 	else
-		button.Title:SetPoint("LEFT", 165, 30);
-		button.Title:SetWidth(tw - numRewards * 65);
+		button.Title:SetPoint("LEFT", 165, 25);
+		button.Title:SetWidth(tw - offset);
 		button.Summary:ClearAllPoints();
 		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
 	end
@@ -3636,7 +3691,7 @@ function addon:GetScroller(title,type)
 	scrollerWindow:Show()
 	return scroll
 end
-function addon:AddLabel(obj,text,...)
+function addon:AddRow(obj,text,...)
 		local l=AceGUI:Create("Label")
 		l:SetText(text)
 		l:SetColor(...)
@@ -3651,7 +3706,7 @@ function addon:cutePrint(scroll,level,k,v)
 		return
 	end
 	if (type(v)=="table") then
-		self:AddLabel(scroll,level..C(k,"Azure")..":" ..C("Table","Orange"))
+		self:AddRow(scroll,level..C(k,"Azure")..":" ..C("Table","Orange"))
 		for kk,vv in pairs(v) do
 			self:cutePrint(scroll,level .. "  ",kk,vv)
 		end
@@ -3659,7 +3714,7 @@ function addon:cutePrint(scroll,level,k,v)
 		if (type(v)=="string" and v:sub(1,2)=='0x') then
 			v=v.. " " ..tostring(self:GetFollowerData(v,'name'))
 		end
-		self:AddLabel(scroll,level..C(k,"White")..":" ..C(v,"Yellow"))
+		self:AddRow(scroll,level..C(k,"White")..":" ..C(v,"Yellow"))
 	end
 end
 function addon:DumpFollowerMissions(missionID)
@@ -3896,6 +3951,7 @@ do
 	local currentMission=0
 	local x=0
 	function addon:GMCCalculateMissions(this,elapsed)
+		db.MissionControl=true
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
 			if timeElapsed >= 1 then
@@ -4419,7 +4475,7 @@ setmetatable(addon,{
 		if type(shadow[key]=="function") then
 			if (trc) then
 				local t=GetTime()
-				pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s]",t-floor(t),key))
+				pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s] Mem: %f4.3",t-floor(t),key,	GetAddOnMemoryUsage("GarrisonCommander")/1024))
 			end
 			return shadow[key]
 		else
@@ -4427,5 +4483,5 @@ setmetatable(addon,{
 		end
 	end
 })
-
+_G.GCF=GCF
 --@end-debug@

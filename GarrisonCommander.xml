@@ -1,17 +1,41 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
 	<Script file="GarrisonCommander.lua"/>
-	<Frame name="GarrisonCommanderTitle" inherits="GarrisonUITemplate" enableMouse="true" topevel="true" virtual="true">
-		<Size x="150" y="80"/>
+	<Button name="GarrisonCommanderWhatsNew" inherits="UIPanelInfoButton" hidden="true" virtual="true">
+		<Scripts>
+			<OnLeave>GameTooltip:FadeOut()</OnLeave>
+			<OnEnter>
+				if self.tooltip then
+					GameTooltip:SetOwner(self,"ANCHOR_TOPLEFT")
+					GameTooltip:AddLine(self.tooltip)
+					GameTooltip:Show()
+				end
+			</OnEnter>
+		</Scripts>
+	</Button>
+	<Frame name="GarrisonCommanderTitle" inherits="GarrisonUITemplate" enableMouse="true" topevel="true" hidden="true" virtual="true">
+		<Size x="150" y="85"/>
 		<Frames>
-			<Button parentKey="Help" inherits="UIPanelInfoButton" hidden="true">
+			<CheckButton parentKey="Pin">
+					<Size x="32" y="32" />
 				<Anchors>
-					<Anchor point="RIGHT" x="0" y="0"/>
+					<Anchor point="TOPRIGHT" x="4" y="5"/>
 				</Anchors>
+				<NormalTexture file="Interface\CHATFRAME\UI-ChatIcon-Minimize-Up">
+					<Size x="32" y="32" />
+				</NormalTexture>
+				<HighlightTexture file="Interface\CHATFRAME/UI-ChatIcon-BlinkHilight" alphaMode="ADD">
+					<Size x="32" y="32" />
+				</HighlightTexture>
+				<CheckedTexture file="Interface\CHATFRAME\UI-ChatIcon-Maximize-Up">
+					<Size x="32" y="32" />
+				</CheckedTexture>
 				<Scripts>
-					<OnLeave>GameTooltip:FadeOut()</OnLeave>
+					<OnLeave>
+						GameTooltip:FadeOut()
+					</OnLeave>
 				</Scripts>
-			</Button>
+			</CheckButton>
 		</Frames>
 		<Layers>
 			<Layer level="OVERLAY">
@@ -23,9 +47,9 @@
 					<TexCoords left="0" right="0.5" top="0.5" bottom="1"/>
 				</Texture>
 				<FontString parentKey="Signature" inherits="QuestTitleFontBlackShadow" justifyH="RIGHT" justifyV="TOP" text="Garrison Commander" >
-					<Size x="400" y="80"/>
+					<Size x="220" y="80"/>
 					<Anchors>
-						<Anchor point="TOPLEFT" relativeKey="$parent.Shield" relativePoint="TOPRIGHT" x="-25" y="-2"/>
+						<Anchor point="TOPRIGHT"  x="-30" y="-2"/>
 					</Anchors>
 				</FontString>
 			</Layer>
