@@ -21,13 +21,15 @@
 				<Anchors>
 					<Anchor point="TOPRIGHT" x="4" y="5"/>
 				</Anchors>
-				<NormalTexture file="Interface\CHATFRAME\UI-ChatIcon-Minimize-Up">
+				<NormalTexture file="Interface\CHATFRAME\UI-ChatIcon-ScrollUp-Up">
 					<Size x="32" y="32" />
 				</NormalTexture>
+				<!--
 				<HighlightTexture file="Interface\CHATFRAME/UI-ChatIcon-BlinkHilight" alphaMode="ADD">
 					<Size x="32" y="32" />
 				</HighlightTexture>
-				<CheckedTexture file="Interface\CHATFRAME\UI-ChatIcon-Maximize-Up">
+				-->
+				<CheckedTexture file="Interface\CHATFRAME\UI-ChatIcon-ScrollDown-Up">
 					<Size x="32" y="32" />
 				</CheckedTexture>
 				<Scripts>
@@ -54,6 +56,16 @@
 				</FontString>
 			</Layer>
 		</Layers>
+		<Scripts>
+			<OnLeave>GameTooltip:FadeOut()</OnLeave>
+			<OnEnter>
+				if self.tooltip then
+					GameTooltip:SetOwner(self,"ANCHOR_TOPLEFT")
+					GameTooltip:AddLine(self.tooltip)
+					GameTooltip:Show()
+				end
+			</OnEnter>
+		</Scripts>
 	</Frame>
 	<Button name="GarrisonCommanderMissionPageFollowerTemplateSmall" virtual="true">
 		<Size x="70" y="58"/>
@@ -153,7 +165,19 @@
 		</Layers>
 	</Frame>
 	<Button name="GarrisonCommanderMissionButton"  virtual="true">
-		<Size x="510" y="80"/>
+		<Size x="1" y="80"/>
+		<Layers>
+			<Layer level="OVERLAY" >
+				<FontString parentKey="NotFull" inherits="GameFontHighlightSmall" justifyH="CENTER" justifyV="CENTER" text="GARRISON_PARTY_NOT_FULL_TOOLTIP" >
+					<Size x="100" y="58"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.PortraitFrame" relativePoint="TOPRIGHT" x="0" y="0"/>
+						<Anchor point="TOPRIGHT" relativeKey="$parent" relativePoint="TOPRIGHT" x="-10" y="0"/>
+					</Anchors>
+					<Color r="1.0" g="0.0" b="0.0" a="0.5" />
+				</FontString>
+			</Layer>
+		</Layers>
 	</Button>
 	<Button name="GarrisonCommanderMissionListButtonTemplate" inherits="GarrisonMissionListButtonTemplate" virtual="true">
 		<Size x="450" y="80" />

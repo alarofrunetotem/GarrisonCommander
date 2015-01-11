@@ -43,6 +43,8 @@ local MPPage
 local dbg=false
 local trc=false
 local pin=false
+local baseHeight
+local minHeight
 
 if (LibDebug) then LibDebug() end
 local function tcopy(obj, seen)
@@ -132,9 +134,6 @@ local GMFFollowers=GarrisonMissionFrameFollowers
 local GMFMissionPage=GMF.MissionTab.MissionPage
 local GMFMissionPageFollowers = GMFMissionPage.Followers
 local GMFMissions=GarrisonMissionFrameMissions
-local GMFMissionsTab1=GarrisonMissionFrameMissionsTab1
-local GMFMissionsTab2=GarrisonMissionFrameMissionsTab2
-local GMFMissionsTab3=GarrisonMissionFrameMissionsTab2
 local GMFRewardPage=GMF.MissionComplete
 local GMFRewardSplash=GMFMissions.CompleteDialog
 local GMFMissionsListScrollFrameScrollChild=GarrisonMissionFrameMissionsListScrollFrameScrollChild
@@ -142,9 +141,6 @@ local GMFMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
 local GMFFollowersListScrollFrameScrollChild=GarrisonMissionFrameFollowersListScrollFrameScrollChild
 local GMFFollowersListScrollFrame=GarrisonMissionFrameFollowersListScrollFrame
 local GMFMissionListButtons=GMF.MissionTab.MissionList.listScroll.buttons
-local GMFTab1=GarrisonMissionFrameTab1
-local GMFTab2=GarrisonMissionFrameTab2
-local GMFTab3=_G.GarrisonMissionFrameTab3
 local GarrisonFollowerTooltip=GarrisonFollowerTooltip
 local GarrisonMissionFrameMissionsListScrollFrame=GarrisonMissionFrameMissionsListScrollFrame
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE
@@ -340,10 +336,10 @@ local followerMissions=setmetatable({},{
 
 --
 -- Temporary party management
-local openParty,isInParty,pushFollower,removeFollower,closeParty,roomInParty,storeFollowers,dumpParty
+local openParty,partyIgnore,isPartyIgnored,isInParty,pushFollower,removeFollower,fillParty,closeParty,roomInParty,storeFollowers,dumpParty,isPartyEmpty
 
 do
-	local ID,frames,members,maxFollowers=0,{},{},1
+	local ID,frames,members,maxFollowers,ignored=0,{},{},1,{}
 	---@function [parent=#party] openParty
 	function openParty(missionID,followers)
 		if (#frames > 0 or #members > 0) then
@@ -356,6 +352,16 @@ do
 		end
 		ID=missionID
 	end
+
+	---@function [parent=#party] partyIgnore
+	function partyIgnore(followerID,soft)
+		ignored[followerID]=soft and 1 or 2
+	end
+	---@function [parent=#party] isPartyIgnored
+	function isPartyIgnored(followerID)
+		return ignored[followerID]
+	end
+
 	---@function [parent=#party] isInParty
 	function isInParty(followerID)
 		return inTable(members,followerID)
@@ -364,6 +370,11 @@ do
 	---@function [parent=#party] roomInParty
 	function roomInParty()
 		return maxFollowers-#members
+	end
+
+	---@function [parent=#party] isPartyEmpty
+	function isPartyEmpty()
+		return maxFollowers>0 and #members==0
 	end
 
 	---@function [parent=#party] dumpParty
@@ -411,6 +422,20 @@ do
 		end
 		return #table
 	end
+	---@function [parent=#party] fillParty
+	function fillParty()
+		if roomInParty() < 1 then return end
+		for followerID,soft in pairs(ignored) do
+			if soft==1 then
+				if not isInParty(followerID) then
+					pushFollower(followerID)
+				end
+				if (roomInParty()<=0) then
+					break
+				end
+			end
+		end
+	end
 
 	---@function [parent=#party] closeParty
 	function closeParty()
@@ -432,6 +457,7 @@ do
 		end
 		wipe(frames)
 		wipe(members)
+		wipe(ignored)
 		return perc or 0
 	end
 end
@@ -916,6 +942,28 @@ local function best(fid1,fid2,counters)
 	end
 	return fid1
 end
+local epicMountTrait=221
+local extraTrainingTrait=80 --all followers +35
+local fastLearnerTrait=29 -- only this follower +50
+local hearthStoneProTrait=236 -- all followers +36
+local scavengerTrait=79 -- More resources
+function addon:AddTraitsToParty(missionID,mission,skipBusy,skipMaxed)
+	local t=counters[missionID]
+	if (t) then
+		for i=1,#t do
+			local follower=t[i]
+			if (follower.trait and not isPartyIgnored(follower.followerID) and not isInParty(follower.followerID)) then
+				if mission.resources > 0 and follower.name==scavengerTrait then
+					pushFollower(follower.followerID)
+				elseif mission.xpOnly  and (follower.name==extraTrainingTrait or follower.name==hearthStoneProTrait) then
+					pushFollower(follower.followerID)
+				elseif mission.durationSeconds > GARRISON_LONG_MISSION_TIME  and follower.name==epicMountTrait then
+					pushFollower(follower.followerID)
+				end
+			end
+		end
+	end
+end
 function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 	local perc=select(4,G.GetPartyMissionInfo(missionID)) -- If percentage is already 100, I'll try and add the most useless character
 	local candidateMissions=10000
@@ -932,7 +980,7 @@ function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 		for i=1,totFollowers do
 			local data=followersCache[i]
 			local followerID=data.followerID
-			if (not self:IsIgnored(followerID,missionID) and not(skipMaxed and data.maxed) and not isInParty(followerID) and self:GetFollowerStatusForMission(followerID,skipBusy)) then
+			if (not isPartyIgnored(followerID) and not isInParty(followerID) and not self:IsIgnored(followerID,missionID) and not(skipMaxed and data.maxed and mission.xpOnly) and not isInParty(followerID) and self:GetFollowerStatusForMission(followerID,skipBusy)) then
 				local missions=#followerMissions[followerID]
 				local rank=data.rank
 				local quality=data.quality
@@ -952,7 +1000,7 @@ function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 							break --continue
 						end
 					end
-					-- This candidate is not improving success chance, minimize
+					-- This candidate is not improving success chance or we are already at 100%, minimize
 					if (i < totFollowers  and data.maxed) then
 						break  -- Pointless using a maxed follower if we  have more follower to try
 					end
@@ -1003,57 +1051,51 @@ function addon:MatchMaker(missionID,mission,party)
 	local maxedSkipped=new()
 	local ignoredSkipped=new()
 	openParty(missionID,mission.numFollowers)
-	if (type(slots)=='table') then
-		for i=1,#slots do
-			local threat=cleanicon(slots[i].icon)
-			local candidates=ct[threat]
-			local choosen
-			for i=1,#candidates do
-				local followerID=missionCounters[candidates[i]].followerID
-				if followerID then
-					if(not addon:GetFollowerStatusForMission(followerID,skipBusy)) then
-						if (dbg) then print("Skipped",n[followerID],"due to skipbusy" ) end
-					elseif (self:IsIgnored(followerID,missionID)) then
-						tinsert(ignoredSkipped,followerID)
-						if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
-					elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
-						tinsert(maxedSkipped,followerID)
-						if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
-					else
-						choosen=best(choosen,candidates[i],missionCounters)
-						if (dbg) then print("Taken",n[missionCounters[choosen].followerID]) end
+	-- Preloading skipped ones in party table.
+	if (missionCounters) then
+		for i=1,#missionCounters do
+			local followerID=missionCounters[i].followerID
+			if (self:IsIgnored(followerID,missionID)) then
+				if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
+				partyIgnore(followerID,true)
+			elseif not addon:GetFollowerStatusForMission(followerID,skipBusy) then
+				if (dbg) then print("Skipped",n[followerID],"due to busy" ) end
+				partyIgnore(followerID)
+			elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
+				if (dbg) then print("Skipped",n[followerID],"due to busy" ) end
+				partyIgnore(followerID,true)
+			end
+		end
+		if (type(slots)=='table') then
+			for i=1,#slots do
+				local threat=cleanicon(slots[i].icon)
+				local candidates=ct[threat]
+				local choosen
+				for i=1,#candidates do
+					local followerID=missionCounters[candidates[i]].followerID
+					if followerID then
+						if(not isPartyIgnored(followerID)) then
+							choosen=best(choosen,candidates[i],missionCounters)
+							if (dbg) then print("Taken",n[missionCounters[choosen].followerID]) end
+						end
 					end
 				end
-			end
-			if (choosen) then
-				if (type(missionCounters[choosen]) ~="table") then
-					trace(format("%s %s %d %d",mission.name,threat,missionID,tonumber(choosen) or 0))
+				if (choosen) then
+					if (type(missionCounters[choosen]) ~="table") then
+						trace(format("%s %s %d %d",mission.name,threat,missionID,tonumber(choosen) or 0))
+					end
+					pushFollower(missionCounters[choosen].followerID)
 				end
-				pushFollower(missionCounters[choosen].followerID)
+				if (roomInParty()==0) then
+					break
+				end
 			end
-			if (roomInParty()==0) then
-				break
-			end
+		else
+			xprint("Mission",missionID,"has no slots????")
 		end
-	else
-		xprint("Mission",missionID,"has no slots????")
+		if roomInParty() > 0 then self:AddTraitsToParty(missionID,mission) end
 	end
-	self:CompleteParty(missionID,mission,skipBusy,skipMaxed)
-	if (roomInParty()>0) then
-		--We try to use maxed, then ignored followers
-		for i=1,#maxedSkipped do
-			pushFollower(maxedSkipped[i])
-			if (roomInParty()==0) then
-				break
-			end
-		end
-		for i=1,#ignoredSkipped do
-			pushFollower(ignoredSkipped[i])
-			if (roomInParty()==0) then
-				break
-			end
-		end
-	end
+	--if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,skipMaxed) end
 	storeFollowers(party.members)
 	party.full= roomInParty()==0
 	party.perc=closeParty()
@@ -1486,7 +1528,10 @@ function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
 --@debug@
 	xprint(event,...)
 --@end-debug@
-	if (GCF) then GCF:Hide() end
+	if (GCF) then
+		self:RemoveMenu()
+		GCF:Hide()
+	end
 end
 function addon:EventGARRISON_MISSION_LIST_UPDATE(event)
 	local n=0
@@ -1621,7 +1666,11 @@ local lastCPU=0
 local startTime=GetTime()
 -- Keeping it as a nice example of coroutine management.. but not using it anymore
 function addon:Clock()
-	collectgarbage("step",20)
+	if (GMFMissions.showInProgress)	 then
+		collectgarbage("step",200)
+	else
+		collectgarbage("step",100)
+	end
 --@debug@
 	if (not dbgFrame) then
 		dbgFrame=AceGUI:Create("Window")
@@ -1985,8 +2034,11 @@ function addon:GenerateMissionButton()
 		local function SetMission(self,mission,missionID)
 			self.frame.info=mission
 			addon:FillMissionButton(self.frame,true)
-			self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
-			self.frame:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+			self.frame:EnableMouse(true)
+			self.frame:SetScript("OnEnter",GarrisonMissionPageFollowerFrame_OnEnter)
+			self.frame:SetScript("OnLeave",GarrisonMissionPageFollowerFrame_OnLeave)
+			--self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
+			--self.frame:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
 			local party
 			for i=1,#GMC.ml.Parties do
 				party=GMC.ml.Parties[i]
@@ -2073,8 +2125,7 @@ function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
 	print("OnCreate",o.frame:GetFrameStrata(),o.frame:GetFrameLevel())
 	o:SetLayout("Flow")
-	o:SetCallback("OnClose",function(widget) widget.frame:SetScale(1.0) widget:Release() end)
-	o:SetCallback("OnRelease",function(widget) widget.frame:SetScale(1.0) widget.frame:Show() print("OnRelease",widget.frame:GetFrameStrata(),widget.frame:GetFrameLevel()) end)
+	o:SetCallback("OnClose",function(widget) widget:Release() end)
 	for i=1,select('#',...) do
 		self:AddOptionToOptionsLayer(o,select(i,...))
 	end
@@ -2131,6 +2182,7 @@ function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 		o:AddChildren(widget)
 	end
 end
+
 function addon:Options()
 	-- Main Garrison Commander Header
 	GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
@@ -2142,32 +2194,32 @@ function addon:Options()
 	GCF:SetFrameStrata(GMF:GetFrameStrata())
 	GCF:SetFrameLevel(GMF:GetFrameLevel()-2)
 	if (not bigscreen) then GCF:SetHeight(GCF:GetHeight()+35) end
-	local baseHeight=GCF:GetHeight()
-	local minHeight=47
+	baseHeight=GCF:GetHeight()
+	minHeight=47
 	GCF.CloseButton:SetScript("OnClick",nil)
 	GCF.Pin:SetAllPoints(GCF.CloseButton)
 	GCF:SetWidth(BIGSIZEW)
 	GCF:SetPoint("TOP",UIParent,0,-60)
 	if (self:GetBoolean("PIN")) then
-		self:AddMenu()
 		GCF.Pin:SetChecked(true)
 	else
-		GCF:SetHeight(minHeight)
 		GCF.Pin:SetChecked(false)
 	end
+
 	do
 		local baseHeight=baseHeight
 		local minHeight=minHeight
 		local baseStrata=GCF:GetFrameStrata()
 		local baseLevel=GCF:GetFrameStrata()
-		local speed=2
+		local speed=3
 		local function shrink(this)
-			if (this.Menu) then this.Menu:Release() this.Menu=nil end
+			addon:RemoveMenu()
 			this:SetScript("OnUpdate",function(me,ts)
 				local h=me:GetHeight()
 				if (h<=45) then
 					me:SetHeight(45)
 					me:SetScript("OnUpdate",nil)
+					GCF.tooltip=L["You can open the menu clicking on the icon in top right corner"]
 				else
 					me:SetHeight(h-2)
 				end
@@ -2180,6 +2232,8 @@ function addon:Options()
 					me:SetScript("OnUpdate",nil)
 					me:SetHeight(baseHeight)
 					if (not me.Menu) then addon:AddMenu() end
+					GCF.tooltip=nil
+					me.Menu:DoLayout()
 				else
 					me:SetHeight(h+2)
 				end
@@ -2637,19 +2691,23 @@ function addon:AddMenu()
 	self:AddOptionToOptionsLayer(GCF.Menu,'DBG')
 	self:AddOptionToOptionsLayer(GCF.Menu,'TRC')
 --@end-debug@
-	--GCF.Menu:SetParent(GCF)
-	local frame=GCF.Menu.frame
-	print(frame:GetFrameStrata())
-	print(frame:GetFrameLevel())
-	--frame:SetFrameStrata(GCF:GetFrameStrata())
-	--frame:SetFrameLevel(GCF:GetFrameLevel()+1)
-	--frame:SetScale(0.6)
-	GCF.Menu:SetPoint("TOPLEFT",GCF,"TOPLEFT",25,-20)
-	GCF.Menu:SetPoint("BOTTOMRIGHT",GCF,"BOTTOMRIGHT",-25,25)
+	local menu=GCF.Menu
+	local frame=menu.frame
 	frame:Show()
-	GCF.Menu:DoLayout()
-
+	menu:ClearAllPoints()
+	menu:SetPoint("TOPLEFT",GCF,"TOPLEFT",25,-18)
+	menu:SetWidth(GCF:GetWidth()-50)
+	menu:SetHeight(GCF:GetHeight()-50)
+	menu:DoLayout()
 end
+function addon:RemoveMenu()
+	print("Removing menu")
+	if (GCF.Menu) then
+		pcall(GCF.Menu.Release,GCF.Menu)
+		GCF.Menu=nil
+	end
+end
+
 ---
 -- Additional setup
 -- This method is called every time garrison mission panel is open because
@@ -2658,9 +2716,15 @@ function addon:StartUp(...)
 --@debug@
 	xprint("Startup")
 --@end-debug@
-	self:Unhook(GMF,"OnShow")
-	self:PermanentEvents()
 	self:GrowPanel()
+	self:Unhook(GMF,"OnShow")
+	if (self:GetBoolean("PIN")) then
+		GCF:SetHeight(baseHeight)
+		self:AddMenu()
+	else
+		GCF:SetHeight(minHeight)
+	end
+	self:PermanentEvents()
 	self:SafeSecureHook("GarrisonMissionButton_AddThreatsToTooltip")
 	self:SafeSecureHook("GarrisonMissionButton_SetRewards")
 	if (bigscreen) then
@@ -2789,7 +2853,7 @@ end
 function addon:CleanUp()
 	self:UnhookAll()
 	self:CancelAllTimers()
-	if (GCF.Menu) then GCF.Menu:Release() GCF.Menu:Release() end
+	self:RemoveMenu()
 	self:HookScript(GMF,"OnSHow","StartUp",true)
 	self:PermanentEvents() -- Reattaching permanent events
 	if (GarrisonFollowerTooltip.fs) then
@@ -2998,17 +3062,20 @@ function addon:FillFollowerButton(frame,followerID,missionID)
 			frame.Name:Hide()
 			frame.Class:Hide()
 			frame.Status:Hide()
-			frame.PortraitFrame.Level:SetText("")
 		else
-			frame.PortraitFrame.Level:SetText(NONE)
+			frame.PortraitFrame.Empty:SetAlpha(0.5)
+			frame.PortraitFrame.Portrait:Hide()
+			frame.PortraitFrame.LevelBorder:SetAtlas("GarrMission_PortraitRing_iLvlBorder");
+			frame.PortraitFrame.LevelBorder:SetWidth(70);
+			frame.PortraitFrame.Level:SetText("Missing")
 		end
 		frame.PortraitFrame.LevelBorder:SetAtlas("GarrMission_PortraitRing_LevelBorder");
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
-		--frame:SetScript("OnEnter",nil)
 		GarrisonFollowerPortrait_Set(frame.PortraitFrame.Portrait)
 		frame.info=nil
 		return
 	end
+	frame.PortraitFrame.Portrait:Show()
 	local info=G.GetFollowerInfo(followerID)
 	--local info=followers[ID]
 	frame.info=info
@@ -3951,7 +4018,7 @@ do
 	local currentMission=0
 	local x=0
 	function addon:GMCCalculateMissions(this,elapsed)
-		db.MissionControl=true
+		db.news.MissionControl=true
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
 			if timeElapsed >= 1 then
@@ -4070,7 +4137,7 @@ function addon:GMCBuildPanel()
 	local list=self:GMCBuildMissionList()
 	duration:SetPoint("TOPLEFT",0,-50)
 	chance:SetPoint("TOPLEFT",duration,"TOPRIGHT",bigscreen and 50 or 10,0)
-	priorities:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",10,-40)
+	priorities:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",25,-40)
 	rewards:SetPoint("TOPLEFT",priorities,"TOPRIGHT",bigscreen and 50 or 15,0)
 	list:SetPoint("TOPLEFT",chance,"TOPRIGHT",10,0)
 	list:SetPoint("BOTTOMRIGHT",GMF,"BOTTOMRIGHT",-25,25)
@@ -4096,31 +4163,30 @@ function addon:GMCBuildPanel()
 	GMC.Credits:SetFormattedText("Original concept and interface by %s",C("Motig","Red") )
 	GMC.Credits:SetPoint("BOTTOMLEFT",25,25)
 end
-local rewardRefresh
-do
-	---@function [parent=#GMC] rewardRefresh
-	function rewardRefresh()
-		for i=1,#GMC.ignoreFrames do
-			local frame=GMC.ignoreFrames[i]
-			local allowed=GMC.settings.allowedRewards[frame.key]
-			frame.chest:SetDesaturated(not allowed)
-			frame.icon:SetDesaturated(not allowed)
-			if (GMC.settings.useOneChance) then
-				frame.slider:Disable()
-				frame.slider.Text:SetTextColor(C.Silver())
-			else
-				frame.slider:Enable()
-				frame.slider.Text:SetTextColor(C.Green())
-			end
-		end
-		if (GMC.settings.useOneChance) then
-			GMC.ct:SetTextColor(C.Green())
-			GMC.cs:Enable()
+function addon:GMCRewardRefresh()
+	print("ignoreframes:",#GMC.ignoreFrames)
+	local single=GMC.settings.useOneChance
+	for i=1,#GMC.ignoreFrames do
+		local frame=GMC.ignoreFrames[i]
+		local allowed=GMC.settings.allowedRewards[frame.key]
+		frame.icon:SetDesaturated(not allowed)
+		local a1,o,a2,x,y=frame:GetPoint(1)
+		if (not single) then
+			frame.chest:Show()
+			frame.slider:Show()
+			frame:SetPoint(a1,o,a2,0,y)
 		else
-			GMC.ct:SetTextColor(C.Silver())
-			GMC.cs:Disable()
+			frame.chest:Hide()
+			frame.slider:Hide()
+			frame:SetPoint(a1,o,a2,100,y)
 		end
-
+	end
+	if (single) then
+		GMC.cp:SetDesaturated(false)
+		GMC.ct:SetTextColor(C.Green())
+	else
+		GMC.cp:SetDesaturated(true)
+		GMC.ct:SetTextColor(C.Silver())
 	end
 end
 function addon:GMCBuildChance()
@@ -4160,7 +4226,7 @@ function addon:GMCBuildChance()
 	GMC.ck:SetPoint("TOPLEFT",GMC.cs,"BOTTOMLEFT",-60,-10)
 	GMC.ck:SetScript("OnClick",function(this)
 		GMC.settings.useOneChance=this:GetChecked()
-		rewardRefresh()
+		addon:GMCRewardRefresh()
 	end)
 	return GMC.cf
 end
@@ -4265,8 +4331,8 @@ function addon:GMCBuildRewards()
 			frame.slider=factory:Slider(frame,0,100,chance or 100,chance or 100)
 			frame.slider:SetWidth(128)
 			frame.slider:SetPoint('BOTTOMLEFT',60,0)
-			frame.slider.Text:SetTextColor(C.Green())
 			frame.slider.Text:SetFontObject('NumberFont_Outline_Med')
+			frame.slider.Text:SetTextColor(C.Green())
 			frame.slider.isPercent=true
 			frame.slider:SetScript("OnValueChanged",function(this,value)
 				GMC.settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
@@ -4277,13 +4343,10 @@ function addon:GMCBuildRewards()
 			frame.chest:SetAtlas(chestTexture)
 			frame.chest:SetSize((209-(209*0.25))*0.30, (155-(155*0.25)) * 0.30)
 			frame.chest:SetPoint('CENTER',frame.slider, 0, 25)
-			frame.icon:SetDesaturated(not allowed)
-			frame.chest:SetDesaturated(not allowed)
-			rewardRefresh()
 			frame:SetScript('OnClick', function(this)
 				local allowed=  this.icon:IsDesaturated() -- ID it was desaturated, I want it allowed, now
 				GMC.settings.allowedRewards[this.key] = allowed
-				rewardRefresh()
+				addon:GMCRewardRefresh()
 			end)
 			frame:SetScript('OnEnter', function(this)
 				GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
@@ -4295,10 +4358,12 @@ function addon:GMCBuildRewards()
 			GMC.ignoreFrames[i] = frame
 			ref=frame
 	end
+	self:GMCRewardRefresh()
 	GMC.aif:SetSize(256, (scale*h+gap) * #t)
 	GMC.itf2:SetPoint('TOPLEFT',ref,'BOTTOMLEFT', 0, -15)
 	return GMC.aif
 end
+
 local addPriorityRule,prioRefresh,removePriorityRule,prioMenu,prioTitles,prioCheck,prioVoices
 do
 -- 1 = item, 2 = folitem, 3 = exp, 4 = money, 5 = resource
@@ -4352,6 +4417,7 @@ do
 	end
 
 end
+_G.XPRIO=prioRefresh
 function addon:GMCBuildPriorities()
 	--Prio
 	GMC.pf = CreateFrame('FRAME', nil, GMC)
@@ -4467,21 +4533,21 @@ for k,v in pairs(addon) do
 		addon[k]=nil
 	end
 end
-setmetatable(addon,{
-	__index=function(table,key)
-		if key=="__CHAT__" then
-			shadow.chat=GetChatFrame('aDebug')
-		end
-		if type(shadow[key]=="function") then
-			if (trc) then
-				local t=GetTime()
-				pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s] Mem: %f4.3",t-floor(t),key,	GetAddOnMemoryUsage("GarrisonCommander")/1024))
-			end
-			return shadow[key]
-		else
-			return nil
-		end
+local mt=getmetatable(addon) or {}
+mt.__index=function(table,key)
+	if key=="__CHAT__" then
+		shadow.chat=GetChatFrame('aDebug')
 	end
-})
+	if type(shadow[key]=="function") then
+		if (trc) then
+			local t=GetTime()
+			pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s] Mem: %4.3f",(t-floor(t))*1000,key,	GetAddOnMemoryUsage("GarrisonCommander")/1024))
+		end
+		return shadow[key]
+	else
+		return nil
+	end
+end
+setmetatable(addon,mt)
 _G.GCF=GCF
 --@end-debug@
