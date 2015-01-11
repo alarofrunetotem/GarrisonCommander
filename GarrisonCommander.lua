@@ -15,9 +15,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
-xprint=function(...) print("DBG",...) end
-xdump=function(d,t) print(t) DevTools_Dump(d) end
-xtrace=trace
+--xprint=function(...) print("DBG",...) end
+--xdump=function(d,t) print(t) DevTools_Dump(d) end
+--xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -37,8 +37,6 @@ local bigscreen=true
 local GMM=false
 local MP=false
 local MPGoodGuy=false
-local ttcalled=false
-local rendercalled=false
 local MPPage
 local dbg=false
 local trc=false
@@ -1536,7 +1534,7 @@ end
 function addon:EventGARRISON_MISSION_LIST_UPDATE(event)
 	local n=0
 	for _,k in pairs(event) do n=n+1 end
-	print("GARRISON_MISSION_LIST_UPDATE",n,date("%d/%m/%y %H:%M:%S"))
+	xprint("GARRISON_MISSION_LIST_UPDATE",n,date("%d/%m/%y %H:%M:%S"))
 	local t=new()
 	G.GetAvailableMissions(t)
 	local justseen={}
@@ -1665,6 +1663,7 @@ local dbgFrame
 local lastCPU=0
 local startTime=GetTime()
 -- Keeping it as a nice example of coroutine management.. but not using it anymore
+local InProgress
 function addon:Clock()
 	if (GMFMissions.showInProgress)	 then
 		collectgarbage("step",200)
@@ -2035,10 +2034,10 @@ function addon:GenerateMissionButton()
 			self.frame.info=mission
 			addon:FillMissionButton(self.frame,true)
 			self.frame:EnableMouse(true)
-			self.frame:SetScript("OnEnter",GarrisonMissionPageFollowerFrame_OnEnter)
-			self.frame:SetScript("OnLeave",GarrisonMissionPageFollowerFrame_OnLeave)
-			--self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
-			--self.frame:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+			--self.frame:SetScript("OnEnter",GarrisonMissionPageFollowerFrame_OnEnter)
+			--self.frame:SetScript("OnLeave",GarrisonMissionPageFollowerFrame_OnLeave)
+			self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
+			self.frame:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
 			local party
 			for i=1,#GMC.ml.Parties do
 				party=GMC.ml.Parties[i]
@@ -2123,7 +2122,6 @@ end
 
 function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
-	print("OnCreate",o.frame:GetFrameStrata(),o.frame:GetFrameLevel())
 	o:SetLayout("Flow")
 	o:SetCallback("OnClose",function(widget) widget:Release() end)
 	for i=1,select('#',...) do
@@ -2308,7 +2306,18 @@ end
 function addon:IsMissionPage()
 	return GMF:IsShown() and GMFMissionPage:IsShown() and GMFFollowers:IsShown()
 end
+function addon:HookedGarrisonMissionList_SetTab(tab)
+	if (tab==GarrisonMissionFrameMissionsTab2) then
+		InProgress=true
+	else
+		InProgress=false
+	end
+	xprint("Inprogress",InProgress)
+end
 function addon:HookedGarrisonMissionFrame_SelectTab(id)
+	if (id~=1) then
+		InProgress=false
+	end
 	GMC:Hide()
 	GMC.tabMC:SetChecked(false)
 	wipe(GMCUsedFollowers)
@@ -2397,7 +2406,6 @@ function addon:FillMissionButton(button,gmc,...)
 			mission=self:GetMissionData(button.missionID)
 		end
 	end
-	if gmc then print("Arrivo da Mission control") print("Width is",button:GetWidth()) else print("Da dove arrivo?") end
 	if (not mission) then return end
 	button.Title:SetWidth(0);
 	button.Title:SetText(mission.name);
@@ -2683,7 +2691,6 @@ function addon:SetUp(...)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
 function addon:AddMenu()
-	print("Creating menu")
 	GCF.Menu=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL')
 	self:AddOptionToOptionsLayer(GCF.Menu,'MSORT')
 	self:AddOptionToOptionsLayer(GCF.Menu,'ShowMissionControl')
@@ -2701,7 +2708,6 @@ function addon:AddMenu()
 	menu:DoLayout()
 end
 function addon:RemoveMenu()
-	print("Removing menu")
 	if (GCF.Menu) then
 		pcall(GCF.Menu.Release,GCF.Menu)
 		GCF.Menu=nil
@@ -2736,6 +2742,7 @@ function addon:StartUp(...)
 	self:SafeSecureHook("GarrisonMissionPage_ShowMission")
 	self:SafeSecureHook("GarrisonMissionList_UpdateMissions")
 	self:SafeSecureHook("GarrisonMissionFrame_SelectTab")
+	self:SafeSecureHook("GarrisonMissionList_SetTab")
 
 	self:SafeHookScript(GMFMissions,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GMFFollowers,"OnShow")--,"GrowPanel")
@@ -3076,9 +3083,10 @@ function addon:FillFollowerButton(frame,followerID,missionID)
 		return
 	end
 	frame.PortraitFrame.Portrait:Show()
-	local info=G.GetFollowerInfo(followerID)
-	--local info=followers[ID]
-	frame.info=info
+	if not frame.info or frame.info.followerID ~= followerID then
+		frame.info=G.GetFollowerInfo(followerID)
+	end
+	local info=frame.info
 	frame.missionID=missionID
 	if (frame.Name) then
 		frame.Name:Show()
@@ -3128,7 +3136,6 @@ function addon:FillFollowerButton(frame,followerID,missionID)
 end
 -- pseudo static
 local scale=0.9
-local BFBCount=0
 function addon:BuildFollowersButtons(button,bg,limit)
 	if (bg.Party) then return end
 	bg.Party={}
@@ -3171,9 +3178,6 @@ function addon:BuildFollowersButtons(button,bg,limit)
 		button.Threats[1]:ClearAllPoints()
 		button.Threats[1]:SetPoint("TOPLEFT",165,0)
 	end
-	BFBCount=BFBCount+1
-	if (BFBCount > 8) then print ("OPS BFBcount=",BFBCount) end
-
 end
 function addon:RenderExtraButton(button,numRewards)
 	local panel=button.gcINDICATOR
@@ -3266,7 +3270,6 @@ function addon:CheckExpire(missionID)
 	print("Age+expire",date("%m/%d/%y %H:%M:%S",age+expire))
 	print("Delta",age+expire-time())
 end
-local BEXCount=0
 function addon:BuildExtraButton(button)
 	local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
 	local indicators=CreateFrame("Frame",nil,button,"GarrisonCommanderIndicators")
@@ -3280,8 +3283,6 @@ function addon:BuildExtraButton(button)
 	button.gcPANEL=bg
 	button.gcINDICATOR=indicators
 	if (not bg.Party) then self:BuildFollowersButtons(button,bg,3) end
-	BEXCount=BEXCount+1
-	if (BEXCount > 8) then print ("OPS Bexcount=",BEXCount) end
 end
 --function addon:GarrisonMissionButton_SetRewards(button,rewards,numrewards)
 --end
@@ -4164,7 +4165,6 @@ function addon:GMCBuildPanel()
 	GMC.Credits:SetPoint("BOTTOMLEFT",25,25)
 end
 function addon:GMCRewardRefresh()
-	print("ignoreframes:",#GMC.ignoreFrames)
 	local single=GMC.settings.useOneChance
 	for i=1,#GMC.ignoreFrames do
 		local frame=GMC.ignoreFrames[i]
@@ -4534,18 +4534,29 @@ for k,v in pairs(addon) do
 	end
 end
 local mt=getmetatable(addon) or {}
-mt.__index=function(table,key)
-	if key=="__CHAT__" then
-		shadow.chat=GetChatFrame('aDebug')
-	end
-	if type(shadow[key]=="function") then
-		if (trc) then
-			local t=GetTime()
-			pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s] Mem: %4.3f",(t-floor(t))*1000,key,	GetAddOnMemoryUsage("GarrisonCommander")/1024))
+do
+local tock=0
+local lastmem=0
+local lastkey="main"
+	mt.__index=function(table,key)
+		if key=="__CHAT__" then
+			shadow.chat=GetChatFrame('aDebug')
 		end
-		return shadow[key]
-	else
-		return nil
+		if type(shadow[key]=="function") then
+			if (trc) then
+				UpdateAddOnMemoryUsage()
+				local mymem=floor(GetAddOnMemoryUsage("GarrisonCommander")/1024*100)
+				if (mymem~=lastmem) then
+					local t=GetTime()
+					pp(date('%H:%M:%S',time()).. format(".%03d Calling [%s / %s ] Mem: %4.2f / %4.2f",(t-floor(t))*1000,lastkey,key,lastmem/100,mymem/100))
+					lastmem=mymem
+				end
+			end
+			lastkey=key
+			return shadow[key]
+		else
+			return nil
+		end
 	end
 end
 setmetatable(addon,mt)
