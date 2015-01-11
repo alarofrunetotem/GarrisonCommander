@@ -29,7 +29,7 @@ local MP=false
 local MPGoodGuy=false
 local ttcalled=false
 local rendercalled=false
-local MPPage
+local MPSwitch
 local dbg=false
 
 --@debug@
@@ -546,26 +546,14 @@ function addon:CheckMP()
 			MPGoodGuy=true
 			return
 		end
+		if GetAddOnMetadata("MasterPlan","Version")>="0.23" then
+			self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switches between Garrison Commander and Master Plan mission interface. Tested with MP >0.23"])
+			MPGoodGuy=true
+			MPSwitch=true
+		end
 		MP=true
-		self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switches between Garrison Commander and Master Plan mission interface. Tested with MP 0.20.x"])
-		if (GarrisonMissionFrameTab3) then -- Active Missions
-			GarrisonMissionFrameTab3:HookScript("OnClick",function(this)
-			GarrisonMissionList_SetTab(GarrisonMissionFrameMissionsTab2)
-			MPPage=3
-			end)
-		end
-		if (GarrisonMissionFrameTab1) then --Available Missions
-			GarrisonMissionFrameTab1:HookScript("OnClick",function(this)
-			GarrisonMissionList_SetTab(GarrisonMissionFrameMissionsTab1)
-			MPPage=1
-			end)
-		end
-		if (GarrisonMissionFrameTab2) then -- Followers list
-			GarrisonMissionFrameTab2:HookScript("OnClick",function(this)
-			GarrisonMissionFrame_SelectTab(2)
-			MPPage=2
-			end)
-		end
+		MPSwitch=true
+		self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switches between Garrison Commander and Master Plan mission interface. Tested with MP >0.20"])
 	end
 end
 function addon:CheckGMM()
@@ -579,7 +567,14 @@ function addon:ApplyIGM(value)
 	self:RefreshMission()
 end
 function addon:ApplyCKMP(value)
-	self:RefreshMission()
+	if (MasterPlanMissionList) then
+		if (value) then
+			MasterPlanMissionList:Hide()
+		else
+			MasterPlanMissionList:Show()
+		end
+		self:RefreshMission()
+	end
 end
 function addon:ApplyBIGSCREEN(value)
 		if (value) then
@@ -1507,7 +1502,7 @@ local MPShown=nil
 -- Keeping it as a nice example of coroutine management.. but not using it anymore
 function addon:Clock()
 	collectgarbage("step")
-	if (not MP) then return end
+	if (not MP or MPGoodGuy) then return  end
 	MPShown=not self:GetBoolean("CKMP")
 	local children={GMFMissions:GetChildren()}
 	for i=1,#children do
@@ -1525,7 +1520,7 @@ function addon:Clock()
 		GarrisonMissionFrameMissionsListScrollFrame:Hide()
 	else
 		GarrisonMissionFrameMissionsListScrollFrame:Show()
-		GarrisonMissionFrameMissionsListScrollFrame:SetParent(GMF)
+		GarrisonMissionFrameMissionsListScrollFrame:SetParent(GMFMissions)
 	end
 --@debug@
 	for k,d in pairs(coroutines) do
@@ -1645,19 +1640,16 @@ Since 2.0.2, the "big screen" mode became optional. If you choosed to disable it
 ]]
 if (MP) then
 text=text..[[
-<h3>Master Plan Detected</h3>
-<p>Master Plan hides Garrison Commander interface while retaining some of its features<br/>
-For example, when you click mission button, you will find your mission already populated by Garrison Commander, but you lose the ability to give Garrison Commander instructions about which followers it should choose.<br/>
-You can switch between MP and GC interface for missions checking and unchecking "Use GC Interface" checkbox.
+<h3>Clashing Master Plan Detected</h3>
+<p>You cold experience issues. Please update MP to the last revision or downgrade it to 0.18 for a smoother experience
 </p>
 ]]
 end
 if (MPGoodGuy) then
 text=text..[[
-<h3>Master Plan 0.18 Detected</h3>
-<p>This the last known version of Master Plan which leaves Blizzard UI available to other addons<br/>
-You loose Garrison Commander Active Mission page, but the one provided by MP is good enough.<br/>
-In order to see enhanced tooltips you need to hover on extra button or, if you disabled big screen, on percentage.
+<h3>Master Plan 0.18 or 0.23 or above Detected</h3>
+<p>This version of Master Plan plays not so bad with GC<br/>
+You can use the "Use GC interface" switch to regain GC interface with MP 0.23 or above.<br/>
 </p>
 ]]
 end
@@ -1719,7 +1711,7 @@ function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
 	xprint("Created options ", o)
 	o:SetLayout("Flow")
-	o:SetCallback("OnRelease",function(widget) widget.frame:SetScale(1.0) print("Released") end)
+	o:SetCallback("OnRelease",function(widget) widget.frame:SetScale(1.0) end)
 	o:SetCallback("OnClose",function(widget) widget.frame:SetScale(1.0) widget:Release() end)
 	for i=1,select('#',...) do
 		self:AddOptionToOptionsLayer(o,select(i,...))
@@ -2115,18 +2107,10 @@ function addon:SetUp(...)
 	xprint("Setup")
 --@end-debug@
 	SIZEV=GMF:GetHeight()
-	self:ScheduleTimer("CheckME",5)
 	self:CheckMP()
 	self:CheckGMM()
 	self:Options()
 	self:StartUp()
-end
-local function restore()
-	xprint("GC")
-end
-function addon:CheckME()
-	xprint("Tooltip:",ttcalled,"Rendering",rendercalled)
-	hooksecurefunc("GarrisonMissionList_UpdateMissions", restore)
 end
 ---
 -- Additional setup
@@ -2137,8 +2121,9 @@ function addon:StartUp(...)
 	xprint("Startup")
 --@end-debug@
 	self:Unhook(GMF,"OnShow")
+	self:Trigger("CKMP")
 	self:PermanentEvents()
-	GCF.Menu=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT')
+	GCF.Menu=self:CreateOptionsLayer(MPSwitch and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT')
 	GCF.Menu:SetParent(GCF)
 	GCF.Menu.frame:SetScale(0.6)
 	if (bigscreen) then
