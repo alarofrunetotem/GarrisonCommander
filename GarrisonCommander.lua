@@ -464,12 +464,10 @@ end
 local origGarrisonMissionButton_OnEnter = _G.GarrisonMissionButton_OnEnter
 function _G.GarrisonMissionButton_OnEnter(this,button)
 	origGarrisonMissionButton_OnEnter(this,button)
-	--@debug@
 	if (this.info.inProgress) then
 		GameTooltip:AddDoubleLine("ID:",this.info.missionID)
 		GameTooltip:Show()
 	end
-	--@end-debug@
 end
 --@end-debug@
 -- These local will became conf var
