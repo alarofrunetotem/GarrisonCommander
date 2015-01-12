@@ -549,9 +549,6 @@ function addon:OnInitialized()
 --@debug@
 	xprint("OnInitialized")
 --@end-debug@
---@alpha@
-	self:Popup(L["You are using an Alpha version of Garrison Commander. Please post bugs on Curse if you find them"],10)
---@end-alpha@
 	for _,b in ipairs(GMFMissionsListScrollFrame.buttons) do
 		local scale=0.8
 		local f,h,s=b.Title:GetFont()
@@ -2689,6 +2686,13 @@ function addon:SetUp(...)
 --@debug@
 	xprint("Setup")
 --@end-debug@
+--@alpha@
+	if (not db.alfa.v220) then
+		self:Popup(L["You are using an Alpha version of Garrison Commander. Please post bugs on Curse if you find them"],10)
+		db.alfa.v220=true
+	end
+--@end-alpha@
+
 	SIZEV=GMF:GetHeight()
 	self:CheckMP()
 	self:CheckGMM()

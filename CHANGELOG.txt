@@ -1,4 +1,11 @@
 = GarrisonCommander helps you when choosing the right follower for the right mission =
+* 2.2.0
+Feature: Fast Mission Control: you can have GC set up parties for your follower and send them out with just two mouse click.
+Party building can be customized setting varios criteria.
+This feature is invoked via the right side tab with Hammer and clock. Take some time to check it. Feedbacl appreciated
+Feature: Little screen mode now have almost all the informations present in big screen
+Feature: In follower list: xp needed to level, time to be available, item and armor level
+Feature: Garrison Commander header can now be opened or closed at will to reclaim more screen estate
 * 2.1.4
 Fix: Mission page semi transparet when MP is installed
 Fix: Was spamming "released" on main window closing
