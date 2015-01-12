@@ -24,5 +24,6 @@
 ## X-Embeds:
 embeds.xml
 localization.lua
+wowhead.lua
 GarrisonCommander.xml
 RelNotes.lua
