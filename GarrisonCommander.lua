@@ -1670,7 +1670,7 @@ local startTime=GetTime()
 -- Keeping it as a nice example of coroutine management.. but not using it anymore
 function addon:Clock()
 	if (GMFMissions.showInProgress)	 then
-		collectgarbage("step",200)
+		collectgarbage("collect") --while I fix it....
 	else
 		collectgarbage("step",100)
 	end
@@ -3576,7 +3576,6 @@ function addon:RenderButton(button,rewards,numRewards)
 	if (not button.gcPANEL) then
 		self:BuildExtraButton(button)
 	end
-	print("Renderng extrabutton")
 	self:RenderExtraButton(button,numRewards)
 end
 
