@@ -259,31 +259,6 @@ end
 local counters=setmetatable({},t2)
 local counterThreatIndex=setmetatable({},t2)
 local counterFollowerIndex=setmetatable({},t2)
-local function genIteratorByFollower(missionID,followerID,tbl)
-	do
-		local tt=counters[missionID]
-		local tx=counterFollowerIndex[missionID][followerID]
-		setmetatable(tbl,{
-			__index=function(t,k) return tt[tx[k]] end,
-			__call=function(t) return #tx end
-			}
-		)
-		return tbl
-	end
-end
-local function genIteratorByThreat(missionID,threat,tbl)
-	do
-		local tt=counters[missionID]
-		local tx=counterThreatIndex[missionID][threat]
-		setmetatable(tbl,{
-			__index=function(t,k) return tt[tx[k]] end,
-			__call=function(t)  return #tx end
-			}
-		)
-		return tbl
-	end
-end
-
 --- Quick backdrop
 --
 local function addBackdrop(f)
@@ -1100,31 +1075,24 @@ function addon:IsIgnored(followerID,missionID)
 end
 function addon:GetAllCounters(missionID,threat,table)
 	wipe(table)
-	local iter=genIteratorByThreat(missionID,cleanicon(tostring(threat)),new())
-	for i=1,iter() do
-		if (iter[i]) then
-			tinsert(table,iter[i].followerID)
-		end
+	for i=1,#counterThreatIndex[cleanicon(tostring(threat))] do
+		tinsert(table,counters[counterThreatIndex[i]].followerID)
 	end
-	del(iter)
 end
 function addon:GetCounterBias(missionID,threat)
 	local bias=-1
 	local who=""
-	local iter=genIteratorByThreat(missionID,cleanicon(tostring(threat)),new())
-	for i=1,iter() do
-		if (iter[i]) then
-			if ((tonumber(iter[i].bias) or -1) > bias) then
-				if (dbg) then print("Countered by",self:GetFollowerData(iter[i].followerID,'fullname'),iter[i].bias) end
-				if (inParty(missionID,iter[i].followerID)) then
-					if (dbg) then print("   Choosen",self:GetFollowerData(iter[i].followerID,'fullname')) end
-					bias=iter[i].bias
-					who=iter[i].name
-				end
+	for i=1,#counterThreatIndex[cleanicon(tostring(threat))] do
+		local follower=counters[counterThreatIndex[i]]
+		if ((tonumber(follower.bias) or -1) > bias) then
+			if (dbg) then print("Countered by",self:GetFollowerData(follower.followerID,'fullname'),follower.bias) end
+			if (inParty(missionID,follower.followerID)) then
+				if (dbg) then print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
+				bias=follower.bias
+				who=follower.name
 			end
 		end
 	end
-	del(iter)
 	return bias,who
 end
 function addon:AddLine(name,status)
@@ -1665,16 +1633,16 @@ local startTime=GetTime()
 -- Keeping it as a nice example of coroutine management.. but not using it anymore
 function addon:Clock()
 	if (GMFMissions.showInProgress)	 then
-		collectgarbage("collect") --while I fix it....
+		--collectgarbage("collect") --while I fix it....
 	else
-		collectgarbage("step",100)
+		--collectgarbage("step",100)
 	end
 --@debug@
 	if (not dbgFrame) then
 		dbgFrame=AceGUI:Create("Window")
 		dbgFrame:SetTitle("GC Performance")
 		dbgFrame:SetPoint("LEFT")
-		dbgFrame:SetHeight(60)
+		dbgFrame:SetHeight(80)
 		dbgFrame:SetWidth(350)
 		dbgFrame:SetLayout("fill")
 		dbgFrame.Text=AceGUI:Create("Label")
@@ -1685,10 +1653,8 @@ function addon:Clock()
 	if (m~=lastmin) then
 		lastmin=m
 	end
-	if (trc) then
-		UpdateAddOnCPUUsage()
-		UpdateAddOnMemoryUsage()
-	end
+	UpdateAddOnCPUUsage()
+	UpdateAddOnMemoryUsage()
 	local cpu=GetAddOnCPUUsage("GarrisonCommander")
 	dbgFrame.Text:SetText(format("GC Cpu %3.2f/%2.2f/%2.2f Mem %4.3fMB ",
 		cpu,
@@ -2863,6 +2829,7 @@ function addon:SafeRegisterEvent(event)
 	end
 end
 function addon:SafeSecureHook(tobehooked,method)
+	if (self:IsHooked(tobehooked)) then return end
 	method=method or "Hooked"..tobehooked
 	if (self:checkMethod(method,tobehooked)) then
 		return self:SecureHook(tobehooked,method)
@@ -2886,6 +2853,7 @@ function addon:SafeHookScript(frame,hook,method,postHook)
 		end
 	end
 	if (frame) then
+		if (self:IsHooked(frame,hook)) then return end
 		if (method) then
 			if (postHook) then
 				self:SecureHookScript(frame,hook,method)
@@ -4225,7 +4193,9 @@ end
 _G.GAC=addon
 --- Enable a trace for every function call. It's a VERY heavy debug
 --
+if false then
 local memorysinks={}
+local callstack={}
 local lib=LibStub("LibInit")
 for k,v in pairs(addon) do
 	if (type(v))=="function" and not lib[k] then
@@ -4233,6 +4203,7 @@ for k,v in pairs(addon) do
 		do
 			local original=addon[k]
 			wrapped=function(...)
+				tinsert(callstack,k)
 				if trc then
 					UpdateAddOnMemoryUsage()
 				end
@@ -4240,10 +4211,19 @@ for k,v in pairs(addon) do
 				local s=GetTime()
 				local a1,a2,a3,a4,a5,a6,a7,a8,a9=original(...)
 				local e=GetTime()
+				if (trc) then
+					UpdateAddOnMemoryUsage()
+				end
 				local memafter=floor(GetAddOnMemoryUsage("GarrisonCommander"))
+				tremove(callstack)
 				memorysinks[k].mem=memorysinks[k].mem+memafter-membefore
 				memorysinks[k].calls=memorysinks[k].calls+1
 				memorysinks[k].elapsed=memorysinks[k].elapsed+e-s
+				if (#callstack) then
+					memorysinks[k].callers=strjoin("->",callstack)
+				else
+					memorysinks[k].callers="main"
+				end
 				if (memafter-membefore > 100) then
 					pp(C(k,'Red'),'used ',memafter-membefore)
 				end
@@ -4251,7 +4231,7 @@ for k,v in pairs(addon) do
 			end
 		end
 		addon[k]=wrapped
-		memorysinks[k]={mem=0,elapsed=0,calls=0}
+		memorysinks[k]={mem=0,elapsed=0,calls=0,callers==""}
 	end
 end
 function addon:ResetSinks()
@@ -4263,7 +4243,7 @@ function addon:ResetSinks()
 end
 local sorted={}
 function addon:DumpSinks()
-	local scroll=self:GetScroller("Sinks",400,1000)
+	local scroll=self:GetScroller("Sinks",1000,400)
 	wipe(sorted)
 	for k,v in pairs(memorysinks) do
 		if v.mem > 0 then
@@ -4272,6 +4252,7 @@ function addon:DumpSinks()
 	end
 	table.sort(sorted,function(a,b) return a>b end)
 	self:cutePrint(scroll,sorted)
+end
 end
 function addon:GetScroller(title,type,h,w)
 	h=h or 800
