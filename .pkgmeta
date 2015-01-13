@@ -12,7 +12,7 @@ externals:
 
 manual-changelog:
 		filename: CHANGELOG.txt
-		markup-type: creole
+		markup-type: textile
 
 ignore:
 - .buildpath
