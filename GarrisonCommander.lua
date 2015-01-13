@@ -1,6 +1,7 @@
 local me, ns = ...
 local _G=_G
 local pp=print
+local HD=false
 --@debug@
 	LoadAddOn("Blizzard_DebugTools")
 --@end-debug@
@@ -15,9 +16,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
---xprint=function(...) print("DBG",...) end
---xdump=function(d,t) print(t) DevTools_Dump(d) end
---xtrace=trace
+xprint=function(...) print("DBG",...) end
+xdump=function(d,t) print(t) DevTools_Dump(d) end
+xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -56,20 +57,27 @@ end
 --@end-debug@
 -----------------------------------------------------------------
 -- Recycling function from ACE3
-----newcount, delcount,createdcount,cached = 0,0,0
+
 
 
 local new, del, copy
 do
+	--@debug@
+	local newcount, delcount,createdcount,cached = 0,0,0
+	--@end-debug@
 	local pool = setmetatable({},{__mode="k"})
 	function new()
-		--newcount = newcount + 1
+	--@debug@
+		newcount = newcount + 1
+	--@end-debug@
 		local t = next(pool)
 		if t then
 			pool[t] = nil
 			return t
 		else
-			--createdcount = createdcount + 1
+	--@debug@
+			createdcount = createdcount + 1
+	--@end-debug@
 			return {}
 		end
 	end
@@ -81,18 +89,29 @@ do
 		return c
 	end
 	function del(t)
-		--delcount = delcount + 1
+	--@debug@
+		delcount = delcount + 1
+	--@end-debug@
 		wipe(t)
 		pool[t] = true
 	end
---	function cached()
---		local n = 0
---		for k in pairs(pool) do
---			n = n + 1
---		end
---		return n
---	end
+	--@debug@
+	function cached()
+		local n = 0
+		for k in pairs(pool) do
+			n = n + 1
+		end
+		return n
+	end
+	function addon:CacheStats()
+		print("Created:",createdcount)
+		print("Aquired:",newcount)
+		print("Released:",delcount)
+		print("Cached:",cached())
+	end
+	--@end-debug@
 end
+
 local function capitalize(s)
 	s=tostring(s)
 	return strupper(s:sub(1,1))..strlower(s:sub(2))
@@ -261,15 +280,15 @@ local counterThreatIndex=setmetatable({},t2)
 local counterFollowerIndex=setmetatable({},t2)
 --- Quick backdrop
 --
+local backdrop = {
+	bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
+	edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+	tile=true,
+	tileSize=16,
+	edgeSize=16,
+	insets={bottom=7,left=7,right=7,top=7}
+}
 local function addBackdrop(f)
-	local backdrop = {
-		bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
-		edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
-		tile=true,
-		tileSize=16,
-		edgeSize=16,
-		insets={bottom=7,left=7,right=7,top=7}
-	}
 	f:SetBackdrop(backdrop)
 end
 
@@ -296,7 +315,7 @@ end
 --
 --
 local parties=setmetatable({},{
-	__index=function(t,k) rawset(t,k,{members={},perc=0,full=false}) return t[k] end
+	__index=function(t,k)  rawset(t,k,{members={},perc=0,full=false}) return t[k] end
 })
 local function inParty(missionID,followerID)
 	return inTable(parties[missionID].members,followerID)
@@ -304,7 +323,7 @@ end
 --- Follower Missions Info
 --
 local followerMissions=setmetatable({},{
-	__index=function(t,k) rawset(t,k,{}) return t[k] end
+	__index=function(t,k)  rawset(t,k,{}) return t[k] end
 })
 
 --
@@ -452,6 +471,7 @@ end
 local origGarrison_SortMissions
 
 function addon.Garrison_SortMissions_Chance(missionsList)
+
 	local comparison
 	do
 		function comparison(mission1, mission2)
@@ -595,7 +615,7 @@ function addon:ApplyIGM(value)
 	self:RefreshMission()
 end
 function addon:ApplyCKMP(value)
-	self:Clock()
+	if (HD) then self:Clock() end
 	if (MasterPlanMissionList) then
 		if (value) then
 			MasterPlanMissionList:Hide()
@@ -651,7 +671,7 @@ function addon:ApplyMINPERC(value)
 end
 
 
-
+--[[
 function addon:RestoreTooltip()
 	local self = GMF.MissionTab.MissionList;
 	local scrollFrame = self.listScroll;
@@ -660,7 +680,7 @@ function addon:RestoreTooltip()
 		buttons[i]:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
 	end
 end
-
+--]]
 --[[
 	[12]={
 		description="Iron Horde raiders have descended on nearby draenei villages. Find the raiders' camp and raid it. Turnabout, they say, is fair play.",
@@ -1013,15 +1033,14 @@ function addon:MatchMaker(missionID,mission,party)
 	local slots=mission.slots
 	local missionCounters=counters[missionID]
 	local ct=counterThreatIndex[missionID]
-	local maxedSkipped=new()
-	local ignoredSkipped=new()
 	openParty(missionID,mission.numFollowers)
 	-- Preloading skipped ones in party table.
+	if (dbg) then print("Matchmaking mission ",missionID,mission.name) end
 	if (missionCounters) then
 		for i=1,#missionCounters do
 			local followerID=missionCounters[i].followerID
 			if (not followerID) then
-				xprint("Trying to use [",followerID,"]")
+				if (dbg) then print("Trying to use [",followerID,"]") end
 			else
 				if (self:IsIgnored(followerID,missionID)) then
 					if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
@@ -1064,7 +1083,7 @@ function addon:MatchMaker(missionID,mission,party)
 		end
 		if roomInParty() > 0 then self:AddTraitsToParty(missionID,mission) end
 	end
-	--if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,skipMaxed) end
+	if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,skipMaxed) end
 	storeFollowers(party.members)
 	party.full= roomInParty()==0
 	party.perc=closeParty()
@@ -1182,11 +1201,6 @@ function addon:RenderTooltip(missionID)
 	end
 end
 
-function addon:FillFollowersList()
-	if (GarrisonFollowerList_UpdateFollowers) then
-		GarrisonFollowerList_UpdateFollowers(GMF.FollowerList)
-	end
-end
 local function switch(flag)
 	if (GCF[flag]) then
 		local b=GCF[flag]
@@ -1568,6 +1582,8 @@ function addon:EventGARRISON_MISSION_FINISHED(event,missionID,...)
 end
 function addon:EventGARRISON_FOLLOWER_LIST_UPDATE(event)
 --We need to update all followers, maybe this could be done in an onupdate handler
+	wipe(followersCache)
+	wipe(followersCacheIndex)
 end
 function addon:EventGARRISON_FOLLOWER_ADDED(event)
 	wipe(followersCache)
@@ -1653,8 +1669,6 @@ function addon:Clock()
 	if (m~=lastmin) then
 		lastmin=m
 	end
-	UpdateAddOnCPUUsage()
-	UpdateAddOnMemoryUsage()
 	local cpu=GetAddOnCPUUsage("GarrisonCommander")
 	dbgFrame.Text:SetText(format("GC Cpu %3.2f/%2.2f/%2.2f Mem %4.3fMB ",
 		cpu,
@@ -2030,10 +2044,15 @@ function addon:GenerateMissionButton()
 
 		local function Constructor()
 			unique=unique+1
-			local frame=CreateFrame("Button","Pippo"..unique,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
+			local frame=CreateFrame("Button",nil,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
 			local indicators=CreateFrame("Frame",nil,frame,"GarrisonCommanderIndicators")
 			frame.Title:SetFontObject("QuestFont_Shadow_Small")
 			frame.Summary:SetFontObject("QuestFont_Shadow_Small")
+			if (bigscreen) then
+				indicators.Percent:SetJustifyH("RIGHT")
+			else
+				indicators.Percent:SetJustifyH("LEFT")
+			end
 			indicators:SetPoint("LEFT",65,0)
 			indicators.Age:Hide()
 			frame.Percent=indicators.Percent
@@ -2065,7 +2084,7 @@ function addon:GenerateMissionButton()
 		AceGUI:RegisterWidgetType(Type,Constructor,Version)
 	end
 end
-function addon:GMCBuildMiniMissionButton(frame,i,mission,scale,perc,offset)
+function addon:__GMCBuildMiniMissionButton(frame,i,mission,scale,perc,offset)
 	offset=offset or 20
 	scale=scale or 0.6
 	local panel=frame.Missions[i]
@@ -2304,6 +2323,7 @@ do
 		for i=1,#GMFMissionListButtons do
 			GMFMissionListButtons.lastMissionID=nil
 		end
+		if (HD) then addon:ResetSinks() end
 	end
 end
 function addon:HookedGarrisonMissionFrame_HideCompleteMissions()
@@ -2344,26 +2364,31 @@ function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
 	end
 end
 function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCounters)
-	if MP then self:Unhook("GarrisonFollowerButton_UpdateCounters") return end
-	if not frame.GCTime then
-		frame.GCTime=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCTime:SetPoint("TOPLEFT",frame.Status,"TOPRIGHT",5,0)
-		frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCXp:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",0,2)
+	if not frame.GCIt then
+		if not MP then
+			frame.GCTime=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
+			frame.GCTime:SetPoint("TOPLEFT",frame.Status,"TOPRIGHT",5,0)
+			frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
+			frame.GCXp:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",0,2)
+		end
 		frame.GCIt=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCIt:SetPoint("TOPRIGHT",frame,"TOPRIGHT",0,-2)
+		frame.GCIt:SetPoint("TOPRIGHT",frame,"TOPRIGHT",-5,-3)
 	end
 	if not frame.isCollected then
-		frame.GCTime:Hide()
-		frame.GCXp:Hide()
+		if not MP then
+			frame.GCTime:Hide()
+			frame.GCXp:Hide()
+		end
 		frame.GCIt:Hide()
 		return
 	end
-	if (frame.Status:GetText() == GARRISON_FOLLOWER_ON_MISSION) then
-		frame.GCTime:SetText(self:GetFollowerStatus(follower.followerID,true,true))
-		frame.GCTime:Show()
-	else
-		frame.GCTime:Hide()
+	if not MP then
+		if (frame.Status:GetText() == GARRISON_FOLLOWER_ON_MISSION) then
+			frame.GCTime:SetText(self:GetFollowerStatus(follower.followerID,true,true))
+			frame.GCTime:Show()
+		else
+			frame.GCTime:Hide()
+		end
 	end
 	local follower=self:GetFollowerData(follower.followerID)
 	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL ) then
@@ -2383,12 +2408,10 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 
 end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
---@debug@
-	trace("Click",frame:GetName(),button,GMF.FollowerTab.Model:IsShown())
---@end-debug@
 	if (button=="LeftButton" and GMF.FollowerTab.FollowerID ~= frame.info.followerID) then
 		if (frame.info.isCollected) then
-			self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID)
+			if (bigscreen)  then self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID) end
+			self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.1,frame,frame.info,false)
 		end
 	end
 end
@@ -2522,6 +2545,7 @@ function addon:ClonedGarrisonMissionMechanic_OnEnter(missionID,this,...)
 			tip:AddLine(self:GetFollowerData(t[i],'fullname'),C[self:GetBiasColor(t[i],missionID,C.White())]())
 		end
 	end
+	del(t)
 	tip:Show()
 end
 local Busystatusmessage
@@ -2739,8 +2763,8 @@ function addon:StartUp(...)
 	self:PermanentEvents()
 	self:SafeSecureHook("GarrisonMissionButton_AddThreatsToTooltip")
 	self:SafeSecureHook("GarrisonMissionButton_SetRewards")
+	self:SafeSecureHook("GarrisonFollowerListButton_OnClick") -- used both to update follower mission list and itemlevel display
 	if (bigscreen) then
-		self:SafeSecureHook("GarrisonFollowerListButton_OnClick")--,function(...) xprint("GarrisonFollowerListButton_OnClick",...) end)
 		self:SafeSecureHook("GarrisonFollowerPage_ShowFollower")--,function(...) xprint("GarrisonFollowerPage_ShowFollower",...) end)
 		self:SafeSecureHook("GarrisonFollowerTooltipTemplate_SetGarrisonFollower")
 	end
@@ -2764,7 +2788,7 @@ function addon:StartUp(...)
 		self:SafeHookScript(b,"OnEnter","AddMissionId",true)
 --@end-debug@
 	end
-	self:ScheduleRepeatingTimer("Clock",1)
+	if HD then self:ScheduleRepeatingTimer("Clock",1) end
 	self:BuildMissionsCache(true,true)
 	self:BuildRunningMissionsCache()
 	self:Trigger("MSORT")
@@ -2794,6 +2818,7 @@ function addon:PermanentEvents()
 --@end-debug@
 end
 function addon:DebugEvents()
+	if true then return end
 	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 	self:SafeRegisterEvent("GARRISON_MISSION_FINISHED")
 	self:SafeRegisterEvent("GARRISON_UPDATE")
@@ -2951,14 +2976,14 @@ function addon:GetMissionData(missionID,subkey)
 	local missionCache=cache.missions[missionID]
 	if (not missionCache) then
 --@debug@
-		xprint("Found a new mission",missionID,G.GetMissionName(missionID),"Refreshing it")
+		xprint("Found a new mission",missionID,"Refreshing it")
 --@end-debug@
 		self:BuildMissionCache(missionID)
 		self:FillCounters(missionID,cache.missions[missionID])
 		self:MatchMaker(missionID,cache.missions[missionID])
 	end
-	if not missionCache then return end
 	if (subkey) then
+		if not missionCache then return 0 end
 		return missionCache[subkey]
 	end
 	return missionCache
@@ -3218,6 +3243,7 @@ function addon:RenderExtraButton(button,numRewards)
 	if (GMF.MissionTab.MissionList.showInProgress) then
 		local perc=select(4,G.GetPartyMissionInfo(missionID))
 		panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
+		panel.Percent:SetJustifyV("CENTER")
 		panel.Age:Hide()
 		panel.Percent:SetTextColor(self:GetDifficultyColors(perc))
 		for i=1,3 do
@@ -3230,6 +3256,8 @@ function addon:RenderExtraButton(button,numRewards)
 			end
 		end
 		return
+	else
+		panel.Percent:SetJustifyV("BOTTOM")
 	end
 	local party=parties[missionID]
 	if (#party.members==0) then
@@ -3414,6 +3442,8 @@ function addon:OnClick_GCMissionButton(frame,button)
 end
 
 function addon:HookedGarrisonMissionButton_SetRewards(button,rewards,numRewards)
+	if GMF.MissionTab.MissionList.showInProgress and button.info.missionID==button.lastMissionID then collectgarbage("step",50) return end
+	button.lastMissionID=button.info.missionID
 	self:RenderButton(button,rewards,numRewards)
 end
 function addon:RenderButton(button,rewards,numRewards)
@@ -3424,8 +3454,6 @@ function addon:RenderButton(button,rewards,numRewards)
 --@end-debug@
 	end
 	local missionID=button.info.missionID
-	if GMF.MissionTab.MissionList.showInProgress and missionID==button.lastMissionID then return end
-	button.lastMissionID=missionID
 	if (bigscreen) then
 		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
 		button:SetWidth(width+600)
@@ -3472,7 +3500,6 @@ function addon:RenderButton(button,rewards,numRewards)
 			local slots=self:GetMissionData(missionID,'slots')
 			if (not GMF.MissionTab.MissionList.showInProgress) then
 				button.Env:Show()
-				if (dbg) then self:DumpParty(missionID) end
 				for i=1,#slots do
 					local slot=slots[i]
 					if (slot.name==TYPE) then
@@ -3590,19 +3617,29 @@ function addon:GMCCreateMissionList(workList)
 		local m2=addon:GetMissionData(i2)
 		for i=1,#GMC.settings.itemPrio do
 			local criterium=GMC.settings.itemPrio[i]
-			xprint("Checking",criterium)
 			if (criterium) then
-				xprint(i1,i2,"Sorting on ",criterium,m1[criterium] , m2[criterium])
 				if (m1[criterium] ~= m2[criterium]) then
-					xprint(i1,i2,"Sorted on ",criterium,m1[criterium] , m2[criterium])
 					return m1[criterium] > m2[criterium]
 				end
 			end
 		end
-		xprint(i1,i2,"Sorted on level",m1.level , m2.level)
 		return m1.level > m2.level
 	end
 	table.sort(workList,msort)
+	--@debug@
+	xprint("Sorted list")
+	for i=1,#workList do
+		local mission=self:GetMissionData(workList[i])
+		local t=new()
+		for i=1,#GMC.settings.itemPrio do
+			local criterium=GMC.settings.itemPrio[i]
+			tinsert(t,format("%s: %d",criterium,mission[criterium]))
+			print(workList[i],mission.name,strjoin("\t",unpack(t)))
+		end
+		del(t)
+	end
+	--@end-debug@
+
 end
 local factory={} --#factory
 do
@@ -4193,7 +4230,7 @@ end
 _G.GAC=addon
 --- Enable a trace for every function call. It's a VERY heavy debug
 --
-if false then
+if HD then
 local memorysinks={}
 local callstack={}
 local lib=LibStub("LibInit")
@@ -4203,51 +4240,42 @@ for k,v in pairs(addon) do
 		do
 			local original=addon[k]
 			wrapped=function(...)
+				pp(k)
 				tinsert(callstack,k)
-				if trc then
-					UpdateAddOnMemoryUsage()
-				end
-				local membefore=floor(GetAddOnMemoryUsage("GarrisonCommander"))
-				local s=GetTime()
+				local membefore=GetAddOnMemoryUsage("GarrisonCommander")
 				local a1,a2,a3,a4,a5,a6,a7,a8,a9=original(...)
-				local e=GetTime()
-				if (trc) then
-					UpdateAddOnMemoryUsage()
-				end
-				local memafter=floor(GetAddOnMemoryUsage("GarrisonCommander"))
+				local memafter=GetAddOnMemoryUsage("GarrisonCommander")
 				tremove(callstack)
 				memorysinks[k].mem=memorysinks[k].mem+memafter-membefore
 				memorysinks[k].calls=memorysinks[k].calls+1
-				memorysinks[k].elapsed=memorysinks[k].elapsed+e-s
 				if (#callstack) then
-					memorysinks[k].callers=strjoin("->",callstack)
+					memorysinks[k].callers=strjoin("->",unpack(callstack))
 				else
 					memorysinks[k].callers="main"
 				end
-				if (memafter-membefore > 100) then
+				if (memafter-membefore > 20) then
 					pp(C(k,'Red'),'used ',memafter-membefore)
 				end
 				return a1,a2,a3,a4,a5,a6,a7,a8,a9
 			end
 		end
 		addon[k]=wrapped
-		memorysinks[k]={mem=0,elapsed=0,calls=0,callers==""}
+		memorysinks[k]={mem=0,calls=0,callers=""}
 	end
 end
 function addon:ResetSinks()
 	for k,v in pairs(memorysinks) do
 		memorysinks[k].mem=0
 		memorysinks[k].calls=0
-		memorysinks[k].elapsed=0
 	end
 end
 local sorted={}
 function addon:DumpSinks()
-	local scroll=self:GetScroller("Sinks",1000,400)
+	local scroll=self:GetScroller("Sinks",nil,400,1000)
 	wipe(sorted)
 	for k,v in pairs(memorysinks) do
-		if v.mem > 0 then
-			tinsert(sorted,format("Mem %06d %-80s (calls: %3d) Mem per call:%3.2f  Elapsed %3.3f (per call %3.3f)",v.mem,k,v.calls,v.mem/v.calls,v.elapsed,v.elapsed/v.calls))
+		if v.mem then
+			tinsert(sorted,format("Mem %06d (calls: %03d) Mem per call:%03.2f  Callstack:%s(%s)",v.mem,v.calls,v.mem/v.calls,C(k,"Orange"),v.callers))
 		end
 	end
 	table.sort(sorted,function(a,b) return a>b end)
