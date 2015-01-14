@@ -2390,6 +2390,12 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 		else
 			frame.GCTime:Hide()
 		end
+		if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL and follower.quality >= GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) then
+			frame.GCXp:Hide()
+		else
+			frame.GCXp:SetFormattedText("Xp to next upgrade: %d",follower.levelXP-follower.xp)
+			frame.GCXp:Show()
+		end
 	end
 	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL ) then
 		local follower=self:GetFollowerData(follower.followerID)
@@ -2399,12 +2405,6 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 		frame.GCIt:Show()
 	else
 		frame.GCIt:Hide()
-	end
-	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL and follower.quality >= GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) then
-		frame.GCXp:Hide()
-	else
-		frame.GCXp:SetFormattedText("Xp to next upgrade: %d",follower.levelXP-follower.xp)
-		frame.GCXp:Show()
 	end
 
 end
@@ -3300,7 +3300,7 @@ function addon:RenderExtraButton(button,numRewards)
 			panel.Age:SetText("Expires: " .. UNKNOWN)
 			panel.Age:SetTextColor(C.White())
 		else
-			local age=(age+expire-time())/60
+			local age=(age+(expire*2)-time())/60
 			if age < 0 then age=0 end
 			local hours=(floor((age/60)/6)+1)*6
 			local q=self:GetDifficultyColor(hours+20,true)
@@ -3318,7 +3318,7 @@ function addon:CheckExpire(missionID)
 	local expire=ns.wowhead[missionID]
 	print("Age",date("%m/%d/%y %H:%M:%S",age))
 	print("Now",date("%m/%d/%y %H:%M:%S"))
-	print("Expire",expire,ns.expire[missionID])
+	print("Expire",expire)
 	print("Age+expire",date("%m/%d/%y %H:%M:%S",age+expire))
 	print("Delta",age+expire-time())
 end
@@ -3365,25 +3365,25 @@ do
 			menu[2].arg1=missionID
 			menu[2].arg2=followerID
 			--menu[3].arg2=followerID
-			local i=4
+			local i=3
 			for k,r in pairs(dbcache.ignored[missionID]) do
 				if (r) then
+					i=i+1
 					local v=menu[i] or {}
 					v.text=self:GetFollowerData(k,'name')
 					v.func=func2
 					v.arg1=missionID
 					v.arg2=k
 					menu[i]=v
-					i=i+1
 				else
-					dbcache.ignored[missionID]=nil
+					dbcache.ignored[missionID][k]=nil
 				end
 			end
-			if (i>4) then
+			if (i>3) then
 				i=i+1
 				menu[i]={text=ALL,func=func2,arg1=missionID,arg2='all'}
 			end
-			for x=#menu,i,-1 do tremove(menu) end
+			for x=#menu,i+1,-1 do tremove(menu) end
 			EasyMenu(menu,menuFrame,"cursor",0,0,"MENU",5)
 		end
 
@@ -4384,6 +4384,14 @@ function addon:DumpParty(missionID)
 	local scroll=self:GetScroller("Party " .. self:GetMissionData(missionID,'name'))
 	self:cutePrint(scroll,parties[missionID])
 end
-
+function addon:DumpAgeDb()
+	local t=new()
+	for i,v in pairs(dbcache.seen) do
+		tinsert(t,format("%80s %s %d",self:GetMissionData(i,'name'),date("%d/%m/%y %H:%M:%S",v),ns.wowhead[i]))
+	end
+	local scroll=self:GetScroller("Expire db")
+	self:cutePrint(scroll,t)
+	del(t)
+end
 _G.GCF=GCF
 --@end-do-not-package@
