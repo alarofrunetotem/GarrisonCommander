@@ -16,9 +16,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
-xprint=function(...) print("DBG",...) end
-xdump=function(d,t) print(t) DevTools_Dump(d) end
-xtrace=trace
+--xprint=function(...) print("DBG",...) end
+--xdump=function(d,t) print(t) DevTools_Dump(d) end
+--xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -2864,7 +2864,7 @@ function addon:SafeSecureHook(tobehooked,method)
 	else
 		do
 			local hooked=tobehooked
-			return self:SecureHook(tobehooked,function(...) print(hooked,...) end)
+			return self:SecureHook(tobehooked,function(...) xprint(hooked,...) end)
 		end
 --@end-debug@
 	end
