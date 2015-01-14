@@ -16,9 +16,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
---xprint=function(...) print("DBG",...) end
---xdump=function(d,t) print(t) DevTools_Dump(d) end
---xtrace=trace
+xprint=function(...) print("DBG",...) end
+xdump=function(d,t) print(t) DevTools_Dump(d) end
+xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -2409,11 +2409,11 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 
 end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
-	if (button=="LeftButton") then
-		if (frame.info.isCollected) then
+	if (frame.info.isCollected) then
+		if (button=="LeftButton") then
 			if (bigscreen)  then self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID) end
-			self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.1,frame,frame.info,false)
 		end
+		self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.2,frame,frame.info,false)
 	end
 end
 -- Shamelessly stolen from Blizzard Code
