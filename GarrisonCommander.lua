@@ -1584,6 +1584,7 @@ function addon:EventGARRISON_FOLLOWER_LIST_UPDATE(event)
 --We need to update all followers, maybe this could be done in an onupdate handler
 	wipe(followersCache)
 	wipe(followersCacheIndex)
+	xprint("Follower cache cleaned")
 end
 function addon:EventGARRISON_FOLLOWER_ADDED(event)
 	wipe(followersCache)
@@ -2390,8 +2391,8 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 			frame.GCTime:Hide()
 		end
 	end
-	local follower=self:GetFollowerData(follower.followerID)
 	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL ) then
+		local follower=self:GetFollowerData(follower.followerID)
 		local c1=ITEM_QUALITY_COLORS[follower.weaponQuality or 1]
 		local c2=ITEM_QUALITY_COLORS[follower.armorQuality or 1]
 		frame.GCIt:SetFormattedText("W:%s%3d|r A:%s%3d|r",c1.hex,follower.weaponItemLevel,c2.hex,follower.armorItemLevel)
@@ -2408,7 +2409,7 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 
 end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
-	if (button=="LeftButton" and GMF.FollowerTab.FollowerID ~= frame.info.followerID) then
+	if (button=="LeftButton") then
 		if (frame.info.isCollected) then
 			if (bigscreen)  then self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID) end
 			self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.1,frame,frame.info,false)
@@ -2776,8 +2777,7 @@ function addon:StartUp(...)
 	self:SafeHookScript(GMFMissions,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GMFFollowers,"OnShow")--,"GrowPanel")
 	self:SafeHookScript(GCF,"OnHide","CleanUp",true)
-	-- Follower button enhancement in follower list
-	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
+
 	-- Mission management
 	self:SafeHookScript(GMF.MissionComplete.NextMissionButton,"OnClick","OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton",true)
 	-- Hooking mission buttons on click
@@ -2813,6 +2813,8 @@ function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_REMOVED")
 	self:RegisterBucketEvent("GARRISON_MISSION_LIST_UPDATE",2,"EventGARRISON_MISSION_LIST_UPDATE")
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+	-- Follower button enhancement in follower list
+	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
 --@debug@
 	self:DebugEvents()
 --@end-debug@
@@ -2932,6 +2934,7 @@ end
 function addon:GetFollowerData(key,subkey)
 	local k=followersCacheIndex[key]
 	if (not followersCache[1]) then
+		xprint("Follower cache refresh")
 		followersCache=G.GetFollowers()
 		for i,follower in pairs(followersCache) do
 			if (not follower.isCollected) then
@@ -3567,7 +3570,6 @@ function addon:RenderButton(button,rewards,numRewards)
 		end
 	end
 	if (button.fromFollowerPage) then
-		print("From follower page")
 		return
 	end
 	if (not button.gcPANEL) then
@@ -3634,7 +3636,7 @@ function addon:GMCCreateMissionList(workList)
 		for i=1,#GMC.settings.itemPrio do
 			local criterium=GMC.settings.itemPrio[i]
 			tinsert(t,format("%s: %d",criterium,mission[criterium]))
-			print(workList[i],mission.name,strjoin("\t",unpack(t)))
+			xprint(workList[i],mission.name,strjoin("\t",unpack(t)))
 		end
 		del(t)
 	end
