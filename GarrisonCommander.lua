@@ -118,9 +118,9 @@ local function capitalize(s)
 end
 --- upvalues
 --
-local AVAILABLE=AVAILABLE -- "Available"
+--local AVAILABLE=AVAILABLE -- "Available"
 local BUTTON_INFO=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS.. " " .. GARRISON_MISSION_PERCENT_CHANCE
-local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
+--local ENVIRONMENT_SUBHEADER=ENVIRONMENT_SUBHEADER -- "Environment"
 local G=C_Garrison
 --local GARRISON_BUILDING_SELECT_FOLLOWER_TITLE=GARRISON_BUILDING_SELECT_FOLLOWER_TITLE -- "Select a Follower";
 --local GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP=GARRISON_BUILDING_SELECT_FOLLOWER_TOOLTIP -- "Click here to assign a Follower";
@@ -132,16 +132,16 @@ local G=C_Garrison
 --local GARRISON_FOLLOWER_ON_MISSION=GARRISON_FOLLOWER_ON_MISSION -- "On Mission"
 --local GARRISON_FOLLOWER_WORKING=GARRISON_FOLLOWER_WORKING -- "Working
 local GARRISON_MISSION_PERCENT_CHANCE="%d%%"-- GARRISON_MISSION_PERCENT_CHANCE
-local GARRISON_MISSION_SUCCESS=GARRISON_MISSION_SUCCESS -- "Success"
-local GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS -- "%d Follower mission";
-local GARRISON_PARTY_NOT_FULL_TOOLTIP=GARRISON_PARTY_NOT_FULL_TOOLTIP -- "You do not have enough followers on this mission."
-local GARRISON_MISSION_CHANCE=GARRISON_MISSION_CHANCE -- Chanche
-local GARRISON_FOLLOWER_BUSY_COLOR=GARRISON_FOLLOWER_BUSY_COLOR
-local GARRISON_FOLLOWER_INACTIVE_COLOR=GARRISON_FOLLOWER_INACTIVE_COLOR
-local GARRISON_CURRENCY=GARRISON_CURRENCY  --824
-local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY -- 4
-local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL -- 100
-
+--local GARRISON_MISSION_SUCCESS=GARRISON_MISSION_SUCCESS -- "Success"
+--local GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS=GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS -- "%d Follower mission";
+--local GARRISON_PARTY_NOT_FULL_TOOLTIP=GARRISON_PARTY_NOT_FULL_TOOLTIP -- "You do not have enough followers on this mission."
+--local GARRISON_MISSION_CHANCE=GARRISON_MISSION_CHANCE -- Chanche
+--local GARRISON_FOLLOWER_BUSY_COLOR=GARRISON_FOLLOWER_BUSY_COLOR
+--local GARRISON_FOLLOWER_INACTIVE_COLOR=GARRISON_FOLLOWER_INACTIVE_COLOR
+--local GARRISON_CURRENCY=GARRISON_CURRENCY  --824
+--local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY -- 4
+--local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL -- 100
+local SHORTDATE=SHORTDATE.. " %s"
 local LEVEL=LEVEL -- Level
 local MISSING=ADDON_MISSING
 local NOT_COLLECTED=NOT_COLLECTED -- not collected
@@ -326,23 +326,36 @@ local followerMissions=setmetatable({},{
 	__index=function(t,k)  rawset(t,k,{}) return t[k] end
 })
 
+
+local holdEvents,releaseEvents
+do
+	local frames
+	function holdEvents()
+		frames={GetFramesRegisteredForEvent('GARRISON_FOLLOWER_LIST_UPDATE')}
+		for i=1,#frames do
+			frames[i]:UnregisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+		end
+	end
+	function releaseEvents()
+		for i=1,#frames do
+			frames[i]:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
+		end
+		frames=nil
+	end
+end
+
 --
 -- Temporary party management
 local openParty,partyIgnore,isPartyIgnored,isInParty,pushFollower,removeFollower,fillParty,closeParty,roomInParty,storeFollowers,dumpParty,isPartyEmpty
 
 do
-	local ID,frames,members,maxFollowers,ignored=0,{},{},1,{}
+	local ID,maxFollowers,members,ignored=0,1,{},{}
 	---@function [parent=#party] openParty
 	function openParty(missionID,followers)
-		if (#frames > 0 or #members > 0) then
-			error(format("Unbalanced openParty/closeParty %d %d",#frames,#members))
-		end
+		wipe(members)
 		maxFollowers=followers
-		frames={GetFramesRegisteredForEvent('GARRISON_FOLLOWER_LIST_UPDATE')}
-		for i=1,#frames do
-			frames[i]:UnregisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
-		end
 		ID=missionID
+		holdEvents()
 	end
 
 	---@function [parent=#party] partyIgnore
@@ -443,11 +456,7 @@ do
 				break
 			end
 		end
-		for i=1,#frames do
-			frames[i]:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
-
-		end
-		wipe(frames)
+		releaseEvents()
 		wipe(members)
 		wipe(ignored)
 		return perc or 0
@@ -970,7 +979,7 @@ function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 				local rank=data.rank
 				local quality=data.quality
 				repeat
-					if (perc<100) then
+					if ((perc or 0) <100) then
 						pushFollower(followerID)
 						local newperc=select(4,G.GetPartyMissionInfo(missionID))
 						removeFollower(followerID)
@@ -1094,21 +1103,34 @@ function addon:IsIgnored(followerID,missionID)
 end
 function addon:GetAllCounters(missionID,threat,table)
 	wipe(table)
-	for i=1,#counterThreatIndex[cleanicon(tostring(threat))] do
-		tinsert(table,counters[counterThreatIndex[i]].followerID)
+	if type(counterThreatIndex[missionID]) == "table" then
+		local index=counterThreatIndex[missionID][cleanicon(tostring(threat))]
+		if (type(index)=="table") then
+			for i=1,#index do
+				tinsert(table,counters[missionID][index[i]].followerID)
+			end
+		end
 	end
 end
 function addon:GetCounterBias(missionID,threat)
 	local bias=-1
 	local who=""
-	for i=1,#counterThreatIndex[cleanicon(tostring(threat))] do
-		local follower=counters[counterThreatIndex[i]]
-		if ((tonumber(follower.bias) or -1) > bias) then
-			if (dbg) then print("Countered by",self:GetFollowerData(follower.followerID,'fullname'),follower.bias) end
-			if (inParty(missionID,follower.followerID)) then
-				if (dbg) then print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
-				bias=follower.bias
-				who=follower.name
+	if dbg then DevTools_Dump(counterThreatIndex[missionID]) end
+	local index=counterThreatIndex[missionID]
+	local data=counters[missionID]
+	if (type(index)=="table" and type(counters)=="table") then
+		index=index[cleanicon(tostring(threat))]
+		if (type(index) == "table") then
+			for i=1,#index do
+				local follower=data[index[i]]
+				if ((tonumber(follower.bias) or -1) > bias) then
+					if (dbg) then print("Countered by",self:GetFollowerData(follower.followerID,'fullname'),follower.bias) end
+					if (inParty(missionID,follower.followerID)) then
+						if (dbg) then print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
+						bias=follower.bias
+						who=follower.name
+					end
+				end
 			end
 		end
 	end
@@ -1124,7 +1146,7 @@ function addon:AddLine(name,status)
 	GameTooltip:AddDoubleLine(name, status,nil,nil,nil,r2,g2,b2)
 end
 function addon:SetThreatColor(obj,missionID)
-	if (dbg) then print("Evaluating ",missionID,obj.Icon:GetTexture()) end
+	if (dbg) then print(C("Evaluating ","Red"),missionID,obj.Icon:GetTexture()) end
 	local bias=self:GetCounterBias(missionID,obj.Icon:GetTexture())
 	local color=self:GetBiasColor(bias,nil,"Green")
 	local c=C[color]
@@ -1199,6 +1221,18 @@ function addon:RenderTooltip(missionID)
 		GameTooltip:AddLine(L["You have ignored followers"])
 		break;
 	end
+	if (dbcache.history[missionID]) then
+		local tot,success=0,0
+		for d,r in pairs(dbcache.history[missionID]) do
+			tot,success=tot+1,success + (r.success and 1 or 0)
+		end
+		local ratio=floor(success/tot*100)
+		if (tot > 0) then
+			GameTooltip:AddDoubleLine(format("You performed this mission %d times with a win ratio of",tot),ratio..'%',0,1,0,self:GetDifficultyColors(ratio))
+			return
+		end
+	end
+	GameTooltip:AddLine("You never performed this mission",1,0,0)
 end
 
 local function switch(flag)
@@ -1360,63 +1394,63 @@ function addon:BuildMissionCache(id,data)
 		if (not mission) then return end
 		cache.missions[id]=mission
 		if dbg then print("Retrieved",id,mission.name) end
-		local _,xp,type,typeDesc,typeIcon,locPrefix,_,enemies=G.GetMissionInfo(id)
-		mission.rank=mission.level < 100 and mission.level or mission.iLevel
-		mission.xp=xp
-		mission.xpBonus=0
-		mission.resources=0
-		mission.gold=0
-		mission.followerUpgrade=0
-		mission.itemLevel=0
-		for k,v in pairs(mission.rewards) do
-			if (v.followerXP) then mission.xpBonus=mission.xpBonus+v.followerXP end
-			if (v.currencyID and v.currencyID==GARRISON_CURRENCY) then mission.resources=v.quantity end
-			if (v.currencyID and v.currencyID==0) then mission.gold =mission.gold+v.quantity/10000 end
-			if (v.itemID) then
-				if (v.itemID~=120205) then
-					local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
-					if (itemName) then
-						if (itemLevel > 1 ) then
-							mission.itemLevel=itemLevel
-						else
-							mission.followerUpgrade=1
-						end
+	end
+	local _,xp,type,typeDesc,typeIcon,locPrefix,_,enemies=G.GetMissionInfo(id)
+	mission.rank=mission.level < 100 and mission.level or mission.iLevel
+	mission.xp=xp
+	mission.xpBonus=0
+	mission.resources=0
+	mission.gold=0
+	mission.followerUpgrade=0
+	mission.itemLevel=0
+	for k,v in pairs(mission.rewards) do
+		if (v.followerXP) then mission.xpBonus=mission.xpBonus+v.followerXP end
+		if (v.currencyID and v.currencyID==GARRISON_CURRENCY) then mission.resources=v.quantity end
+		if (v.currencyID and v.currencyID==0) then mission.gold =mission.gold+v.quantity/10000 end
+		if (v.itemID) then
+			if (v.itemID~=120205) then
+				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
+				if (itemName) then
+					if (itemLevel > 1 ) then
+						mission.itemLevel=itemLevel
+					else
+						mission.followerUpgrade=itemRarity
 					end
 				end
 			end
 		end
-		mission.totalXp=(tonumber(mission.xp) or 0) + (tonumber(mission.xpBonus) or 0)
-		mission.globalXp=mission.totalXp*mission.numFollowers
-		if (mission.resources==0 and mission.gold==0 and mission.itemLevel==0 and mission.followerUpgrade==0) then
-			mission.xpOnly=true
-		else
-			mission.xpOnly=false
-		end
-		mission.locPrefix=locPrefix
-		if (not type) then
---@debug@
-			xprint("No type",id,data.name)
---@end-debug@
-		else
-			if (not self.db.global.types[type]) then
-				self.db.global.types[type]={name=type,description=typeDesc,icon=typeIcon}
-			end
-		end
-		mission.slots={}
-		local slots=mission.slots
-
-		for i=1,#enemies do
-			local mechanics=enemies[i].mechanics
-			for i,mechanic in pairs(mechanics) do
-				tinsert(slots,mechanic)
-				self.db.global.abilities[mechanic.name]=mechanic
-			end
-		end
-		if (type) then
-			tinsert(slots,{name=TYPE,key=type,icon=typeIcon})
-		end
-		--collectgarbace("step",100)
 	end
+	mission.totalXp=(tonumber(mission.xp) or 0) + (tonumber(mission.xpBonus) or 0)
+	mission.globalXp=mission.totalXp*mission.numFollowers
+	if (mission.resources==0 and mission.gold==0 and mission.itemLevel==0 and mission.followerUpgrade==0) then
+		mission.xpOnly=true
+	else
+		mission.xpOnly=false
+	end
+	mission.locPrefix=locPrefix
+	if (not type) then
+--@debug@
+		xprint("No type",id,data.name)
+--@end-debug@
+	else
+		if (not self.db.global.types[type]) then
+			self.db.global.types[type]={name=type,description=typeDesc,icon=typeIcon}
+		end
+	end
+	mission.slots={}
+	local slots=mission.slots
+
+	for i=1,#enemies do
+		local mechanics=enemies[i].mechanics
+		for i,mechanic in pairs(mechanics) do
+			tinsert(slots,mechanic)
+			self.db.global.abilities[mechanic.name]=mechanic
+		end
+	end
+	if (type) then
+		tinsert(slots,{name=TYPE,key=type,icon=typeIcon})
+	end
+	--collectgarbage("step",100)
 	mission.basePerc=select(4,G.GetPartyMissionInfo(id))
 
 end

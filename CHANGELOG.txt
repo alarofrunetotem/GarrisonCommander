@@ -4,6 +4,7 @@
 ** Feature: Little screen mode now have almost all the informations present in big screen
 ** Feature: In follower list: xp needed to level, time to be available, item and armor level
 ** Feature: Garrison Commander header can now be opened or closed at will to reclaim more screen estate
+** Feature: Mission tooltip reports how many times you ran that mission and how you performed
 * 2.1.4
 ** Fix: Mission page semi transparet when MP is installed
 ** Fix: Was spamming "released" on main window closing
