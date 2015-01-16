@@ -1581,6 +1581,7 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 	dbcache.running[missionID].started=time()
 	dbcache.running[missionID].duration=select(2,G.GetPartyMissionInfo(missionID))
 	wipe(dbcache.running[missionID].followers)
+	wipe(dbcache.ignored[missionID])
 	for i=1,3 do
 		local m=parties[missionID].members[i]
 		if (m) then
@@ -3393,8 +3394,6 @@ do
 				GarrisonFollowerPage_ShowFollower(GMF.FollowerTab,followerID)
 			end
 		else
-		local ignore=self.privatedb.profile.ignored
-
 			menu[1].text=frame.info.name
 			menu[2].arg1=missionID
 			menu[2].arg2=followerID
