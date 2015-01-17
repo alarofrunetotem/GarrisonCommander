@@ -1266,7 +1266,7 @@ function addon:BuildMissionsCache(fc,mm,OnEvent)
 	for index=1,#t do
 		local missionID=t[index].missionID
 		if (not	dbcache.seen[missionID]) then
-			dbcache.seen[missionID]=OnEvent and time() or dbcache.lastseen
+			dbcache.seen[missionID]=(OnEvent and time()) or dbcache.lastseen
 		end
 		self:BuildMissionCache(missionID,t[index])
 		if fc then self:FillCounters(missionID) end
@@ -1274,7 +1274,7 @@ function addon:BuildMissionsCache(fc,mm,OnEvent)
 	end
 	for k,v in pairs(dbcache.seen) do
 		if (not cache.missions[k]) then
-			local span=time()-tonumber(v) or time()
+			local span=time()-(tonumber(v) or time())
 			if (span > db.lifespan[k]) then
 				db.lifespan[k]=span
 			end
@@ -1590,7 +1590,7 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 		end
 	end
 	local v=dbcache.seen[missionID]
-	local span=time()-tonumber(v) or time()
+	local span=time()-(tonumber(v) or time())
 	if (span > db.lifespan[missionID]) then
 		db.lifespan[missionID]=span
 		-- IF we started it.. it was alive, so it's expire time is at least the time we waited before starting it
@@ -2211,15 +2211,6 @@ end
 function addon:Options()
 	-- Main Garrison Commander Header
 	GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
---@alpha@
-	local fs=GCF:CreateFontString(nil, "BACKGROUND", "WorldMapTextFont")
-	fs:SetAllPoints()
-	fs:SetJustifyH("CENTER")
-	fs:SetJustifyV("CENTER")
-	fs:SetText("A l p h a   V e r s i o n")
-	fs:SetTextColor(C.Silver())
-	fs:SetAlpha(0.6)
---@end-alpha@
 	-- Removing wood corner. I do it here to not derive an xml frame. This shoud play better with ui extensions
 	GCF.CloseButton:Hide()
 	for _,f in pairs({GCF:GetRegions()}) do
@@ -3050,6 +3041,11 @@ function addon:GetFollowerStatus(followerID,withTime,colored)
 		return colored and C(AVAILABLE,"Green") or AVAILABLE
 	end
 end
+function addon:RemoveFromAllMissions(followerID)
+	for i=1,#cache.missions do
+		pcall(G.RemoveFollowerFromMission,followerID,cache.missions[i])
+	end
+end
 function addon:FillMissionPage(missionInfo)
 	if( IsControlKeyDown()) then xprint("Shift key, ignoring mission prefill") return end
 	if (self:GetBoolean("NOFILL")) then return end
@@ -3066,12 +3062,16 @@ function addon:FillMissionPage(missionInfo)
 		for i=1,missionInfo.numFollowers do
 			local followerID=members[i]
 			if (followerID) then
-				if false then
-				local info=self:GetFollowerData(followerID)
+				local status=G.GetFollowerStatus(followerID)
+				if (status) then
+					if status == GARRISON_FOLLOWER_IN_PARTY then -- Left from a previous assignment?
 --@debug@
-				xprint("Adding follower",info.name)
+						xprint(followerID,self:GetFollowerdData(followerID,"name"),"was already on mission")
 --@end-debug@
-				GarrisonMissionPage_SetFollower(GMFMissionPageFollowers[i],info)
+						self:RemoveFromAllMissions(followerID)
+					else
+						self:Popup("You attemped to use a busy follower. Please check '" .. IGNORE_UNAIVALABLE_FOLLOWERS .."'",10)
+					end
 				else
 					GarrisonMissionPage_AddFollower(followerID)
 				end
