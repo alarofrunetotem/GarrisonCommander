@@ -16,9 +16,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
-xprint=function(...) print("DBG",...) end
-xdump=function(d,t) print(t) DevTools_Dump(d) end
-xtrace=trace
+--xprint=function(...) print("DBG",...) end
+--xdump=function(d,t) print(t) DevTools_Dump(d) end
+--xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -467,10 +467,8 @@ end
 local origGarrisonMissionButton_OnEnter = _G.GarrisonMissionButton_OnEnter
 function _G.GarrisonMissionButton_OnEnter(this,button)
 	origGarrisonMissionButton_OnEnter(this,button)
-	if (this.info.inProgress) then
-		GameTooltip:AddDoubleLine("ID:",this.info.missionID)
-		GameTooltip:Show()
-	end
+	GameTooltip:AddDoubleLine("ID:",this.info.missionID)
+	GameTooltip:Show()
 end
 --@end-debug@
 -- These local will became conf var
@@ -484,6 +482,7 @@ function addon.Garrison_SortMissions_Chance(missionsList)
 	local comparison
 	do
 		function comparison(mission1, mission2)
+			if type(mission1)~="table" or type(mission2) ~="table" then return end
 			local p1=parties[mission1.missionID]
 			local p2=parties[mission2.missionID]
 			if (p2.full and not p1.full) then return false end
@@ -501,6 +500,7 @@ function addon.Garrison_SortMissions_Age(missionsList)
 	local comparison
 	do
 		function comparison(mission1, mission2)
+			if type(mission1)~="table" or type(mission2) ~="table" then return end
 			local p1=parties[mission1.missionID]
 			local p2=parties[mission2.missionID]
 			if (p2.full and not p1.full) then return false end
@@ -520,6 +520,7 @@ function addon.Garrison_SortMissions_Followers(missionsList)
 	local comparison
 	do
 		function comparison(mission1, mission2)
+			if type(mission1)~="table" or type(mission2) ~="table" then return end
 			local p1=mission1.numFollowers
 			local p2=mission2.numFollowers
 			if (p1==p2) then
@@ -535,6 +536,7 @@ function addon.Garrison_SortMissions_Xp(missionsList)
 	local comparison
 	do
 		function comparison(mission1, mission2)
+			if type(mission1)~="table" or type(mission2) ~="table" then return end
 			local p1=addon:GetMissionData(mission1.missionID,'globalXp')
 			local p2=addon:GetMissionData(mission2.missionID,'globalXp')
 			if (p1==p2) then
@@ -1044,7 +1046,7 @@ function addon:MatchMaker(missionID,mission,party)
 	local ct=counterThreatIndex[missionID]
 	openParty(missionID,mission.numFollowers)
 	-- Preloading skipped ones in party table.
-	if (dbg) then print("Matchmaking mission ",missionID,mission.name) end
+	if (dbg) then print(C("Matchmaking mission","Red"),missionID,mission.name) end
 	if (missionCounters) then
 		for i=1,#missionCounters do
 			local followerID=missionCounters[i].followerID
@@ -1115,7 +1117,6 @@ end
 function addon:GetCounterBias(missionID,threat)
 	local bias=-1
 	local who=""
-	if dbg then DevTools_Dump(counterThreatIndex[missionID]) end
 	local index=counterThreatIndex[missionID]
 	local data=counters[missionID]
 	if (type(index)=="table" and type(counters)=="table") then
@@ -1124,7 +1125,6 @@ function addon:GetCounterBias(missionID,threat)
 			for i=1,#index do
 				local follower=data[index[i]]
 				if ((tonumber(follower.bias) or -1) > bias) then
-					if (dbg) then print("Countered by",self:GetFollowerData(follower.followerID,'fullname'),follower.bias) end
 					if (inParty(missionID,follower.followerID)) then
 						if (dbg) then print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
 						bias=follower.bias
@@ -1146,7 +1146,6 @@ function addon:AddLine(name,status)
 	GameTooltip:AddDoubleLine(name, status,nil,nil,nil,r2,g2,b2)
 end
 function addon:SetThreatColor(obj,missionID)
-	if (dbg) then print(C("Evaluating ","Red"),missionID,obj.Icon:GetTexture()) end
 	local bias=self:GetCounterBias(missionID,obj.Icon:GetTexture())
 	local color=self:GetBiasColor(bias,nil,"Green")
 	local c=C[color]
@@ -1599,6 +1598,7 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 	counters[missionID]=nil
 	parties[missionID]=nil
 	self:BuildMissionsCache(true,true)
+	self:RefreshFollowerStatus()
 end
 ---
 --@param #string event GARRISON_MISSION_FINISHED
@@ -1656,6 +1656,7 @@ function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed
 	dbcache.seen[missionID]=nil
 	counters[missionID]=nil
 	parties[missionID]=nil
+	self:RefreshFollowerStatus()
 end
 function addon:EventGARRISON_FOLLOWER_REMOVED()
 	wipe(followersCache)
@@ -1756,7 +1757,11 @@ function addon:ActivateButton(button,OnClick,Tooltiptext,persistent)
 	if (Tooltiptext) then
 		button.tooltip=Tooltiptext
 		button:SetScript("OnEnter",ShowTT)
-		button:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+		if persistent then
+			button:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+		else
+			button:SetScript("OnLeave",function() GameTooltip:Hide() end)
+		end
 	else
 		button:SetScript("OnEnter",nil)
 		button:SetScript("OnLeave",nil)
@@ -1773,7 +1778,34 @@ function addon:Shrink(button)
 		f:SetHeight(f.savedHeight)
 	end
 end
-
+do
+	local s=setmetatable({},{__index=function(t,k) return 0 end})
+	local FOLLOWER_STATUS_FORMAT=(bigscreen and "Followers status " or "" )..
+								C(AVAILABLE..':%d ','green') ..
+								C(GARRISON_FOLLOWER_WORKING .. ":%d ",'cyan') ..
+								C(GARRISON_FOLLOWER_ON_MISSION .. ":%d ",'red') ..
+								C(GARRISON_FOLLOWER_INACTIVE .. ":%d","silver")
+	function addon:RefreshFollowerStatus()
+		wipe(s)
+		for i=1,#followersCache do
+			local status=self:GetFollowerStatus(followersCache[i].followerID)
+			s[status]=s[status]+1
+		end
+		if (GMF.FollowerStatusInfo) then
+			GMF.FollowerStatusInfo:SetWidth(0)
+			GMF.FollowerStatusInfo:SetFormattedText(
+				FOLLOWER_STATUS_FORMAT,
+				s[AVAILABLE],
+				s[GARRISON_FOLLOWER_WORKING],
+				s[GARRISON_FOLLOWER_ON_MISSION],
+				s[GARRISON_FOLLOWER_INACTIVE]
+				)
+		end
+	end
+	function addon:GetTotFollowers(status)
+		return s[status] or 0
+	end
+end
 function addon:ShowMissionControl()
 	if (not GMC:IsShown()) then
 		GarrisonMissionFrame_SelectTab(999)
@@ -2338,6 +2370,7 @@ end
 function addon:HookedGarrisonMissionFrame_SelectTab(id)
 	GMC:Hide()
 	GMC.tabMC:SetChecked(false)
+	self:RefreshFollowerStatus()
 	wipe(GMCUsedFollowers)
 end
 ---
@@ -2347,6 +2380,7 @@ do
 		function GarrisonMissionList_SetTab(...)
 		-- I dont actually care wich page we are shoing, I know I must redraw missions
 		original(...)
+		addon:RefreshFollowerStatus()
 		for i=1,#GMFMissionListButtons do
 			GMFMissionListButtons.lastMissionID=nil
 		end
@@ -2722,6 +2756,8 @@ function addon:SetUp(...)
 	self:MarkAsNew(tabMC,'MissionControl','New in 2.2.0! Try automatic mission management!')
 	tabMC:Show()
 	GMC.tabMC=tabMC
+	GMF.FollowerStatusInfo=GMF:CreateFontString(nil, "BORDER", "GameFontNormal")
+	GMF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,-5)
 	local tabCF=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	tabCF.tooltip="Open Garrison Commander Configuration Screen"
 	tabCF:SetNormalTexture("Interface\\ICONS\\Trade_Engineering.blp")
@@ -2817,6 +2853,7 @@ function addon:StartUp(...)
 	if HD then self:ScheduleRepeatingTimer("Clock",1) end
 	self:BuildMissionsCache(true,true)
 	self:BuildRunningMissionsCache()
+	self:RefreshFollowerStatus()
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
 end
@@ -3058,6 +3095,7 @@ function addon:FillMissionPage(missionInfo)
 	GarrisonMissionPage_ClearParty()
 	local party=parties[missionID]
 	if (party) then
+		holdEvents()
 		local members=party.members
 		for i=1,missionInfo.numFollowers do
 			local followerID=members[i]
@@ -3066,17 +3104,21 @@ function addon:FillMissionPage(missionInfo)
 				if (status) then
 					if status == GARRISON_FOLLOWER_IN_PARTY then -- Left from a previous assignment?
 --@debug@
-						xprint(followerID,self:GetFollowerdData(followerID,"name"),"was already on mission")
+						xprint(followerID,self:GetFollowerData(followerID,"name"),"was already on mission")
 --@end-debug@
 						self:RemoveFromAllMissions(followerID)
+						GarrisonMissionPage_AddFollower(followerID)
 					else
 						self:Popup("You attemped to use a busy follower. Please check '" .. IGNORE_UNAIVALABLE_FOLLOWERS .."'",10)
 					end
 				else
+					pcall(G.RemoveFollowerFromMission,missionID,followerID)
+					xprint("Adding",followerID,G.GetFollowerName(followerID))
 					GarrisonMissionPage_AddFollower(followerID)
 				end
 			end
 		end
+		releaseEvents()
 	end
 	GarrisonMissionPage_UpdateMissionForParty()
 end
@@ -3499,14 +3541,13 @@ function addon:RenderButton(button,rewards,numRewards)
 		button.xp=button:CreateFontString(nil, "ARTWORK", "QuestMaprewardsFont")
 		button.xp:SetPoint("TOPRIGHT",button.Rewards[1],"TOPRIGHT")
 		button.xp:SetJustifyH("RIGHT")
-		button.xp:Show()
-
 	end
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
 	button.xp:SetWidth(0)
 	if (not GMF.MissionTab.MissionList.showInProgress) then
 		button.xp:SetFormattedText("Xp: %d (approx)",self:GetMissionData(missionID,'globalXp'))
 		button.xp:SetTextColor(self:GetDifficultyColors(self:GetMissionData(missionID,'totalXp')/3000*100))
+		button.xp:Show()
 	else
 		button.xp:Hide()
 	end
@@ -3658,21 +3699,28 @@ function addon:GMCCreateMissionList(workList)
 				end
 			end
 		end
+		if (parties[m1.missionID].perc and parties[m2.missionID].perc) then
+			return parties[m1.missionID].perc > parties[m2.missionID].perc
+		end
 		return m1.level > m2.level
 	end
 	table.sort(workList,msort)
 	--@debug@
 	xprint("Sorted list")
+	local x=new()
 	for i=1,#workList do
 		local mission=self:GetMissionData(workList[i])
 		local t=new()
 		for i=1,#GMC.settings.itemPrio do
 			local criterium=GMC.settings.itemPrio[i]
 			tinsert(t,format("%s: %d",criterium,mission[criterium]))
-			xprint(workList[i],mission.name,strjoin("\t",unpack(t)))
 		end
+		tinsert(x,mission.name .." "..  strjoin("\t",unpack(t)) .. " Success" ..  tostring(parties[mission.missionID].perc))
 		del(t)
 	end
+	local scroll=self:GetScroller("Sorted missions")
+	self:cutePrint(scroll,x)
+	del(x)
 	--@end-debug@
 
 end
@@ -3851,6 +3899,12 @@ function addon:GMC_OnClick_Start(this,button)
 	addon:GMCCreateMissionList(aMissions)
 	wipe(GMCUsedFollowers)
 	wipe(GMC.ml.Parties)
+	self:RefreshFollowerStatus()
+	if (self:GetTotFollowers(AVAILABLE) == 0) then
+		self:Popup("All followers are busy",10)
+		this:Enable()
+		return
+	end
 	if (#aMissions>0) then
 		GMC.ml.widget:SetFormattedTitle(L["Processing mission %d of %d"],1,#aMissions)
 	else
@@ -4263,6 +4317,21 @@ function addon:GMCBuildMissionList()
 end
 --@do-not-package@
 _G.GAC=addon
+
+addon.oldSetUp=addon.SetUp
+function addon:ExperimentalSetUp()
+	self:oldSetUp()
+	print("Experimental features enabled")
+	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
+	local bt = CreateFrame('BUTTON',nil, ref, 'UIPanelButtonTemplate')
+	bt:SetWidth(300)
+	bt:SetText(L["Garrison Comander Quick Mission Completion"])
+	bt:SetPoint("CENTER",0,-50)
+	addon:ActivateButton(bt,"MissionComplete","Complete all missions without confirmation")
+end
+addon.SetUp=addon.ExperimentalSetUp
+
+
 --- Enable a trace for every function call. It's a VERY heavy debug
 --
 if HD then
@@ -4374,6 +4443,10 @@ function addon:DumpFollower(name)
 		self:cutePrint(scroll,follower)
 	end
 
+end
+function addon:DumpFollowers()
+	local scroll=self:GetScroller("Followers Cache (" .. #followersCache ..")"  )
+	self:cutePrint(scroll,followersCache)
 end
 function addon:DumpFollowerMissions(missionID)
 	local scroll=self:GetScroller("FollowerMissions " .. self:GetMissionData(missionID,'name'))
