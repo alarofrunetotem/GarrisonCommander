@@ -1,4 +1,10 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
+* 2.2.1
+** Feature: weapon/armor iLevel on followers' button can now be disabled
+** Feature: when building proposed partis, maxed follower are used when not using them was leaving ght party not fully filled
+** Fix: empty follower button no longer has tooltip
+** Fix: Lua error comparing nil in line 988
+** Fix: Available/Working/On Missions/Inactive follower count was not being updated when completing last mission
 * 2.2.0
 ** Feature: Fast Mission Control: you can have GC set up parties for your follower and send them out with just two mouse click.Party building can be customized setting varios criteria.This feature is invoked via the right side tab with Hammer and clock. Take some time to check it. Feedbacl appreciated
 ** Feature: Little screen mode now have almost all the informations present in big screen
