@@ -16,9 +16,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
---xprint=function(...) print("DBG",...) end
---xdump=function(d,t) print(t) DevTools_Dump(d) end
---xtrace=trace
+xprint=function(...) print("DBG",...) end
+xdump=function(d,t) print(t) DevTools_Dump(d) end
+xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -981,9 +981,10 @@ function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 				local rank=data.rank
 				local quality=data.quality
 				repeat
-					if ((perc or 0) <100) then
+					perc=tonumber(perc) or 0
+					if ((perc) <100) then
 						pushFollower(followerID)
-						local newperc=select(4,G.GetPartyMissionInfo(missionID))
+						local newperc=tonumber(select(4,G.GetPartyMissionInfo(missionID))) or 0
 						removeFollower(followerID)
 						if (newperc > candidatePerc) then
 							candidatePerc=newperc
@@ -1633,7 +1634,9 @@ end
 function addon:EventGARRISON_MISSION_BONUS_ROLL_COMPLETE(event,missionID,completed,success)
 --@debug@
 	xprint(event,missionID,completed,success)
+	self:MissionAutoComplete(event,missionID,completed,success)
 --@end-debug@
+	self:RefreshFollowerStatus()
 end
 ---
 --@param #number missionID mission identifier
@@ -1646,9 +1649,10 @@ end
 --GARRISON_MISSION_NPC_OPENED ??
 --GARRISON_MISSION_BONUS_ROLL_COMPLETE missionID nil
 --
-function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,success)
+function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards)
 --@debug@
-	xprint(event,missionID)
+	xprint(event,missionID,completed,rewards)
+	self:MissionAutoComplete(event,missionID,completed,rewards)
 --@end-debug@
 	dbcache.history[missionID][time()]={result=100,success=success}
 	dbcache.seen[missionID]=nil
@@ -1656,7 +1660,6 @@ function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed
 	dbcache.seen[missionID]=nil
 	counters[missionID]=nil
 	parties[missionID]=nil
-	self:RefreshFollowerStatus()
 end
 function addon:EventGARRISON_FOLLOWER_REMOVED()
 	wipe(followersCache)
@@ -4330,7 +4333,42 @@ function addon:ExperimentalSetUp()
 	addon:ActivateButton(bt,"MissionComplete","Complete all missions without confirmation")
 end
 addon.SetUp=addon.ExperimentalSetUp
+do
+	local missions={}
+	local missionsIndex=1
+	local currentmission
+	function addon:MissionComplete(this,button)
+		missions=G.GetCompleteMissions()
+		--GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
+		if (missions and #missions > 0) then
+			missionsIndex=1
+			print("We have " .. #missions .. " missions to complete")
+			self:MissionAutoComplete("LOOP")
+		end
+	end
+	function addon:MissionAutoComplete(event,missionID,completed,custom)
+-- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
+-- C_Garrison.MissionBonusRoll
 
+		if (event=="GARRISON_MISSION_COMPLETE_RESPONSE") then
+			xprint(missionID,completed,"Mission result:", custom)
+		elseif (event=="GARRISON_MISSION_BONUS_ROLL_COMPLETE") then
+			xprint(missionID,completed,"Mission result:")
+			xdump(custom,"ROLL")
+			xdump(G.GetMissionPartyInfo(missionID),'partyinfo')
+			xdump(G.GetMissionInfo(missionID),'info')
+		else
+			local mission=missions[missionsIndex]
+			if (mission) then
+				missionID=mission.missionID
+				xprint(event,missionID)
+				xdump({G.GetPartyMissionInfo(missionID)},'PARTYINFO')
+				xdump({G.GetMissionInfo(missionID)},'INFO')
+				xdump(mission,"MISSION")
+			end
+		end
+	end
+end
 
 --- Enable a trace for every function call. It's a VERY heavy debug
 --
