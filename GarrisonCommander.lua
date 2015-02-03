@@ -608,6 +608,7 @@ function addon:OnInitialized()
 	self:AddLabel("Followers Panel")
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
+	self:AddToggle("ILV",true,L["Show weapon/armor level"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
 	--self:AddPrivateAction("ShowMissionControl",L["Mission control"],L["You can choose some criteria and have GC autosumbit missions for you"])
 --@debug@
 	self:AddLabel("Developers options")
@@ -1705,7 +1706,7 @@ function addon:EventGARRISON_FOLLOWER_REMOVED(event)
 	wipe(followersCacheIndex)
 end
 
-function addon:EventGARRISON_MISSION_BONUS_ROLL_COMPLETE(event,missionID,completed,success)
+function addon:EventGARRISON_MISSION_BONUS_ROLL_LOOT(event,missionID,completed,success)
 --@debug@
 	xprint('evt',event,missionID,completed,success)
 --@end-debug@
@@ -1717,10 +1718,10 @@ end
 --@oaram #boolean success Mission was succesfull
 --Mission complete Sequence is:
 --GARRISON_MISSION_COMPLETE_RESPONSE
---GARRISON_MISSION_BONUS_ROLL_COMPLETE missionID true
+--GARRISON_MISSION_BONUS_ROLL_LOOT missionID true
 --GARRISON_FOLLOWER_XP_CHANGED (1 or more times
 --GARRISON_MISSION_NPC_OPENED ??
---GARRISON_MISSION_BONUS_ROLL_COMPLETE missionID nil
+--GARRISON_MISSION_BONUS_ROLL_LOOY missionID nil
 --
 function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards)
 --@debug@
@@ -2496,7 +2497,7 @@ function addon:Options()
 				end
 			end)
 		end
-		GCF.Pin.tooltip=L["Toggles Garrison Commander Menu AutoHide on/off"]
+		GCF.Pin.tooltip=L["Toggles Garrison Commander Menu Header on/off"]
 		GCF.Pin:SetScript("OnEnter",ShowTT)
 		GCF.Pin:SetScript("OnClick",function(this)
 			local value=this:GetChecked()
@@ -2657,7 +2658,7 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 			frame.GCXp:Show()
 		end
 	end
-	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL ) then
+	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL and self:GetToggle("ILV") ) then
 		local follower=self:GetFollowerData(follower.followerID)
 		local c1=ITEM_QUALITY_COLORS[follower.weaponQuality or 1]
 		local c2=ITEM_QUALITY_COLORS[follower.armorQuality or 1]
@@ -3078,7 +3079,7 @@ end
 function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
-	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
+	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_ADDED")
@@ -3732,6 +3733,7 @@ function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(th
 	local frame = GMF.MissionComplete
 	if (not frame:IsShown()) then
 		self:Trigger("MSORT")
+		self:RefreshFollowerStatus()
 	end
 end
 function addon:OnClick_GarrisonMissionButton(tab,button)
