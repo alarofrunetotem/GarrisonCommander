@@ -32,6 +32,12 @@ Pannelli utili:
 
 GMF.MissionTab.MissionList.CompleteDialog.BorderFrame.LoadingFrame Loading col tondino
 
+GMFMissions.CompleteDialog è il fondino nero dietro il pannello con la tipa con la benda
+GMFMissions.CompleteDialog.BorderFrame è il pannello con la tipa con la benda
+GMFMissions.CompleteDialog.BorderFrame.Stage  è lo sfondo colorato
+GMFMissions.CompleteDialog.BorderFrame.Model è la tipa con la benda
+
+
 
 Dump: value=C_Garrison.GetMissionRewardInfo(91)
 [1]={
@@ -252,3 +258,36 @@ Dump: value=table returned by GetFollowerInfo for a collected follower
 		else
 			HybridScrollFrame_CreateButtons(frame.FollowerList.listScroll, "GarrisonMissionFollowerButtonTemplate", 7, -7, nil, nil, nil, -6);
 		end
+
+
+Fonts:
+* GameFontNormal
+* GameFontNormalSmall
+* GameFontNormalLarge
+* GameFontHighlight
+* GameFontHighlightSmall
+* GameFontHighlightSmallOutline
+* GameFontHighlightLarge
+* GameFontDisable
+* GameFontDisableSmall
+* GameFontDisableLarge
+* GameFontGreen
+* GameFontGreenSmall
+* GameFontGreenLarge
+* GameFontRed
+* GameFontRedSmall
+* GameFontRedLarge
+* GameFontWhite
+* GameFontDarkGraySmall
+* NumberFontNormalYellow
+* NumberFontNormalSmallGray
+* QuestFontNormalSmall
+* DialogButtonHighlightText
+* ErrorFont
+* TextStatusBarText
+* CombatLogFont
+
+Xp bonus:
+570
+593
+
