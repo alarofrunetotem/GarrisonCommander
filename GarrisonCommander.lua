@@ -2627,10 +2627,10 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(frame,follower,showCo
 			frame.GCTime=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 			frame.GCTime:SetPoint("TOPLEFT",frame.Status,"TOPRIGHT",5,0)
 			frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-			frame.GCXp:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",0,2)
+			frame.GCXp:SetPoint("TOPLEFT",frame.Name,"BOTTOMLEFT",0,-15)
 		end
 		frame.GCIt=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCIt:SetPoint("TOPRIGHT",frame,"TOPRIGHT",-5,-3)
+		frame.GCIt:SetPoint("BOTTOMLEFT",frame.Name,"TOPLEFT",0,2)
 	end
 	if not frame.isCollected then
 		if not MP then
