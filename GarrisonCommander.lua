@@ -1,3 +1,4 @@
+print("Caricato versione mia")
 local me, ns = ...
 local _G=_G
 local pp=print
@@ -2024,16 +2025,11 @@ function addon:GenerateMissionCompleteList(title)
 			local m={}
 			local function onEnter(self)
 				if (self.itemlink) then
-					print("Itemlink",self.itemlink)
 					GameTooltip:SetHyperlink(self.itemlink)
 					GameTooltip:Show()
-				else
-				print("Onenter",self,self.frame)
 				end
 			end
 			function m:OnAcquire()
-				self.frame:SetPoint("LEFT")
-				self.itemlink=nil
 			end
 			function m:Show()
 				self.frame:Show()
@@ -2047,7 +2043,7 @@ function addon:GenerateMissionCompleteList(title)
 				local l=AceGUI:Create("Label")
 				l:SetFontObject(QuestTitleFontBlackShadow)
 				l:SetColor(C:Yellow())
-				l:SetText(name)
+				l:SetText(format("    %s",name))
 				l:SetFullWidth(true)
 				obj:AddChild(l)
 			end
@@ -2081,8 +2077,9 @@ function addon:GenerateMissionCompleteList(title)
 			function m:AddIconText(icon,text,qt)
 				local obj=self.scroll
 				local l=AceGUI:Create("InteractiveLabel")
+				l:SetHighlight(C.Yellow())
 				l:SetCallback("OnEnter",function() print("onEnter") end )
-				l:SetCallback("OnLeave",function() GameTooltip:Hide() end)
+				l:SetCallback("OnLeave",function() GxameTooltip:Hide() end)
 				l:SetFontObject(GameFontNormal)
 				if (qt) then
 					l:SetText(format("%s x %s",text,qt))
@@ -2152,9 +2149,8 @@ function addon:GenerateContainer()
 			widget.content = content
 			--addBackdrop(content,'Green')
 			content.obj = widget
-			content:SetPoint("TOP",frame,"TOP",0,-25)
-			content:SetPoint("BOTTOM",frame,"BOTTOM",0,25)
-			content:SetWidth(400)
+			content:SetPoint("TOPLEFT",25,-25)
+			content:SetPoint("BOTTOMRIGHT",-25,25)
 			AceGUI:RegisterAsContainer(widget)
 			return widget
 		end
@@ -2672,7 +2668,7 @@ end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
 	if (frame.info.isCollected) then
 		if (button=="LeftButton") then
-			if (bigscreen)  then self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID) end
+			if (bigscreen and frame and frame.info and frame.info.followerID)  then self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID) end
 		end
 		self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.2,frame,frame.info,false)
 	end
@@ -2814,8 +2810,6 @@ do
 	local Busystatusmessage
 	local lastFollowerID=""
 	function addon:HookedGarrisonFollowerPage_ShowFollower(frame,followerID,force)
-		xprint("hook",followerID,force)
-		if (followerID==lastFollowerID and not force) then return end
 		lastFollowerID=followerID
 		local i=0
 		if (not self:IsFollowerList()) then return end
@@ -2823,7 +2817,6 @@ do
 		if (not Busystatusmessage) then Busystatusmessage=C(BUSY_MESSAGE,"Red)") end
 		-- frame has every info you can need on a follower, but here I dont really need them, maybe just counters
 		--xdump(table.Counters)
-		xprint("Passed",followerID)
 		local followerName=self:GetFollowerData(followerID,'name',true)
 		repeat -- a poor man goto
 			if (type(frame.followerID)=="number") then
@@ -2983,6 +2976,12 @@ function addon:SetUp(...)
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
 	tabCF:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-60)
 	tabMC:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-110)
+	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
+	local bt = CreateFrame('BUTTON',nil, ref, 'UIPanelButtonTemplate')
+	bt:SetWidth(300)
+	bt:SetText(L["Garrison Comander Quick Mission Completion"])
+	bt:SetPoint("CENTER",0,-50)
+	addon:ActivateButton(bt,"MissionComplete","Complete all missions without confirmation")
 	self:StartUp()
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
@@ -3542,7 +3541,7 @@ function addon:RenderExtraButton(button,numRewards)
 	local missionID=missionInfo.missionID
 	panel.missionID=missionID
 	local mission=missionInfo
-	if not mission then print "not yet updated missions" return end -- something went wrong while refreshing
+	if not mission then return end -- something went wrong while refreshing
 	if (not bigscreen) then
 		local index=mission.numFollowers+numRewards-3
 		local position=(index * -65) - 130
@@ -3647,6 +3646,7 @@ function addon:BuildExtraButton(button)
 	if (not bg.Party) then self:BuildFollowersButtons(button,bg,3) end
 end
 function addon:OnShow_FollowerPage(page)
+	if not GCFMissions then return end
 	xprint("Onshow")
 	if type(GCFMissions.Header.info)=="table" then
 		self:HookedGarrisonFollowerPage_ShowFollower(page,GCFMissions.Header.info.followerID,true)
@@ -3745,12 +3745,12 @@ function addon:OnClick_GarrisonMissionButton(tab,button)
 	xprint("Clicked GarrisonMissionButto")
 --@end-debug@
 	if (tab.fromFollowerPage) then
+		if (#tab.info.followers>0) then
+			return
+		end
 		GarrisonMissionFrame_SelectTab(1)
 		self:FillMissionPage(tab.info)
 	else
---@debug@
-		xdump(tab.info)
---@end-debug@
 		self:FillMissionPage(tab.info)
 	end
 end
@@ -4562,21 +4562,13 @@ function addon:GMCBuildMissionList()
 	return ml.widget
 
 end
---@do-not-package@
-_G.GAC=addon
-
+--[[
 addon.oldSetUp=addon.SetUp
 function addon:ExperimentalSetUp()
-	self:oldSetUp()
-	print("Experimental features enabled")
-	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
-	local bt = CreateFrame('BUTTON',nil, ref, 'UIPanelButtonTemplate')
-	bt:SetWidth(300)
-	bt:SetText(L["Garrison Comander Quick Mission Completion"])
-	bt:SetPoint("CENTER",0,-50)
-	addon:ActivateButton(bt,"MissionComplete","Complete all missions without confirmation")
+
 end
 addon.SetUp=addon.ExperimentalSetUp
+--]]
 do
 	local missions={}
 	local states={}
@@ -4635,8 +4627,10 @@ do
 			report=self:GenerateMissionCompleteList("Missions' results")
 			--report:SetPoint("TOPLEFT",GMFMissions.CompleteDialog.BorderFrame)
 			--report:SetPoint("BOTTOMRIGHT",GMFMissions.CompleteDialog.BorderFrame)
-			report:SetPoint("TOPLEFT",GMF,-2,2)
-			report:SetPoint("BOTTOMRIGHT",GMF,2,-2)
+			report:SetParent(GMF)
+			report:SetPoint("TOP",GMF)
+			report:SetPoint("BOTTOM",GMF)
+			report:SetWidth(500)
 			report:SetCallback("OnClose",function() return addon:MissionsCleanup() end)
 --@debug@
 			self:AddRow(scroller,"Auto completing " .. #missions .. " to complete")
@@ -4755,8 +4749,6 @@ do
 					return
 				end
 				currentMission.state=step
-			else
-				self:MissionsCleanup()
 			end
 		end
 	end
@@ -4813,6 +4805,8 @@ do
 
 	end
 end
+--@do-not-package@
+_G.GAC=addon
 
 --- Enable a trace for every function call. It's a VERY heavy debug
 --
