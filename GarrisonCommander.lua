@@ -1,4 +1,3 @@
-print("Caricato versione mia")
 local me, ns = ...
 local _G=_G
 local pp=print
@@ -2078,8 +2077,8 @@ function addon:GenerateMissionCompleteList(title)
 				local obj=self.scroll
 				local l=AceGUI:Create("InteractiveLabel")
 				l:SetHighlight(C.Yellow())
-				l:SetCallback("OnEnter",function() print("onEnter") end )
-				l:SetCallback("OnLeave",function() GxameTooltip:Hide() end)
+				--l:SetCallback("OnEnter",function() print("onEnter") end )
+				--l:SetCallback("OnLeave",function() GameTooltip:Hide() end)
 				l:SetFontObject(GameFontNormal)
 				if (qt) then
 					l:SetText(format("%s x %s",text,qt))
@@ -4584,7 +4583,9 @@ do
 	end
 	function addon:MissionsCleanup()
 		stopTimer()
+--@debug@
 		self:AddRow(scroller,"Final cleanup")
+--@end-debug@
 		self:MissionEvents(false)
 		GMF.MissionTab.MissionList.CompleteDialog:Hide()
 		GMF.MissionComplete:Hide()
