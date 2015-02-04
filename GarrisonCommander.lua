@@ -11,6 +11,7 @@ local D=LibStub("LibDeformat-3.0")
 local C=addon:GetColorTable()
 local L=addon:GetLocale()
 local print=addon:Wrap("Print")
+local dprint=print
 local trace=addon:Wrap("Trace")
 local xprint=function() end
 local xdump=function() end
@@ -1596,8 +1597,6 @@ function addon:WipeMission(missionID)
 	dbcache.seen[missionID]=nil
 	parties[missionID]=nil
 	--collectgarbage("step")
-
-
 end
 
 ---
@@ -3056,9 +3055,9 @@ function addon:StartUp(...)
 		self:SafeHookScript(b,"OnClick","OnClick_GarrisonMissionButton",true)
 --@debug@
 		self:SafeHookScript(b,"OnEnter","AddMissionId",true)
+	self:ScheduleRepeatingTimer("Clock",1)
 --@end-debug@
 	end
-	if HD then self:ScheduleRepeatingTimer("Clock",1) end
 	self:BuildMissionsCache(true,true)
 	self:BuildRunningMissionsCache()
 	self:RefreshFollowerStatus()
@@ -3086,23 +3085,6 @@ function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE")
 	-- Follower button enhancement in follower list
 	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
---@debug@
-	self:DebugEvents()
---@end-debug@
-end
-function addon:DebugEvents()
-	if true then return end
-	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
-	self:SafeRegisterEvent("GARRISON_MISSION_FINISHED")
-	self:SafeRegisterEvent("GARRISON_UPDATE")
-	self:SafeRegisterEvent("GARRISON_USE_PARTY_GARRISON_CHANGED")
-	self:SafeRegisterEvent("GARRISON_MISSION_NPC_OPENED")
-	self:SafeSecureHook("GarrisonMissionList_UpdateMissions")
-	self:SafeSecureHook("GarrisonMissionFrame_ShowCompleteMissions")
-	self:SafeSecureHook("GarrisonMissionFrame_CheckCompleteMissions")
-	self:SafeSecureHook("MissionCompletePreload_LoadMission")
-
-
 end
 function addon:checkMethod(method,hook)
 	if (type(self[method])=="function") then
@@ -3228,7 +3210,6 @@ do
 	function addon:GetFollowerData(key,subkey,refresh)
 		local k=followersCacheIndex[key]
 		if (not followersCache[1]) then
-			xprint("Follower cache refresh")
 			followersCache=G.GetFollowers()
 			for i,follower in pairs(followersCache) do
 				if (not follower.isCollected) then
@@ -3764,7 +3745,7 @@ end
 function addon:HookedGarrisonMissionButton_SetRewards(button,rewards,numRewards)
 	if GMF.MissionTab.MissionList.showInProgress and button.info.missionID==button.lastMissionID then collectgarbage("step",50) return end
 	button.lastMissionID=button.info.missionID
-	self:RenderButton(button,rewards,numRewards)
+	return self:RenderButton(button,rewards,numRewards)
 end
 function addon:RenderButton(button,rewards,numRewards)
 	if (not button or not button.Title) then
@@ -3891,7 +3872,7 @@ function addon:RenderButton(button,rewards,numRewards)
 	if (not button.gcPANEL) then
 		self:BuildExtraButton(button)
 	end
-	self:RenderExtraButton(button,numRewards)
+	return self:RenderExtraButton(button,numRewards)
 end
 
 -- Courtesy of Motig
