@@ -17,9 +17,9 @@ local xprint=function() end
 local xdump=function() end
 local xtrace=function() end
 --@debug@
-xprint=function(...) print("DBG",...) end
-xdump=function(d,t) print(t) DevTools_Dump(d) end
-xtrace=trace
+--xprint=function(...) print("DBG",...) end
+--xdump=function(d,t) print(t) DevTools_Dump(d) end
+--xtrace=trace
 --@end-debug@
 local pairs=pairs
 local select=select
@@ -373,7 +373,7 @@ end
 
 --
 -- Temporary party management
-local openParty,partyIgnore,isPartyIgnored,isInParty,pushFollower,removeFollower,fillParty,closeParty,roomInParty,storeFollowers,dumpParty,isPartyEmpty
+local openParty,partyIgnore,isPartyIgnored,isInParty,pushFollower,removeFollower,fillParty,closeParty,roomInParty,storeFollowers,dumpParty,isPartyEmpty,addTrait,needTrait
 
 do
 	local ID,maxFollowers,members,ignored=0,1,{},{}
@@ -954,7 +954,12 @@ RareOverlay table
 Summary table
 HighlightTL table
 --]]
-local function best(fid1,fid2,counters)
+local epicMountTrait=221
+local extraTrainingTrait=80 --all followers +35
+local fastLearnerTrait=29 -- only this follower +50
+local hearthStoneProTrait=236 -- all followers +36
+local scavengerTrait=79 -- More resources
+local function best(fid1,fid2,counters,mission)
 	if (not fid1) then return fid2 end
 	if (not fid2) then return fid1 end
 	local f1,f2=counters[fid1],counters[fid2]
@@ -965,15 +970,92 @@ local function best(fid1,fid2,counters)
 	if (f2.bias<0) then return fid1 end
 	if (f2.bias>f1.bias) then return fid2 end
 	if (f1.bias == f2.bias) then
+		if (mission.resources > 0 ) then
+			if addon:HasTrait(f1.followerID,scavengerTrait) then
+				return fid1
+			end
+		end
 		if (f2.quality < f1.quality or f2.rank < f1.rank) then return fid2 end
 	end
 	return fid1
 end
-local epicMountTrait=221
-local extraTrainingTrait=80 --all followers +35
-local fastLearnerTrait=29 -- only this follower +50
-local hearthStoneProTrait=236 -- all followers +36
-local scavengerTrait=79 -- More resources
+function addon:MatchMaker(missionID,mission,party,fromMissionControl)
+	if (GMFRewardSplash:IsShown()) then return end
+	if (not mission) then mission=self:GetMissionData(missionID) end
+	if (not party) then party=parties[missionID] end
+	local skipBusy=self:GetBoolean("IGM")
+	local skipMaxed=self:GetBoolean("IGP")
+	dbg=missionID==(tonumber(_G.MW) or 0)
+	local slots=mission.slots
+	local missionCounters=counters[missionID]
+	local ct=counterThreatIndex[missionID]
+	openParty(missionID,mission.numFollowers)
+	-- Preloading skipped ones in party table.
+	if (dbg) then print(C("Matchmaking mission","Red"),missionID,mission.name) end
+	if (missionCounters) then
+		for i=1,#missionCounters do
+			local followerID=missionCounters[i].followerID
+			if (not followerID) then
+				if (dbg) then print("Trying to use [",followerID,"]") end
+			else
+				if (self:IsIgnored(followerID,missionID)) then
+					if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
+					partyIgnore(followerID,true)
+				elseif not addon:IsFollowerAvailableForMission(followerID,skipBusy) then
+					if (dbg) then print("Skipped",n[followerID],"due to busy" ) end
+					partyIgnore(followerID)
+				elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
+					if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
+					partyIgnore(followerID,true)
+				end
+			end
+		end
+		if (type(slots)=='table') then
+			for i=1,#slots do
+				local threat=cleanicon(slots[i].icon)
+				local candidates=ct[threat]
+				local choosen
+				if (dbg) then print("Checking ",threat) end
+				for i=1,#candidates do
+					local followerID=missionCounters[candidates[i]].followerID
+					if isInParty(followerID) then
+						if dbg then print("Countered by",n[followerID],"which is already in party") end
+						choosen=nil
+						break
+					end
+					if followerID then
+						if(not isPartyIgnored(followerID)) then
+							choosen=best(choosen,candidates[i],missionCounters,mission)
+							if (dbg) then print("Taken",n[missionCounters[choosen].followerID]) end
+						else
+							if (dbg) then print("Party Ignored",n[followerID]) end
+						end
+					end
+				end
+				if (choosen) then
+					if (type(missionCounters[choosen]) ~="table") then
+						trace(format("%s %s %d %d",mission.name,threat,missionID,tonumber(choosen) or 0))
+					end
+					if dbg then print("Adding to party",n[missionCounters[choosen].followerID]," still need ",roomInParty()) end
+					pushFollower(missionCounters[choosen].followerID)
+				end
+				if (roomInParty()==0) then
+					break
+				end
+			end
+		else
+			xprint("Mission",missionID,"has no slots????")
+		end
+		if roomInParty() > 0 then self:AddTraitsToParty(missionID,mission) end
+	end
+	if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,skipMaxed) end
+	if (not fromMissionControl and not isPartyEmpty()) then
+		if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,false) end
+	end
+	storeFollowers(party.members)
+	party.full= roomInParty()==0
+	party.perc=closeParty()
+end
 function addon:AddTraitsToParty(missionID,mission,skipBusy,skipMaxed)
 	local t=counters[missionID]
 	if (t) then
@@ -1107,83 +1189,6 @@ function addon:TestMission(missionID)
 
 end
 
-function addon:MatchMaker(missionID,mission,party,fromMissionControl)
-	if (GMFRewardSplash:IsShown()) then return end
-	if (not mission) then mission=self:GetMissionData(missionID) end
-	if (not party) then party=parties[missionID] end
-	local skipBusy=self:GetBoolean("IGM")
-	local skipMaxed=self:GetBoolean("IGP")
-	dbg=missionID==(tonumber(_G.MW) or 0)
-	local slots=mission.slots
-	local missionCounters=counters[missionID]
-	local ct=counterThreatIndex[missionID]
-	openParty(missionID,mission.numFollowers)
-	-- Preloading skipped ones in party table.
-	if (dbg) then print(C("Matchmaking mission","Red"),missionID,mission.name) end
-	if (missionCounters) then
-		for i=1,#missionCounters do
-			local followerID=missionCounters[i].followerID
-			if (not followerID) then
-				if (dbg) then print("Trying to use [",followerID,"]") end
-			else
-				if (self:IsIgnored(followerID,missionID)) then
-					if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
-					partyIgnore(followerID,true)
-				elseif not addon:IsFollowerAvailableForMission(followerID,skipBusy) then
-					if (dbg) then print("Skipped",n[followerID],"due to busy" ) end
-					partyIgnore(followerID)
-				elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
-					if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
-					partyIgnore(followerID,true)
-				end
-			end
-		end
-		if (type(slots)=='table') then
-			for i=1,#slots do
-				local threat=cleanicon(slots[i].icon)
-				local candidates=ct[threat]
-				local choosen
-				if (dbg) then print("Checking ",threat) end
-				for i=1,#candidates do
-					local followerID=missionCounters[candidates[i]].followerID
-					if isInParty(followerID) then
-						if dbg then print("Countered by",n[followerID],"which is already in party") end
-						choosen=nil
-						break
-					end
-					if followerID then
-						if(not isPartyIgnored(followerID)) then
-							choosen=best(choosen,candidates[i],missionCounters)
-							if (dbg) then print("Taken",n[missionCounters[choosen].followerID]) end
-						else
-							if (dbg) then print("Party Ignored",n[followerID]) end
-						end
-					end
-				end
-				if (choosen) then
-					if (type(missionCounters[choosen]) ~="table") then
-						trace(format("%s %s %d %d",mission.name,threat,missionID,tonumber(choosen) or 0))
-					end
-					if dbg then print("Adding to party",n[missionCounters[choosen].followerID]," still need ",roomInParty()) end
-					pushFollower(missionCounters[choosen].followerID)
-				end
-				if (roomInParty()==0) then
-					break
-				end
-			end
-		else
-			xprint("Mission",missionID,"has no slots????")
-		end
-		if roomInParty() > 0 then self:AddTraitsToParty(missionID,mission) end
-	end
-	if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,skipMaxed) end
-	if (not fromMissionControl and not isPartyEmpty()) then
-		if roomInParty() > 0 then self:CompleteParty(missionID,mission,skipBusy,false) end
-	end
-	storeFollowers(party.members)
-	party.full= roomInParty()==0
-	party.perc=closeParty()
-end
 function addon:IsIgnored(followerID,missionID)
 	if (dbcache.ignored[missionID][followerID]) then return true end
 	if (dbcache.totallyignored[followerID]) then return true end
@@ -1700,9 +1705,9 @@ function addon:EventGARRISON_MISSION_FINISHED(event,missionID,...)
 end
 function addon:EventGARRISON_FOLLOWER_LIST_UPDATE(event)
 --We need to update all followers, maybe this could be done in an onupdate handle
---	wipe(followersCache)
---	wipe(followersCacheIndex)
---	wipe(parties)
+	wipe(followersCache)
+	wipe(followersCacheIndex)
+	wipe(parties)
 	xprint("Follower cache cleaned")
 end
 function addon:EventGARRISON_FOLLOWER_ADDED(event)
@@ -2657,9 +2662,7 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 		frame.GCIt:Hide()
 		return
 	end
-	if (not follower.fullname) then
-		addon:RecalculateFollower(follower)
-	end
+	addon:RecalculateFollower(follower)
 	if not MP then
 		if (frame.Status:GetText() == GARRISON_FOLLOWER_ON_MISSION) then
 			frame.GCTime:SetText(self:GetFollowerStatus(follower.followerID,true,true))
@@ -3302,6 +3305,28 @@ function addon:RecalculateFollower(follower,refreshrank)
 	follower.weaponQuality=select(3,GetItemInfo(weaponItemID))
 	follower.armorQuality=select(3,GetItemInfo(armorItemID))
 end
+function addon:CanCounter(followerID,id)
+	local abilities=self:GetFollowerData(followerID,abilities)
+	for i=1,#abilities do
+		local ability=abilities[i]
+		for k,v in pairs(ability.counter) do
+			if (k==trait or v.name==trait) then
+				return true
+			end
+		end
+	end
+end
+function addon:HasTrait(followerID,trait)
+	local abilities=self:GetFollowerData(followerID,abilities)
+	for i=1,#abilities do
+		local ability=abilities[i]
+		if ability.isTrait then
+			if ability.ID==trait then
+				return true
+			end
+		end
+	end
+end
 function addon:GetFollowerData(key,subkey,refresh)
 	local k=followersCacheIndex[key]
 	if (not followersCache[1]) then
@@ -3311,6 +3336,7 @@ function addon:GetFollowerData(key,subkey,refresh)
 				followersCache[i]=nil
 			else
 				self:RecalculateFollower(follower)
+				follower.abilities=G.GetFollowerAbilities(follower.followerID)
 			end
 		end
 		refresh=false
@@ -4704,11 +4730,14 @@ do
 			report:SetPoint("BOTTOM",GMF)
 			report:SetWidth(500)
 			report:SetCallback("OnClose",function() return addon:MissionsCleanup() end)
-			currentMission=tremove(missions)
-			currentMission.followerXp={}
-			for k,v in pairs(currentMission.followers) do
-				currentMission.followerXp[v]={0,G.GetFollowerXP(v),self:GetFollowerData(v,'level'),self:GetFollowerData(v,'quality')}
+			for i=1,#missions do
+				missions[i].followerXp={}
+				missions[i].items={}
+				for k,v in pairs(missions[i].followers) do
+					missions[i].followerXp[v]={0,G.GetFollowerXP(v),self:GetFollowerData(v,'level'),self:GetFollowerData(v,'quality')}
+				end
 			end
+			currentMission=tremove(missions)
 			self:MissionEvents(true)
 			self:MissionAutoComplete("LOOP")
 		end
@@ -4716,6 +4745,9 @@ do
 	function addon:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
+	--@debug@
+		print("evt",event,ID,arg1,arg2,agr3)
+	--@end-debug@
 		if (event =="LOOP" ) then
 			ID=currentMission and currentMission.missionID or "none"
 			arg1=currentMission and currentMission.state or "none"
@@ -4729,7 +4761,7 @@ do
 			return
 		-- GET_ITEM_INFO_RECEIVED: itemID
 		elseif (event=="GET_ITEM_INFO_RECEIVED") then
-			report:AddItem(ID,1)
+			currentMission.items[ID]=1
 			return
 		-- GARRISON_MISSION_COMPLETE_RESPONSE: missionID, requestCompleted, succeeded
 		elseif (event=="GARRISON_MISSION_COMPLETE_RESPONSE") then
@@ -4816,11 +4848,15 @@ do
 				elseif v.itemID then
 						-- Item reward
 						report:AddItem(v.itemID,1)
+						currentMission.items[v.itemID]=nil
 				else
 						-- Follower XP reward
 						report:AddIconText(v.icon,v.name)
 				end
 			end
+		end
+		for k,v in pairs(currentMission.items) do
+			report:AddItem(k,v)
 		end
 		for k,v in pairs(currentMission.followers) do
 			report:AddFollower(v,currentMission.followerXp[v])
