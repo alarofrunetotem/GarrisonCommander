@@ -1039,6 +1039,7 @@ function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
 					pushFollower(followerID)
 					local newperc=select(4,G.GetPartyMissionInfo(missionID))
 					newperc=tonumber(newperc) or 0
+					candidatePerc=tonumber(candidatePerc) or 0
 					removeFollower(followerID)
 					if (newperc > candidatePerc) then
 						candidatePerc=newperc
@@ -4704,6 +4705,10 @@ do
 			report:SetWidth(500)
 			report:SetCallback("OnClose",function() return addon:MissionsCleanup() end)
 			currentMission=tremove(missions)
+			currentMission.followerXp={}
+			for k,v in pairs(currentMission.followers) do
+				currentMission.followerXp[v]={0,G.GetFollowerXP(v),self:GetFollowerData(v,'level'),self:GetFollowerData(v,'quality')}
+			end
 			self:MissionEvents(true)
 			self:MissionAutoComplete("LOOP")
 		end
@@ -4752,10 +4757,6 @@ do
 			if (currentMission) then
 				local step=currentMission.state or -1
 				if (step<1) then
-					currentMission.followerXp={}
-					for k,v in pairs(currentMission.followers) do
-						currentMission.followerXp[v]={0,G.GetFollowerXP(v),self:GetFollowerData(v,'level'),self:GetFollowerData(v,'quality')}
-					end
 					step=0
 					currentMission.state=0
 					local _
