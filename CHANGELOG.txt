@@ -2,6 +2,7 @@
 * 2.3.0
 ** Feature: Mission autocompletion. Feedback appreciated
 ** Feature: Matchmaker slightly improved
+** Feature: Compacted output
 * 2.2.1
 ** Feature: weapon/armor iLevel on followers' button can now be disabled
 ** Feature: when building proposed partis, maxed follower are used when not using them was leaving ght party not fully filled
