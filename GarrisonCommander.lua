@@ -2841,7 +2841,7 @@ do
 		addon:OnClick_GarrisonMissionButton(this.frame,"Leftup")
 		lastTab=2
 	end
-	function addon:RenderFollowerPageMissionList(frame,followerID,force)
+	function addon:RenderFollowerPageMissionListBroken(frame,followerID,force)
 		if not bigscreen then return end
 		if (not ml) then
 			ml=AceGUI:Create("GMCLayer")
@@ -2898,6 +2898,131 @@ do
 			end
 		end
 	end
+	function addon:RenderFollowerPageMissionList(frame,followerID,force)
+		xprint("hook",followerID,force)
+		if (followerID==lastFollowerID and not force) then return end
+		lastFollowerID=followerID
+		local i=0
+		if (not self:IsFollowerList()) then return end
+		if (not GCFMissions.Missions) then GCFMissions.Missions={} end
+		if (not Busystatusmessage) then Busystatusmessage=C(BUSY_MESSAGE,"Red)") end
+		-- frame has every info you can need on a follower, but here I dont really need them, maybe just counters
+		--xdump(table.Counters)
+		xprint("Passed",followerID)
+		local followerName=self:GetFollowerData(followerID,'name',true)
+		repeat -- a poor man goto
+			if (type(frame.followerID)=="number") then
+				GCFBusyStatus:SetText(NOT_COLLECTED)
+				GCFBusyStatus:SetTextColor(C.Red())
+				self:RenderFollowerButton(GCFMissions.Header,followerID)
+				break
+			end
+
+			local index=new()
+			local partyIndex=new()
+
+			local status=self:GetFollowerStatus(followerID)
+			local list
+			local m1,m2,m3,perc,numFollowers=nil,nil,nil,0,""
+			if (status ~= AVAILABLE and status ~= GARRISON_FOLLOWER_IN_PARTY) then
+				if (status==GARRISON_FOLLOWER_ON_MISSION) then
+					local missionID=dbcache.runningIndex[followerID]
+					if (not missionID) then return end
+					list=GMF.MissionTab.MissionList.inProgressMissions
+					m1=followerID
+					perc=select(4,G.GetPartyMissionInfo(missionID))
+					for j=1,#list do
+						index[list[j].missionID]=j
+					end
+					local pos=index[missionID]
+					if (not pos) then return end
+					numFollowers=#list[index[missionID]].followers
+					tinsert(partyIndex,-missionID)
+					GCFBusyStatus:SetText(GARRISON_FOLLOWER_ON_MISSION)
+				else
+					GCFBusyStatus:SetText(self:GetFollowerStatus(followerID,false,true)) -- no time, colored
+				end
+				GCFBusyStatus:SetTextColor(C.Red())
+
+			else
+				GCFBusyStatus:SetText(Busystatusmessage)
+				list=GMF.MissionTab.MissionList.availableMissions
+				for j=1,#list do
+					index[list[j].missionID]=j
+				end
+				for k,_ in pairs(parties) do
+					tinsert(partyIndex,k)
+				end
+				table.sort(partyIndex,function(a,b) return parties[a].perc > parties[b].perc end)
+			end
+			self:RenderFollowerButton(GCFMissions.Header,followerID)
+			-- Scanning mission list
+			for z = 1,#partyIndex do
+				local missionID=partyIndex[z]
+				if not(tonumber(missionID)) then
+	--@debug@
+					xprint("missionid not a number",missionID)
+					self:Dump("partyIndex table",partyIndex)
+	--@end-debug@
+					perc=-1 --(lowering perc  to ignore this mission
+				end
+
+				if (missionID>0) then
+					local p=parties[missionID]
+					m1,m2,m3,perc=p.members[1],p.members[2],p.members[3],tonumber(p.perc) or 0
+					if (m3) then
+						numFollowers=3
+					elseif(m2) then
+						numFollowers=2
+					else
+						numFollowers=1
+					end
+				else
+					missionID=abs(missionID)
+				end
+				if (perc>MINPERC and ( m1 == followerID or m2==followerID or m3==followerID)) then
+					i=i+1
+					local mission=list[index[missionID]]
+					local panel=GCFMissions.Missions[i]
+					if (not panel) then
+						panel=CreateFrame("Button",nil,GCFMissions,"GarrisonCommanderMissionListButtonTemplate")
+						self:SafeHookScript(panel,"OnClick","OnClick_GarrisonMissionButton",true)
+
+						if (i==1) then
+							panel:SetPoint("TOPLEFT",GCFMissions.Header,"BOTTOMLEFT")
+						else
+							panel:SetPoint("TOPLEFT",GCFMissions.Missions[i-1],"BOTTOMLEFT")
+							panel:SetPoint("TOPRIGHT",GCFMissions.Missions[i-1],"BOTTOMRIGHT")
+						end
+						tinsert(GCFMissions.Missions,panel)
+						--Creo una riga nuova
+						panel:SetScale(0.6)
+						panel.fromFollowerPage=true
+						panel.LocBG:SetPoint("LEFT")
+					end
+					panel.info=mission
+					--panel.id=index[missionID]
+					self:BuildMissionButton(panel)
+					local q=self:GetDifficultyColor(perc)
+					panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
+					panel.Percent:SetTextColor(q.r,q.g,q.b)
+					panel.NumMembers:SetFormattedText(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS,numFollowers)
+					panel:Show()
+					if (i>= MAXMISSIONS) then break end
+				end
+			end
+			del(partyIndex)
+			del(index)
+		until true
+		if (i>0) then
+			GCFBusyStatus:SetPoint("TOPLEFT",GCFMissions.Missions[i],"BOTTOMLEFT",0,-5)
+		else
+			GCFBusyStatus:SetPoint("TOPLEFT",GCFMissions.Header,"BOTTOMLEFT",0,-5)
+		end
+		i=i+1
+		for x=i,#GCFMissions.Missions do GCFMissions.Missions[x]:Hide() end
+	end
+
 end
 ---
 --Initial one time setup
