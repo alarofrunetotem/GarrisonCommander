@@ -1,4 +1,5 @@
 local me, ns = ...
+ns.me=GetUnitName("player",true)
 local _G=_G
 local pp=print
 local HD=false
@@ -624,7 +625,10 @@ function addon:OnInitialized()
 	self:AddToggle("DBG",false, "Enable Debug")
 	self:AddToggle("TRC",false, "Enable Trace")
 --@end-debug@
-
+	if self.ldbUpdate then
+		self:ldbUpdate()
+		self:ScheduleRepeatingTimer("ldbUpdate",5)
+	end
 	self:Trigger("MSORT")
 	return true
 end
@@ -1001,7 +1005,7 @@ function addon:MatchMaker(missionID,mission,party,fromMissionControl)
 				if (self:IsIgnored(followerID,missionID)) then
 					if (dbg) then print("Skipped",n[followerID],"due to ignored" ) end
 					partyIgnore(followerID,true)
-				elseif not addon:IsFollowerAvailableForMission(followerID,skipBusy) then
+				elseif not self:IsFollowerAvailableForMission(followerID,skipBusy) then
 					if (dbg) then print("Skipped",n[followerID],"due to busy" ) end
 					partyIgnore(followerID)
 				elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
@@ -1548,6 +1552,7 @@ function addon:SetDbDefaults(default)
 	default.global["*"]={
 	}
 	default.global.lifespan={["*"]=0}
+	default.realm={missions={}}
 end
 function addon:CreatePrivateDb()
 	self.privatedb=self:RegisterDatabase(
@@ -1667,6 +1672,10 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 --				},
 	dbcache.running[missionID].started=time()
 	dbcache.running[missionID].duration=select(2,G.GetPartyMissionInfo(missionID))
+	local k=format("%015d.%4d.%s",dbcache.running[missionID].started + dbcache.running[missionID].duration,missionID,ns.me)
+	tinsert(self.db.realm.missions,k)
+	table.sort(self.db.realm.missions)
+	if self.ldbUpdate then self:ldbUpdate() end
 	wipe(dbcache.running[missionID].followers)
 	wipe(dbcache.ignored[missionID])
 	for i=1,3 do
@@ -1682,6 +1691,7 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 		db.lifespan[missionID]=span
 		-- IF we started it.. it was alive, so it's expire time is at least the time we waited before starting it
 	end
+
 	dbcache.seen[missionID]=nil
 	counters[missionID]=nil
 	parties[missionID]=nil
@@ -1698,6 +1708,7 @@ end
 --
 
 function addon:EventGARRISON_MISSION_FINISHED(event,missionID,...)
+	self:ldbCleanup()
 --@debug@
 	xprint(event,missionID,...)
 	xdump(G.GetPartyMissionInfo(missionID))
@@ -1709,14 +1720,6 @@ function addon:EventGARRISON_FOLLOWER_LIST_UPDATE(event)
 	wipe(followersCacheIndex)
 	wipe(parties)
 	xprint("Follower cache cleaned")
-end
-function addon:EventGARRISON_FOLLOWER_ADDED(event)
-	wipe(followersCache)
-	wipe(followersCacheIndex)
-end
-function addon:EventGARRISON_FOLLOWER_REMOVED(event)
-	wipe(followersCache)
-	wipe(followersCacheIndex)
 end
 
 function addon:EventGARRISON_MISSION_BONUS_ROLL_LOOT(event,missionID,completed,success)
@@ -1740,14 +1743,14 @@ function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed
 --@debug@
 	xprint('evt',event,missionID,completed,rewards)
 --@end-debug@
-	dbcache.history[missionID][time()]={result=100,success=success}
+	dbcache.history[missionID][time()]={result=100,success=rewards}
 	dbcache.seen[missionID]=nil
 	dbcache.running[missionID]=nil
 	dbcache.seen[missionID]=nil
 	counters[missionID]=nil
 	parties[missionID]=nil
 end
-function addon:EventGARRISON_FOLLOWER_REMOVED()
+function addon:EventGARRISON_FOLLOWER_ADDED()
 	wipe(followersCache)
 	wipe(followersCacheIndex)
 end
@@ -1795,6 +1798,7 @@ function addon:Clock()
 	if (m~=lastmin) then
 		lastmin=m
 	end
+	UpdateAddOnMemoryUsage()
 	local cpu=GetAddOnCPUUsage("GarrisonCommander")
 	dbgFrame.Text:SetText(format("GC Cpu %3.2f/%2.2f/%2.2f Mem %4.3fMB ",
 		cpu,
@@ -2055,14 +2059,14 @@ function addon:GenerateMissionCompleteList(title)
 				local l=AceGUI:Create("Label")
 				l:SetFontObject(QuestFontNormalSmall)
 				l:SetColor(C:Yellow())
-				l:SetText(format("    %s: %s",name,result))
+				l:SetText(format("%s: %s",name,result))
 				l:SetFullWidth(true)
 				obj:AddChild(l)
 			end
 			function m:AddRow(data,...)
 				local obj=self.scroll
 				local l=AceGUI:Create("InteractiveLabel")
-				l:SetFontObject(GameFontNormal)
+				l:SetFontObject(GameFontNormalSmall)
 				l:SetText(data)
 				l:SetColor(...)
 				l:SetFullWidth(true)
@@ -2088,11 +2092,8 @@ function addon:GenerateMissionCompleteList(title)
 			end
 			function m:AddIconText(icon,text,qt)
 				local obj=self.scroll
-				local l=AceGUI:Create("InteractiveLabel")
-				l:SetHighlight(C.Yellow())
-				--l:SetCallback("OnEnter",function() print("onEnter") end )
-				--l:SetCallback("OnLeave",function() GameTooltip:Hide() end)
-				l:SetFontObject(GameFontNormal)
+				local l=AceGUI:Create("Label")
+				l:SetFontObject(GameFontNormalSmall)
 				if (qt) then
 					l:SetText(format("%s x %s",text,qt))
 				else
@@ -2148,7 +2149,10 @@ function addon:GenerateContainer()
 			self.content:SetWidth(x)
 		end
 		local function Constructor()
-			local frame=CreateFrame("Frame","XXX",nil,"GarrisonUITemplate")
+			local frame=CreateFrame("Frame",nil,nil,"GarrisonUITemplate")
+			for _,f in pairs({frame:GetRegions()}) do
+				if (f:GetObjectType()=="Texture" and f:GetAtlas()=="Garr_WoodFrameCorner") then f:Hide() end
+			end
 			local widget={frame=frame}
 			widget.type=Type
 			widget.SetTitle=function(self,...) self.frame.TitleText:SetText(...) end
@@ -3162,6 +3166,7 @@ function addon:StartUp(...)
 	self:RefreshFollowerStatus()
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
+	self:ldbCleanup()
 end
 function addon:MarkAsNew(obj,key,message)
 	if (not db.news[key]) then
@@ -3175,6 +3180,7 @@ end
 function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
+	self:SafeRegisterEvent("GARRISON_MISSION_FINISHED")
 	self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
@@ -3277,10 +3283,7 @@ function addon:EventGARRISON_FOLLOWER_XP_CHANGED(event,followerID,iLevel,xp,leve
 			follower.xp=xp
 			follower.level=level
 			follower.quality=quality
-			follower.rank=follower.level==100 and follower.iLevel or follower.level
-			follower.coloredname=C(follower.name,tostring(follower.quality))
-			follower.fullname=format("%3d %s",follower.rank,follower.coloredname)
-			follower.maxed=follower.quality >= GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY and follower.level >=GARRISON_FOLLOWER_MAX_LEVEL
+			self:RecalculateFollower(follower)
 			return -- single updated
 		end
 	end
@@ -4679,8 +4682,9 @@ do
 	local scroller
 	local report
 	local timer
-	local function startTimer()
-		addon:ScheduleTimer("MissionAutoComplete",0.2,"LOOP")
+	local function startTimer(delay)
+		delay=delay or 0.2
+		addon:ScheduleTimer("MissionAutoComplete",delay,"LOOP")
 	end
 	local function stopTimer()
 		timer=nil
@@ -4748,6 +4752,9 @@ do
 	--@debug@
 		print("evt",event,ID,arg1,arg2,agr3)
 	--@end-debug@
+		if self['Event'..event] then
+			self['Event'..event](self,event,ID,arg1,arg2,arg3,arg4)
+		end
 		if (event =="LOOP" ) then
 			ID=currentMission and currentMission.missionID or "none"
 			arg1=currentMission and currentMission.state or "none"
@@ -4772,8 +4779,10 @@ do
 				currentMission.state=1
 			else -- failure, just print results
 				currentMission.state=2
+				startTimer(0.6)
+				return
 			end
-			startTimer()
+			startTimer(0.1)
 			return
 		-- GARRISON_MISSION_BONUS_ROLL_COMPLETE: missionID, requestCompleted; happens after C_Garrison.MissionBonusRoll
 		elseif (event=="GARRISON_MISSION_BONUS_ROLL_COMPLETE") then
@@ -4782,8 +4791,10 @@ do
 				currentMission.state=1
 			else
 				currentMission.state=3
+				startTimer(0.6)
+				return
 			end
-			startTimer()
+			startTimer(0.1)
 			return
 		else
 			if (currentMission) then
@@ -4807,6 +4818,8 @@ do
 					return
 				end
 				currentMission.state=step
+			else
+				report:AddRow(DONE)
 			end
 		end
 	end
@@ -4821,18 +4834,18 @@ do
 			report:AddMissionName(currentMission.name,C(format("Failed. (Chance was: %s%%", currentMission.successChance),"Red"))
 		end
 --@debug@
-		report:AddRow(format("Resource multiplier: %d Xp Bonus:%d",currentMission.multiplier,currentMission.xpBonus))
-		report:AddRow(format("ID: %d",currentMission.missionID))
+		--report:AddRow(format("Resource multiplier: %d Xp Bonus:%d",currentMission.multiplier,currentMission.xpBonus))
+		--report:AddRow(format("ID: %d",currentMission.missionID))
 --@end-debug@
 		if success then
 			for k,v in pairs(currentMission.rewards) do
 				v.quantity=v.quantity or 0
 				v.multiplier=v.multiplier or 1
 --@debug@
-				xprint(format("Reward type: = %s",k))
-				for field,value in pairs(v) do
-					xprint(format("   %s = %s",field,value),C.Silver())
-				end
+--				xprint(format("Reward type: = %s",k))
+--				for field,value in pairs(v) do
+--					xprint(format("   %s = %s",field,value),C.Silver())
+--				end
 --@end-debug@
 				if v.currencyID then
 					if v.currencyID == 0 then
