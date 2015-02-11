@@ -26,5 +26,4 @@ embeds.xml
 localization.lua
 wowhead.lua
 GarrisonCommander.xml
-ldb.lua
 RelNotes.lua

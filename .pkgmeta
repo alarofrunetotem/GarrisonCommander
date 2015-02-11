@@ -10,6 +10,31 @@ externals:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk
 		tag: latest
 
+	GarrisonCommander-Broker/libs/Ace3/AceAddon-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceAddon-3.0
+		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/AceDB-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceDB-3.0
+		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/AceEvent-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceEvent-3.0
+		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/AceHook-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceHook-3.0
+		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/AceLocale-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceLocale-3.0
+		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/CallbackHandler-1.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/CallbackHandler-1.0
+		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/LibStub:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/LibStub
+		tag: latest
+
+move-folders:
+	GarrisonCommander/GarrisonCommander-Broker: GarrisonCommander-Broker
+
 manual-changelog:
 		filename: CHANGELOG.txt
 		markup-type: textile

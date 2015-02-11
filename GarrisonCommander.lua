@@ -625,10 +625,6 @@ function addon:OnInitialized()
 	self:AddToggle("DBG",false, "Enable Debug")
 	self:AddToggle("TRC",false, "Enable Trace")
 --@end-debug@
-	if self.ldbUpdate then
-		self:ldbUpdate()
-		self:ScheduleRepeatingTimer("ldbUpdate",5)
-	end
 	self:Trigger("MSORT")
 	return true
 end
@@ -1355,6 +1351,7 @@ function addon:BuildMissionsCache(fc,mm,OnEvent)
 	xprint("Start Full Cache Rebuild")
 --@end-debug@
 	local t=new()
+	holdEvents()
 	G.GetAvailableMissions(t)
 	for index=1,#t do
 		local missionID=t[index].missionID
@@ -1374,6 +1371,7 @@ function addon:BuildMissionsCache(fc,mm,OnEvent)
 			dbcache.seen[k]=nil
 		end
 	end
+	releaseEvents()
 	del(t)
 	collectgarbage("step",10)
 --@debug@
@@ -1549,10 +1547,8 @@ function addon:BuildMissionCache(id,data)
 end
 function addon:SetDbDefaults(default)
 	default.global=default.global or {}
-	default.global["*"]={
-	}
+	default.global["*"]={}
 	default.global.lifespan={["*"]=0}
-	default.realm={missions={}}
 end
 function addon:CreatePrivateDb()
 	self.privatedb=self:RegisterDatabase(
@@ -1672,10 +1668,6 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 --				},
 	dbcache.running[missionID].started=time()
 	dbcache.running[missionID].duration=select(2,G.GetPartyMissionInfo(missionID))
-	local k=format("%015d.%4d.%s",dbcache.running[missionID].started + dbcache.running[missionID].duration,missionID,ns.me)
-	tinsert(self.db.realm.missions,k)
-	table.sort(self.db.realm.missions)
-	if self.ldbUpdate then self:ldbUpdate() end
 	wipe(dbcache.running[missionID].followers)
 	wipe(dbcache.ignored[missionID])
 	for i=1,3 do
@@ -1708,7 +1700,6 @@ end
 --
 
 function addon:EventGARRISON_MISSION_FINISHED(event,missionID,...)
-	self:ldbCleanup()
 --@debug@
 	xprint(event,missionID,...)
 	xdump(G.GetPartyMissionInfo(missionID))
@@ -2100,7 +2091,7 @@ function addon:GenerateMissionCompleteList(title)
 					l:SetText(text)
 				end
 				l:SetImage(icon)
-				l:SetImageSize(16,16)
+				l:SetImageSize(24,24)
 				l:SetFullWidth(true)
 				obj:AddChild(l)
 				return l
@@ -3166,7 +3157,6 @@ function addon:StartUp(...)
 	self:RefreshFollowerStatus()
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
-	self:ldbCleanup()
 end
 function addon:MarkAsNew(obj,key,message)
 	if (not db.news[key]) then
@@ -3433,7 +3423,7 @@ function addon:FillMissionPage(missionInfo)
 			local followerID=members[i]
 			if (followerID) then
 				local status=G.GetFollowerStatus(followerID)
-				if (status) then
+				if (false and status) then
 					if status == GARRISON_FOLLOWER_IN_PARTY then -- Left from a previous assignment?
 --@debug@
 						xprint(followerID,self:GetFollowerData(followerID,"name"),"was already on mission")
@@ -4245,15 +4235,15 @@ function addon:GMC_OnClick_Start(this,button)
 	xprint(C("-------------------------------------------------","Yellow"))
 	this:Disable()
 	GMC.ml.widget:ClearChildren()
-	addon:GMCCreateMissionList(aMissions)
-	wipe(GMCUsedFollowers)
-	wipe(GMC.ml.Parties)
-	self:RefreshFollowerStatus()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
 		self:Popup("All followers are busy",10)
 		this:Enable()
 		return
 	end
+	addon:GMCCreateMissionList(aMissions)
+	wipe(GMCUsedFollowers)
+	wipe(GMC.ml.Parties)
+	self:RefreshFollowerStatus()
 	if (#aMissions>0) then
 		GMC.ml.widget:SetFormattedTitle(L["Processing mission %d of %d"],1,#aMissions)
 	else
@@ -4706,15 +4696,18 @@ do
 	end
 	function addon:MissionEvents(start)
 		self:UnregisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
+		self:UnregisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 		self:UnregisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 		self:UnregisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
 		self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
 		if start then
+			self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","MissionAutoComplete")
 			self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","MissionAutoComplete")
 			self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","MissionAutoComplete")
 			self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","MissionAutoComplete")
 			self:RegisterEvent("GET_ITEM_INFO_RECEIVED","MissionAutoComplete")
 		else
+			self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 			self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
 			self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 			self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
@@ -4768,6 +4761,10 @@ do
 			return
 		-- GET_ITEM_INFO_RECEIVED: itemID
 		elseif (event=="GET_ITEM_INFO_RECEIVED") then
+			currentMission.items[ID]=1
+			return
+		-- GET_ITEM_INFO_RECEIVED: itemID
+		elseif (event=="GARRISON_MISSION_BONUS_ROLL_LOOT") then
 			currentMission.items[ID]=1
 			return
 		-- GARRISON_MISSION_COMPLETE_RESPONSE: missionID, requestCompleted, succeeded
@@ -4864,7 +4861,7 @@ do
 						currentMission.items[v.itemID]=nil
 				else
 						-- Follower XP reward
-						report:AddIconText(v.icon,v.name)
+						--report:AddIconText(v.icon,v.name)
 				end
 			end
 		end

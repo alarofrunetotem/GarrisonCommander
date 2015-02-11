@@ -1,11 +1,15 @@
 local me, ns = ...
+if (not LibStub:GetLibrary("LibDataBroker-1.1",true)) then
+	--@debug@
+	print("Missing libdatabroker")
+	--@end-debug@
+	return
+end
 if (LibDebug) then LibDebug() end
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
-local addon=LibStub("AceAddon-3.0"):GetAddon(me)
---[[ -----------------------------------------
-LibDataBroker Stuff
---]]
-local appo={}
+local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0")
+local dataobj
+local G=C_Garrison
 function addon:ldbCleanup()
 	local now=time()
 	for i=1,#self.db.realm.missions do
@@ -20,31 +24,40 @@ function addon:ldbCleanup()
 		end
 	end
 end
-if (not LibStub:GetLibrary("LibDataBroker-1.1",true)) then
-	--@debug@
-	print("Missing libdatabroker")
-	--@end-debug@
-	return
-end
-local dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject(me, {
-	type = "data source",
-	label = "GarrisonCommander",
-	text=NONE,
-	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
-})
 function addon:ldbUpdate()
 	local now=time()
-	local old=time()-3600
 	for i=1,#self.db.realm.missions do
 		local t,missionID,pc=strsplit('.',self.db.realm.missions[i])
 		t=tonumber(t) or 0
 		if t>now then
-			dataobj.text=format("Next mission on |cff20ff20%s|r in %s",pc,SecondsToTime(t-now))
+			local duration=t-now
+			local duration=duration < 60 and duration or math.floor(duration/60)*60
+			dataobj.text=format("Next mission on |cff20ff20%s|r in %s",pc,SecondsToTime(duration))
 			return
 		end
 	end
 	dataobj.text=NONE
 end
+function addon:GARRISON_MISSION_STARTED(event,missionID)
+	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
+	local k=format("%015d.%4d.%s",time() + duration,missionID,ns.me)
+	tinsert(self.db.realm.missions,k)
+	table.sort(self.db.realm.missions)
+	self:ldbUpdate()
+end
+function addon:OnInitialize()
+	ns.me=GetUnitName("player",false)
+	self:RegisterEvent("GARRISON_MISSION_STARTED")
+	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
+	self:ScheduleRepeatingTimer("ldbUpdate",1)
+	self.db=LibStub("AceDB-3.0"):New("dbGACB",{realm={missions={}}})
+end
+dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject(me, {
+	type = "data source",
+	label = "GarrisonCommander",
+	text=NONE,
+	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
+})
 function dataobj:OnTooltipShow()
 	self:AddLine("Mission awaiting")
 	local db=addon.db.realm.missions
@@ -77,5 +90,8 @@ end
 function dataobj:OnLeave()
 	GameTooltip:Hide()
 end
+--@debug@
+_G.GACDB=addon
+--@end-debug@
 --function dataobj:OnClick(button)
 --end
