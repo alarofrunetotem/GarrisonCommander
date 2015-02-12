@@ -1,5 +1,5 @@
 ## Interface: 60000
-## Title: Alar:GarrisonCommander-Broker
+## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
 ## Notes-frFR: Data-Broker pour GarrisonCommander
