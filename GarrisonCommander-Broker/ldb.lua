@@ -9,7 +9,18 @@ if (LibDebug) then LibDebug() end
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
 local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0")
 local dataobj
+local SecondsToTime=SecondsToTime
+local type=type
+local strsplit=strsplit
+local tonumber=tonumber
+local tremove=tremove
+local time=time
+local tinsert=tinsert
 local G=C_Garrison
+local NONE=NONE
+local DONE=DONE
+local format=format
+local table=table
 function addon:ldbCleanup()
 	local now=time()
 	for i=1,#self.db.realm.missions do
@@ -26,15 +37,17 @@ function addon:ldbCleanup()
 end
 function addon:ldbUpdate()
 	local now=time()
+	local completed=0
 	for i=1,#self.db.realm.missions do
 		local t,missionID,pc=strsplit('.',self.db.realm.missions[i])
 		t=tonumber(t) or 0
 		if t>now then
 			local duration=t-now
 			local duration=duration < 60 and duration or math.floor(duration/60)*60
-			dataobj.text=format("Next mission on |cff20ff20%s|r in %s",pc,SecondsToTime(duration))
+			dataobj.text=format("Next mission on |cff20ff20%s|r in %s (%d completed)",pc,SecondsToTime(duration),completed)
 			return
 		end
+		completed=completed+1
 	end
 	dataobj.text=NONE
 end
