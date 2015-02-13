@@ -55,6 +55,7 @@ function party:Dump()
 			ns.xprint(i,addon:GetFollowerData(members[i],'fullname'))
 		end
 	end
+	ns.xprint(G.GetPartyMissionInfo(ID))
 end
 
 function party:AddFollower(followerID)
