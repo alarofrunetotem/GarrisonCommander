@@ -323,8 +323,6 @@ do
 		end
 		if success then
 			for k,v in pairs(currentMission.rewards) do
-				print("Reward")
-				DevTools_Dump(v)
 				v.quantity=v.quantity or 0
 				v.multiplier=v.multiplier or 1
 				v.golds=v.golds or 1
@@ -343,7 +341,6 @@ do
 				end
 			end
 		end
-		DevTools_Dump(rewards)
 	end
 	function addon:MissionsPrintResults(success)
 		stopTimer()
