@@ -86,12 +86,12 @@ function party:AddFollower(followerID)
 		if (rc and code) then
 			tinsert(members,followerID)
 			return true
---[===[@debug@
+--@debug@
 		else
 			ns.xprint("Unable to add",followerID, G.GetFollowerName(followerID),"to",ID,code,self:IsIn(followerID),G.GetFollowerStatus(followerID))
 			ns.xprint(members[1],members[2],members[3])
 			ns.xprint(debugstack(1,6,0))
---@end-debug@]===]
+--@end-debug@
 		end
 	end
 end
@@ -100,9 +100,9 @@ function party:RemoveFollower(followerID)
 		if (followerID==members[i]) then
 			tremove(members,i)
 			local rc,code=pcall(G.RemoveFollowerFromMission,ID,followerID)
---[===[@debug@
+--@debug@
 			if (not rc) then trace("Unable to remove", G.GetFollowerName(members[i]),"from",ID,code) end
---@end-debug@]===]
+--@end-debug@
 		return true end
 	end
 end
@@ -162,9 +162,9 @@ function party:Close(desttable)
 	for i=1,3 do
 		if (members[i]) then
 			local rc,code=pcall(G.RemoveFollowerFromMission,ID,members[i])
---[===[@debug@
+--@debug@
 			if (not rc) then ns.xtrace("Unable to pop", G.GetFollowerName(members[i])," from ",ID,code) end
---@end-debug@]===]
+--@end-debug@
 
 		else
 			break

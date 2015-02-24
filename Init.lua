@@ -10,9 +10,9 @@ local format=format
 local GetTime=GetTime
 local strjoin=strjoin
 local tostringall=tostringall
---[===[@debug@
+--@debug@
 LoadAddOn("Blizzard_DebugTools")
---@end-debug@]===]
+--@end-debug@
 ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
 local chatframe=ns.addon:GetChatFrame("aDebug")
 local function pd(...)
@@ -31,28 +31,28 @@ ns.trace=ns.addon:Wrap("Trace")
 ns.xprint=function() end
 ns.xdump=function() end
 ns.xtrace=function() end
---[===[@debug@
+--@debug@
 --ns.xprint=function(...) pd("|cffff9900DBG|r",...) end
 --ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
 --ns.xtrace=ns.trace
---@end-debug@]===]
+--@end-debug@
 do
-	--[===[@debug@
+	--@debug@
 	local newcount, delcount,createdcount,cached = 0,0,0
-	--@end-debug@]===]
+	--@end-debug@
 	local pool = setmetatable({},{__mode="k"})
 	function ns.new()
-	--[===[@debug@
+	--@debug@
 		newcount = newcount + 1
-	--@end-debug@]===]
+	--@end-debug@
 		local t = next(pool)
 		if t then
 			pool[t] = nil
 			return t
 		else
-	--[===[@debug@
+	--@debug@
 			createdcount = createdcount + 1
-	--@end-debug@]===]
+	--@end-debug@
 			return {}
 		end
 	end
@@ -64,13 +64,13 @@ do
 		return c
 	end
 	function ns.del(t)
-	--[===[@debug@
+	--@debug@
 		delcount = delcount + 1
-	--@end-debug@]===]
+	--@end-debug@
 		wipe(t)
 		pool[t] = true
 	end
-	--[===[@debug@
+	--@debug@
 	function cached()
 		local n = 0
 		for k in pairs(pool) do
@@ -84,7 +84,7 @@ do
 		ns.print("Released:",delcount)
 		ns.print("Cached:",cached())
 	end
-	--@end-debug@]===]
+	--@end-debug@
 end
 
 local stacklevel=0

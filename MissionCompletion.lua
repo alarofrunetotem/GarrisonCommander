@@ -67,13 +67,14 @@ function addon:GenerateMissionCompleteList(title)
 				l:SetFullWidth(true)
 				obj:AddChild(l)
 				if (obj.scrollbar and obj.scrollbar:IsShown()) then
+					obj:SetScroll(80)
 					obj.scrollbar.ScrollDownButton:Click()
 				end
 
 			end
 			function m:AddFollower(followerID,xp,levelup)
 				local follower=addon:GetFollowerData(followerID)
-				if follower.maxed then
+				if follower.maxed and not levelup then
 					return self:AddRow(format("%s is already at maximum xp",addon:GetFollowerData(followerID,'fullname')))
 				end
 				local quality=G.GetFollowerQuality(followerID) or follower.quality
@@ -82,7 +83,7 @@ function addon:GenerateMissionCompleteList(title)
 					PlaySound("UI_Garrison_CommandTable_Follower_LevelUp");
 				end
 				return self:AddRow(format("%s gained %d xp%s%s",addon:GetFollowerData(followerID,'fullname',true),xp,
-				levelup and " *** Level Up ***." or ".",
+				levelup and " |cffffed1a*** Level Up ***|r ." or ".",
 				format(" %d to go.",addon:GetFollowerData(followerID,'levelXP')-addon:GetFollowerData(followerID,'xp'))))
 			end
 			function m:AddIconText(icon,text,qt)
@@ -99,6 +100,7 @@ function addon:GenerateMissionCompleteList(title)
 				l:SetFullWidth(true)
 				obj:AddChild(l)
 				if (obj.scrollbar and obj.scrollbar:IsShown()) then
+					obj:SetScroll(80)
 					obj.scrollbar.ScrollDownButton:Click()
 				end
 				return l
@@ -221,9 +223,9 @@ do
 	function addon:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
-	--[===[@debug@
+	--@debug@
 		print("evt",event,ID,arg1,arg2,agr3)
-	--@end-debug@]===]
+	--@end-debug@
 		if self['Event'..event] then
 			self['Event'..event](self,event,ID,arg1,arg2,arg3,arg4)
 		end
@@ -248,7 +250,11 @@ do
 			return
 		-- GET_ITEM_INFO_RECEIVED: itemID
 		elseif (event=="GARRISON_MISSION_BONUS_ROLL_LOOT") then
-			rewards.items[format("%d:%s",currentMission.missionID,ID)]=1
+			if (currentMissission) then
+				rewards.items[format("%d:%s",currentMission.missionID,ID)]=1
+			else
+				rewards.items[format("%d:%s",0,ID)]=1
+			end
 			return
 		-- GARRISON_MISSION_COMPLETE_RESPONSE: missionID, requestCompleted, succeeded
 		elseif (event=="GARRISON_MISSION_COMPLETE_RESPONSE") then
@@ -301,7 +307,7 @@ do
 				end
 				currentMission.state=step
 			else
-				report:AddRow(DONE)
+				report:AddRow(L["              Final Report                "])
 				startTimer(0.3,"LOOT")
 			end
 		end
@@ -317,7 +323,8 @@ do
 		end
 		if success then
 			for k,v in pairs(currentMission.rewards) do
-				print("Reward",k,v)
+				print("Reward")
+				DevTools_Dump(v)
 				v.quantity=v.quantity or 0
 				v.multiplier=v.multiplier or 1
 				v.golds=v.golds or 1
@@ -331,15 +338,19 @@ do
 						rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity
 					end
 				elseif v.itemID then
+					GetItemInfo(v.itemID) -- Triggering the cache
 					rewards.items[format("%d:%s",currentMission.missionID,v.itemID)]=1
 				end
 			end
 		end
+		DevTools_Dump(rewards)
 	end
 	function addon:MissionsPrintResults(success)
 		stopTimer()
 		self:FollowerCacheInit()
-		self:Dump("Ended Mission",rewards)
+--@debug@
+		--self:Dump("Ended Mission",rewards)
+--@end-debug@
 		for k,v in pairs(rewards.currencies) do
 			if k == 0 then
 				-- Money reward

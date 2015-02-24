@@ -23,9 +23,9 @@ local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
---[===[@debug@
+--@debug@
 if LibDebug then LibDebug() end
---@end-debug@]===]
+--@end-debug@
 local dbg
 function addon:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
@@ -78,23 +78,6 @@ function addon:GMCCreateMissionList(workList)
 		return addon:GetMissionData(i1,'level') > addon:GetMissionData(i2,'level')
 	end
 	table.sort(workList,msort)
-	--[===[@debug@
-	ns.xprint("Sorted list")
-	local x=new()
-	for i=1,#workList do
-		local mission=self:GetMissionData(workList[i])
-		local t=mission.name
-		for i=1,#GMC.settings.itemPrio do
-			local criterium=GMC.settings.itemPrio[i]
-			t=t..format(" %s: %d",criterium,mission[criterium])
-		end
-		tinsert(x,t .. " Success" ..  tostring(parties[mission.missionID].perc))
-	end
-	local scroll=self:GetScroller("Sorted missions",nil,600,600)
-	self:cutePrint(scroll,x)
-	del(x)
-	--@end-debug@]===]
-
 end
 --- This routine can be called both as coroutin and as a standard one
 -- In standard version, delay between group building and submitting is done via a self schedule

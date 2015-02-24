@@ -90,9 +90,9 @@ function addon:GetScroller(title,type,h,w)
 	return scroll
 end
 function addon:AddRow(obj,text,...)
---[===[@debug@
+--@debug@
 	assert(obj)
---@end-debug@]===]
+--@end-debug@
 	if (obj) then
 		local l=AceGUI:Create("Label")
 		l:SetText(text)

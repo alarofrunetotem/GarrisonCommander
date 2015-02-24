@@ -211,7 +211,7 @@ function LibDeformat.Deformat(text, pattern)
     return get_deformat_function(pattern)(text)
 end
 
---[===[@debug@
+--@debug@
 function LibDeformat.Test()
     local function tuple(success, ...)
         if success then
@@ -267,6 +267,6 @@ function LibDeformat.Test()
     test("Hello, friend", "Cost: $%d", nil)
     print("LibDeformat-3.0: Tests completed.")
 end
---@end-debug@]===]
+--@end-debug@
 
 setmetatable(LibDeformat, { __call = function(self, ...) return self.Deformat(...) end })
