@@ -72,7 +72,7 @@ end
 function AddExtraData(mission)
 	local _
 	_,mission.xp,mission.type,mission.typeDesc,mission.typeIcon,mission.locPrefix,_,mission.enemies=G.GetMissionInfo(mission.missionID)
-	mission.rank=mission.level < 100 and mission.level or mission.iLevel
+	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 	mission.resources=0
 	mission.gold=0
 	mission.followerUpgrade=0

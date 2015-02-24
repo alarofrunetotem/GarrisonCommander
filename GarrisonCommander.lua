@@ -785,7 +785,6 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 --						duration=0
 --					}
 --				},
-	table.sort(GMFMissions.inProgressMissions,sorters.EndTime)
 	dbcache.running[missionID].started=time()
 	dbcache.running[missionID].duration=select(2,G.GetPartyMissionInfo(missionID))
 	wipe(dbcache.running[missionID].followers)
@@ -2077,7 +2076,6 @@ function addon:StartUp(...)
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
 	GMFMissions.listScroll.update = over.GarrisonMissionList_Update
-	table.sort(GMFMissions.inProgressMissions,sorters.EndTime)
 	return self:RefreshMissions()
 end
 function addon:MarkAsNew(obj,key,message)

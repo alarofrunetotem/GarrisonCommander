@@ -6,6 +6,7 @@
 ** Feature: Mission list in follower page is scrolling and has now no limit
 ** Feature: Mission Completion has an hopefully nicer new interface
 ** Feature: "Improved" rewards now have their quantity written in green
+** Feature: In progress mission sorted by end time
 ** Fix: inactive followers are ignored even when "Ignore unavailable" is unchecked
 * 2.3.0
 ** Feature: Mission autocompletion.

@@ -5,14 +5,12 @@
 ## Notes-frFR: Data-Broker pour GarrisonCommander
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ @project-abbreviated-hash@
-## X-Version: 2.3.0-Beta2
+## X-Version: 2.3.5
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
-## OptionalDeps: Titan, Bazooka, ChocolateBar , FuBar
+## OptionalDeps: Titan, Bazooka, ChocolateBar , FuBar , LibDataBroker-1.1
 ## DefaultState: Enabled
-## LoadOnDemand: 1
-## LoadWith: Titan,Bazooka,ChocolateBar,FuBar
 ## SavedVariables: dbGACB
 ## X-ID: GACB
 ## X-Database:dbGACB
