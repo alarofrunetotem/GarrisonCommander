@@ -1,11 +1,26 @@
 local me, ns = ...
 local _G=_G
 local pp=print
---@debug@
+local setmetatable=setmetatable
+local next=next
+local pairs=pairs
+local wipe=wipe
+local GetChatFrame=GetChatFrame
+local format=format
+local GetTime=GetTime
+local strjoin=strjoin
+local tostringall=tostringall
+--[===[@debug@
 LoadAddOn("Blizzard_DebugTools")
---@end-debug@
+--@end-debug@]===]
 ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
+local chatframe=ns.addon:GetChatFrame("aDebug")
+local function pd(...)
+	--if (chatframe) then chatframe:AddMessage(format("GC:%6.3f %s",GetTime(),strjoin(' ',tostringall(...)))) end
+	pp(format("|cff808080GC:%6.3f|r %s",GetTime(),strjoin(' ',tostringall(...))))
+end
 local addon=ns.addon --#addon
+ns.toc=select(4,GetBuildInfo())
 ns.AceGUI=LibStub("AceGUI-3.0")
 ns.D=LibStub("LibDeformat-3.0")
 ns.C=ns.addon:GetColorTable()
@@ -16,32 +31,28 @@ ns.trace=ns.addon:Wrap("Trace")
 ns.xprint=function() end
 ns.xdump=function() end
 ns.xtrace=function() end
---@debug@
-ns.xprint=function(...) pp("|cffff9900DBG|r",...) end
-ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
-ns.xtrace=ns.trace
---@end-debug@
-local setmetatable=setmetatable
-local next=next
-local pairs=pairs
-local wipe=wipe
+--[===[@debug@
+--ns.xprint=function(...) pd("|cffff9900DBG|r",...) end
+--ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
+--ns.xtrace=ns.trace
+--@end-debug@]===]
 do
-	--@debug@
+	--[===[@debug@
 	local newcount, delcount,createdcount,cached = 0,0,0
-	--@end-debug@
+	--@end-debug@]===]
 	local pool = setmetatable({},{__mode="k"})
 	function ns.new()
-	--@debug@
+	--[===[@debug@
 		newcount = newcount + 1
-	--@end-debug@
+	--@end-debug@]===]
 		local t = next(pool)
 		if t then
 			pool[t] = nil
 			return t
 		else
-	--@debug@
+	--[===[@debug@
 			createdcount = createdcount + 1
-	--@end-debug@
+	--@end-debug@]===]
 			return {}
 		end
 	end
@@ -53,13 +64,13 @@ do
 		return c
 	end
 	function ns.del(t)
-	--@debug@
+	--[===[@debug@
 		delcount = delcount + 1
-	--@end-debug@
+	--@end-debug@]===]
 		wipe(t)
 		pool[t] = true
 	end
-	--@debug@
+	--[===[@debug@
 	function cached()
 		local n = 0
 		for k in pairs(pool) do
@@ -73,7 +84,7 @@ do
 		ns.print("Released:",delcount)
 		ns.print("Cached:",cached())
 	end
-	--@end-debug@
+	--@end-debug@]===]
 end
 
 local stacklevel=0
@@ -98,3 +109,12 @@ function addon:releaseEvents()
 	end
 end
 local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
+ns.OnLeave=function() GameTooltip:Hide() end
+
+-------------------- to be estracted to CountersCache
+--
+local G=C_Garrison
+ns.Abilities=setmetatable({},{
+	__index=function(t,k) rawset(t,k,G.GetFollowerAbilityName(k)) return rawget(t,k) end
+})
+

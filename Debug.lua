@@ -1,3 +1,4 @@
+if true then return end
 --@do-not-package@
 local me, ns = ...
 local addon=ns.addon --#addon
@@ -89,9 +90,9 @@ function addon:GetScroller(title,type,h,w)
 	return scroll
 end
 function addon:AddRow(obj,text,...)
---@debug@
+--[===[@debug@
 	assert(obj)
---@end-debug@
+--@end-debug@]===]
 	if (obj) then
 		local l=AceGUI:Create("Label")
 		l:SetText(text)
@@ -172,7 +173,7 @@ end
 function addon:Dump(title,data)
 	local scroll=self:GetScroller(title)
 	self:cutePrint(scroll,data)
-
+	return scroll
 end
 function addon:DumpCounterers(missionID)
 	local scroll=self:GetScroller("Counterers " .. self:GetMissionData(missionID,'name'))

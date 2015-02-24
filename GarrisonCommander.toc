@@ -4,7 +4,7 @@
 ## Notes-itIT: Ti aiuta a scegliere il giusto seguace per la giusta missione
 ## Notes-frFR: Vous aide au moment de choisir le droit utilisateur pour la bonne mission
 ## Author: Alar of Daggerspine
-## Version: @project-version@ @project-abbreviated-hash@
+## Version: @project-version@
 ## X-Version: 2.3.0-Beta4
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it

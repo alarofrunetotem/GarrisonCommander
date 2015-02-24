@@ -1,5 +1,4 @@
 local me,ns=...
-local xprint=ns.xprint
 local pp=print
 local addon=ns.addon --#addon
 local C=ns.C
@@ -15,335 +14,224 @@ local format=format
 local tonumber=tonumber
 local tinsert=tinsert
 local tremove=tremove
-local dbg
+local loadstring=loadstring
+local assert=assert
+local rawset=rawset
+local strsplit=strsplit
 local epicMountTrait=221
 local extraTrainingTrait=80 --all followers +35
 local fastLearnerTrait=29 -- only this follower +50
 local hearthStoneProTrait=236 -- all followers +36
 local scavengerTrait=79 -- More resources
-local function best(fid1,fid2,counters,mission)
-	if (not fid1) then return fid2 end
-	if (not fid2) then return fid1 end
-	local f1,f2=counters[fid1],counters[fid2]
-	if (dbg) then
-		xprint("Current",fid1,n[f1.followerID]," vs Candidate",fid2,n[f2.followerID])
-	end
-	if (P:IsIn(f1.followerID)) then return fid1 end
-	if (f2.bias<0) then return fid1 end
-	if (f2.bias>f1.bias) then return fid2 end
-	if (f1.bias == f2.bias) then
-		if (mission.resources > 0 ) then
-			if addon:HasTrait(f1.followerID,scavengerTrait) then
-				return fid1
-			end
-		end
-		if (f2.quality < f1.quality or f2.rank < f1.rank) then return fid2 end
-	end
-	return fid1
-end
-local function filter()
-	if (missionCounters) then
-		for i=1,#missionCounters do
-			local followerID=missionCounters[i].followerID
-			if (not followerID) then
-				if (dbg) then xprint("Trying to use [",followerID,"]") end
-			else
-				if (self:IsIgnored(followerID,missionID)) then
-					if (dbg) then xprint("Skipped",n[followerID],"due to ignored" ) end
-					P:Ignore(followerID,true)
-				elseif not self:IsFollowerAvailableForMission(followerID,skipBusy) then
-					if (dbg) then xprint("Skipped",n[followerID],"due to busy" ) end
-					P:Ignore(followerID)
-				elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
-					if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
-					P:Ignore(followerID,true)
-				end
-			end
-		end
-	end
-end
+local dbg
+local xprint=function(...) if dbg then ns.xprint(...) end end
+local xdump=function(...) if dbg then ns.xdump(...) end end
 function addon:MissionScore(mission)
-	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier = G.GetPartyMissionInfo(mission.missionID)
-	return format("%03d%01d%01d%01d",successChance,isEnvMechanicCountered and 1 or 0,materialMultiplier*mission.resources,#partyBuffs)
+	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
+	local r=mission.class=='resource' and materialMultiplier or xpBonus/10
+	local t=isMissionTimeImproved and 1 or 0
+	if r > 9999 then r= 999 end
+	return format("%03d%03d%01d",successChance,r,t)
 end
-function addon:FollowerScore(mission)
-	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier = G.GetPartyMissionInfo(mission.missionID)
-	return format("%03d%01d%02d%01d",successChance,isEnvMechanicCountered and 1 or 0,(mission.resources * (materialMultiplier-1)) , (isMissionTimeImproved and 1 or 0))
+function addon:FollowerScore(mission,followerID)
+	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
+	local r=0
+	if mission.class=='resource' then r=materialMultiplier
+	--elseif mission.class=='xp' then r= xpBonus -- all time bonus
+	elseif mission.class=='gold' then r= goldMultiplier
+	else r=xpBonus>0 and 1 or 0
+	end
+
+	local t=isMissionTimeImproved and 1 or 0
+	local c=(isEnvMechanicCountered and 1 or 0)+#partyBuffs
+	return format("%03d%01d%01d%01d%04d",successChance,r,c,t,10000-self:GetFollowerData(followerID,'rank',0))
 end
-local filters={}
-function filters.Xp(data)
-	for k,_ in pairs(data) do
-		if (addon:GetFollowerData(k,'maxed')) then
-			data[k]=nil
+local filters={skipMaxed=false,skipBusy=false}
+function filters.nop(followerID)
+	return true
+end
+function filters.maxed(followerID,missionID)
+	return filters.skipMaxed and addon:GetFollowerData(followerID,'maxed') or false
+end
+function filters.busy(followerID,missionID)
+	return not addon:IsFollowerAvailableForMission(followerID,filters.skipBusy)
+end
+function filters.ignored(followerID,missionID)
+	return addon:IsIgnored(followerID,missionID)
+end
+function filters.generic(followerID,missionID)
+	return filters.busy(followerID,missionID) or filters.ignored(followerID,missionID)
+end
+function filters.xp(followerID,missionID)
+	return filters.maxed(followerID,missionID) or filters.generic(followerID,missionID)
+end
+--alias
+filters.resources=filters.generic
+filters.gold=filters.generic
+filters.equip=filters.generic
+filters.followerequip=filters.generic
+filters.epic=filters.generic
+local function CreateFilter(missionClass)
+	local code = [[
+	local filters,xprint,pairs = ...
+	local function filterdata(followers,missionID)
+		for followerID,_ in pairs(followers) do
+			if TEST then
+				xprint("Removing",C_Garrison.GetFollowerName(followerID),"due to TEST", TEST)
+				followers[followerID] = nil
+			else
+				xprint("Keeping",C_Garrison.GetFollowerName(followerID),"due to TEST", TEST)
+			end
+		end
+	end
+	return filterdata
+	]]
+	code = code:gsub("TEST", " filters." ..missionClass .."(followerID,missionID)")
+	xprint("Compiling ",missionClass,"filter")
+	return assert(loadstring(code, "Filter for " .. missionClass))(filters,xprint,pairs)
+end
+
+local filterTypes = setmetatable({}, {__index=function(self, missionClass)
+	local filter = CreateFilter(missionClass)
+	rawset(self, missionClass, CreateFilter(missionClass))
+	return filter
+end})
+local function AddMoreFollowers(self,mission,scores,justdo)
+	local missionID=mission.missionID
+	local filter=filters[mission.class]
+	local missionScore=self:MissionScore(mission)
+	for p=1,P:FreeSlots() do
+		xprint("Assigning slot ",p+1, " starting with mission score ",missionScore)
+		local candidate=nil
+		local candidateScore=missionScore
+		for i=1,#scores do
+			local score,followerID=strsplit('|',scores[i])
+			xprint(C(score,'yellow'),G.GetFollowerName(followerID),filter(followerID,missionID))
+			if (not filter(followerID,missionID) and not P:IsIn(followerID)) then
+				P:AddFollower(followerID)
+				local newScore=self:MissionScore(mission)
+				xprint(C(score,'yellow'),G.GetFollowerName(followerID),"changes score from ",candidateScore,"to",newScore)
+				if (newScore > missionScore or justdo) then
+					candidate=followerID
+					candidateScore=newScore
+				end
+				P:RemoveFollower(followerID)
+			end
+		end
+		if candidate then
+			xprint(C(score,'yellow'),G.GetFollowerName(candidate),"assigned to slot",p+1)
+			P:AddFollower(candidate)
+			candidate=nil
 		end
 	end
 end
-function addon:MatchMakerEpic(missionID,mission,party,filter)
-	if (GMFRewardSplash:IsShown()) then return end
-	if (not mission) then mission=self:GetMissionData(missionID) end
-	if (not party) then party=self:GetParty(missionID) end
-	local skipBusy=self:GetBoolean("IGM")
-	local skipMaxed=self:GetBoolean("IGP")
-	local scores=new()
-	local traits=new()
-	dbg=missionID==(tonumber(_G.MW) or 0)
-	if (dbg) then xprint(C("Matchmaking mission","Red"),missionID,mission.name) end
-	local buffed=G.GetBuffedFollowersForMission(missionID)
-	if (filter) then
-		filters[filter](buffed)
+local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
+	local mission=self:GetMissionData(missionID)
+	local class=self:GetMissionData(missionID,'class')
+	xprint(C(format("MATCHMAKER %s (%d) class: %s",mission.name,missionID,class),'Orange'),includeBusy and "Busy" or "Ready")
+	local filter=filters[class]
+	filters.skipMaxed=self:GetBoolean("IGP")
+	if (includeBusy==nil) then
+		filters.skipBusy=self:GetBoolean("IGM")
+	else
+		filters.skipBusy=not includeBusy
 	end
+	local scores=new()
+	local buffed=G.GetBuffedFollowersForMission(missionID)
+	local traits=G.GetFollowersTraitsForMission(missionID)
+	local buffeds=0
 	local mechanics=G.GetMissionUncounteredMechanics(missionID)
 	P:Open(missionID,mission.numFollowers)
 	--G.GetFollowerBiasForMission(missionID,followerID)
 	for followerID,_ in pairs(buffed) do
 		P:AddFollower(followerID)
-		tinsert(scores,format("%s|%s",self:FollowerScore(mission),followerID))
-		if (mission.numFollowers>1) then
-			for k,d in pairs(G.GetFollowersTraitsForMission(missionID)) do
-				if not buffed[k] then
-					traits[k]=d
-				end
-			end
+		tinsert(scores,format("%010d1|%s",self:FollowerScore(mission,followerID),followerID))
+		P:RemoveFollower(followerID)
+		buffeds=buffeds+1
+	end
+	for _,followerID in self:GetFollowerIterator() do
+		if (not buffed[followerID]) then
+			P:AddFollower(followerID)
+			tinsert(scores,format("%010d0|%s",self:FollowerScore(mission,followerID),followerID))
+			P:RemoveFollower(followerID)
 		end
-		P:RemoveFollower(followerID)
 	end
-	if (filter) then
-		filters[filter](traits)
-	end
-	for followerID,_ in pairs(traits) do
-		P:AddFollower(followerID)
-		tinsert(scores,format("%s|%s",self:FollowerScore(mission),followerID))
-		xprint(G.GetFollowerName(followerID),scores[#scores])
-		P:RemoveFollower(followerID)
-	end
-	table.sort(scores)
-	for i=#scores,1,-1 do
-		local score,followerID=strsplit('|',scores[i])
-		xprint(score,G.GetFollowerName(followerID))
-	end
-	local missionScore=self:MissionScore(mission)
-	for p=1,mission.numFollowers do
-		xprint("Slot",p)
-		local delete=0
-		local candidate=nil
-		local candidateScore=nil
+	if #scores > 0 then
+		local firstmember
+		table.sort(scores)
+		if (dbg) then
+			local s=self:GetScroller("Scores")
+			self:cutePrint(s,scores)
+		end
+		xprint("           First member")
 		for i=#scores,1,-1 do
 			local score,followerID=strsplit('|',scores[i])
-			P:AddFollower(followerID)
-			candidateScore=self:MissionScore(mission)
-			xprint(G.GetFollowerName(followerID),candidateScore,"pos",i)
-			if (p>1) then
-				if (missionScore<candidateScore) then
-					missionScore=candidateScore
-					candidate=followerID
-					delete=i
-					xprint("Candidate:",G.GetFollowerName(candidate),candidateScore,"will delete",delete)
-				end
-				P:RemoveFollower(followerID)
-			else
-				delete=i
-				xprint("Adding first",G.GetFollowerName(followerID),candidateScore,"will delete",delete)
+			xprint(C(score,'yellow'),G.GetFollowerName(followerID))
+			if not firstmember and not filter(followerID,missionID) then
+				firstmember=followerID
 				break
 			end
 		end
-		if (delete>0) then
-			xprint("scores contiene",#scores)
-			xprint("rimuovo",delete)
-			tremove(scores,delete)
-			xprint("scores contiene",#scores)
+		if firstmember then
+			P:AddFollower(firstmember)
+			if mission.numFollowers > 1 then
+				xprint("           AddMore 1")
+				AddMoreFollowers(self,mission,scores)
+			end
 		end
-		if candidate then
-			P:AddFollower(candidate)
-			xprint("Adding",G.GetFollowerName(candidate),candidateScore)
-		end
-		if P:FreeSlots()==0 then break end
 	end
-	P:Dump()
+	if P:FreeSlots() > 0 then
+		if not onlyBest then
+			filters.skipMaxed=false
+			xprint("           AddMore 1 with skipmaxed false",filters.skipMaxed)
+			AddMoreFollowers(self,mission,scores)
+		end
+	end
+	if P:FreeSlots() > 0 then
+		filters.skipMaxed=false
+		xprint("           AddMore 1 with just do true")
+		AddMoreFollowers(self,mission,scores,true)
+	end
+	if dbg then P:Dump() end
 	xprint("Final score",self:MissionScore(mission))
+	if not party.class then
+		party.class=class
+		party.itemLevel=mission.itemLevel
+		party.followerUpgrade=mission.followerUpgrade
+		party.xpBonus=mission.xpBonus
+		party.gold=mission.gold
+		party.resources=mission.resources
+	end
 	P:StoreFollowers(party.members)
-	party.full= P:FreeSlots()==0
-	party.perc=P:Close()
+	P:Close(party)
+	del(buffed)
+end
+function addon:MCMatchMaker(missionID,party)
+	MatchMaker(self,missionID,party,false)
+	if (self:GetMissionData(missionID,'class')=='xp') then
+		for i=1,#party.members do
+			if not self:GetFollowerData(party.members[i],'maxed') then
+				return
+			end
+		end
+		party.full=false
+		wipe(party.members)
+	end
+end
+function addon:MatchMaker(missionID,party,includeBusy)
+	if (not party) then party=self:GetParty(missionID) end
+	MatchMaker(self,missionID,party,includeBusy)
+end
+function addon:TestMission(missionID,includeBusy)
+	dbg=true
+	self:MatchMaker(missionID,nil,includeBusy)
+	dbg=false
+end
+function addon:MatchDebug(d)
+	dbg=d
 end
 
-function addon:MatchMakerOld(missionID,mission,party,fromMissionControl)
-	if (GMFRewardSplash:IsShown()) then return end
-	if (not mission) then mission=self:GetMissionData(missionID) end
-	if (not party) then party=self:GetParty(missionID) end
-	local skipBusy=self:GetBoolean("IGM")
-	local skipMaxed=self:GetBoolean("IGP")
-	dbg=missionID==(tonumber(_G.MW) or 0)
-	local slots=mission.slots
-	local missionCounters=counters[missionID]
-	local ct=counterThreatIndex[missionID]
-	P:Open(missionID,mission.numFollowers)
-	-- Preloading skipped ones in party table.
-	if (dbg) then xprint(C("Matchmaking mission","Red"),missionID,mission.name) end
-	if (missionCounters) then
-		for i=1,#missionCounters do
-			local followerID=missionCounters[i].followerID
-			if (not followerID) then
-				if (dbg) then xprint("Trying to use [",followerID,"]") end
-			else
-				if (self:IsIgnored(followerID,missionID)) then
-					if (dbg) then xprint("Skipped",n[followerID],"due to ignored" ) end
-					P:Ignore(followerID,true)
-				elseif not self:IsFollowerAvailableForMission(followerID,skipBusy) then
-					if (dbg) then xprint("Skipped",n[followerID],"due to busy" ) end
-					P:Ignore(followerID)
-				elseif (skipMaxed and mission.xpOnly and self:GetFollowerData(followerID,'maxed')) then
-					if (dbg) then print("Skipped",n[followerID],"due to maxed" ) end
-					P:Ignore(followerID,true)
-				end
-			end
-		end
-		if (type(slots)=='table') then
-			for i=1,#slots do
-				local threat=cleanicon(slots[i].icon)
-				local candidates=ct[threat]
-				local choosen
-				if (dbg) then xprint("Checking ",threat) end
-				for i=1,#candidates do
-					local followerID=missionCounters[candidates[i]].followerID
-					if P:IsIn(followerID) then
-						if dbg then xprint("Countered by",n[followerID],"which is already in party") end
-						choosen=nil
-						break
-					end
-					if followerID then
-						if(not P:IsIgnored(followerID)) then
-							choosen=best(choosen,candidates[i],missionCounters,mission)
-							if (dbg) then xprint("Taken",n[missionCounters[choosen].followerID]) end
-						else
-							if (dbg) then xprint("Party Ignored",n[followerID]) end
-						end
-					end
-				end
-				if (choosen) then
-					if dbg then xprint("Adding to party",n[missionCounters[choosen].followerID]," still need ",P:FreeSlots()) end
-					P:AddFollower(missionCounters[choosen].followerID)
-				end
-				if (P:FreeSlots()==0) then
-					break
-				end
-			end
-		else
-			ns.xprint("Mission",missionID,"has no slots????")
-		end
-		if P:FreeSlots() > 0 then self:AddTraitsToParty(missionID,mission) end
-	end
-	if P:FreeSlots() > 0 then self:CompleteParty(missionID,mission,skipBusy,skipMaxed) end
-	if (not fromMissionControl and not P:IsEmpty()) then
-		if P:FreeSlots() > 0 then self:CompleteParty(missionID,mission,skipBusy,false) end
-	end
-	P:StoreFollowers(party.members)
-	party.full= P:FreeSlots()==0
-	party.perc=P:Close()
-end
-function addon:AddTraitsToParty(missionID,mission,skipBusy,skipMaxed)
-	local t=counters[missionID]
-	if (t) then
-		for i=1,#t do
-			local follower=t[i]
-			if (follower.trait and not P:IsIgnored(follower.followerID) and not P:IsIn(follower.followerID)) then
-				if mission.resources > 0 and follower.name==scavengerTrait then
-					P:AddFollower(follower.followerID)
-				elseif mission.xpOnly  and (follower.name==extraTrainingTrait or follower.name==hearthStoneProTrait) then
-					P:AddFollower(follower.followerID)
-				elseif mission.durationSeconds > GARRISON_LONG_MISSION_TIME  and follower.name==epicMountTrait then
-					P:AddFollower(follower.followerID)
-				end
-			end
-		end
-	end
-end
-function addon:CompleteParty(missionID,mission,skipBusy,skipMaxed)
-	local perc=select(4,G.GetPartyMissionInfo(missionID)) -- If percentage is already 100, I'll try and add the most useless character
-	local candidateMissions=10000
-	local candidateRank=10000
-	local candidateQuality=9999
-	if (dbg) then
-		print("Attemptin to fill party, so far perc is ",perc, "and party is")
-		P:Dump()
-	end
-	for x=1,P:FreeSlots() do
-		local candidate
-		local candidatePerc=perc
-		if (dbg) then print("            Perc to beat",perc, "Going for spot ",P:FreeSlots()) end
-		local totFollowers=#followersCache
-		for i=1,totFollowers do
-			local data=followersCache[i]
-			local followerID=data.followerID
-			if (dbg) then print("evaluating",data.fullname) end
-			repeat
-				if P:IsIgnored(followerID) then
-					if (dbg) then print("Skipped due to party ignored") end
-					break
-				end
-				if P:IsIn(followerID) then
-					if (dbg) then print("Skipped due to already in party") end
-					break
-				end
-				if self:IsIgnored(followerID,missionID) then
-					if (dbg) then print("Skipped due to ignored") end
-					break
-				end
-				if (skipMaxed and data.maxed and mission.xpOnly) then
-					if (dbg) then print("Skipped due to maxed",skipMaxed,mission.xpOnly) end
-					break
-				end
-				if (not self:IsFollowerAvailableForMission(followerID,skipBusy)) then
-					if (dbg) then print("Skipped due to busy") end
-					break
-				end
-				local rank=data.rank
-				local quality=data.quality
-				perc=tonumber(perc) or 0
-				if ((perc) <100) then
-					P:AddFollower(followerID)
-					local newperc=select(4,G.GetPartyMissionInfo(missionID))
-					newperc=tonumber(newperc) or 0
-					candidatePerc=tonumber(candidatePerc) or 0
-					P:RemoveFollower(followerID)
-					if (newperc > candidatePerc) then
-						candidatePerc=newperc
-						candidate=followerID
-						candidateRank=rank
-						candidateQuality=quality
-						break -- continue
-					end
-				else
-					-- This candidate is not improving success chance or we are already at 100%, minimize
-					if (i < totFollowers  and data.maxed) then
-						break  -- Pointless using a maxed follower if we  have more follower to try
-					end
-					if(rank<candidateRank) then
-						candidate=followerID
-						candidateRank=rank
-						candidateQuality=quality
-					elseif(rank==candidateRank and quality<candidateQuality) then
-						candidate=followerID
-						candidateRank=rank
-						candidateQuality=quality
-					elseif (not candidate) then
-						candidate=followerID
-						candidateRank=rank
-						candidateQuality=quality
-					end
-				end
-			until true -- A poor man continue implementation using break
-		end
-		if (candidate) then
-			if (dbg) then print("Attempting to add to party") end
-			P:AddFollower(candidate)
-			if (dbg) then
-				print("Added member to party")
-				P:Dump()
-			end
-			perc=select(4,G.GetPartyMissionInfo(missionID))
-			if (dbg) then print("New perc is",perc) end
-		end
-	end
-end
+
 --@do-not-package@
 --[[
 Dump value=GetBuffedFollowersForMission(315)
@@ -373,6 +261,19 @@ Dump value=GetBuffedFollowersForMission(315)
 			counterName="Bone Shield",
 			icon="Interface\\ICONS\\Ability_Warrior_SavageBlow.blp",
 			description="An ability that deals massive damage."
+		}
+	}
+}
+Dump: value=C_Garrison.GetFollowersTraitsForMission(109)
+{
+	["0x00000000001BE95D"]={
+		[1]={
+			traitID=236,
+			icon="Interface\\ICONS\\Item_Hearthstone_Card.blp"
+		},
+		[2]={
+			traitID=76,
+			icon="Interface\\ICONS\\Spell_Holy_WordFortitude.blp"
 		}
 	}
 }

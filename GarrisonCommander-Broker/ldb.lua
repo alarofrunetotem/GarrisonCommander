@@ -1,8 +1,8 @@
 local me, ns = ...
 if (not LibStub:GetLibrary("LibDataBroker-1.1",true)) then
-	--@debug@
+	--[===[@debug@
 	print("Missing libdatabroker")
-	--@end-debug@
+	--@end-debug@]===]
 	return
 end
 if (LibDebug) then LibDebug() end
@@ -103,8 +103,8 @@ end
 function dataobj:OnLeave()
 	GameTooltip:Hide()
 end
---@debug@
+--[===[@debug@
 _G.GACDB=addon
---@end-debug@
+--@end-debug@]===]
 --function dataobj:OnClick(button)
 --end

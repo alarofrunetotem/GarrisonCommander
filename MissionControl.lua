@@ -16,7 +16,6 @@ local aMissions={}
 local dbcache
 local cache
 local db
-local parties
 local GMC
 local GMF=GarrisonMissionFrame
 local G=C_Garrison
@@ -24,9 +23,9 @@ local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
---@debug@
+--[===[@debug@
 if LibDebug then LibDebug() end
---@end-debug@
+--@end-debug@]===]
 local dbg
 function addon:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
@@ -36,20 +35,23 @@ function addon:GMCCreateMissionList(workList)
 	local settings=self.privatedb.profile.missionControl
 	local ar=settings.allowedRewards
 	wipe(workList)
-	for missionID,mission in pairs(cache.missions) do
+	for _,missionID in self:GetMissionIterator() do
 		local discarded=false
 		repeat
-			if (mission.durationSeconds > settings.maxDuration * 3600 or mission.durationSeconds <  settings.minDuration * 3600) then
-				ns.xprint(missionID,"discarded due to len",mission.durationSeconds /3600)
+			ns.xprint("|cffff0000",'Examing',self:GetMissionData(missionID,"name"),self:GetMissionData(missionID,"class"),"|r")
+			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
+			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
+				ns.xprint(missionID,"discarded due to len",durationSeconds /3600)
 				break
 			end -- Mission too long, out of here
-			if (mission.isRare and settings.skipRare) then
+			if (self:GetMissionData(missionID,'isRare') and settings.skipRare) then
 				ns.xprint(missionID,"discarded due to rarity")
 				break
 			end
 			for k,v in pairs(ar) do
 				if (not v) then
-					if (mission[k] and mission[k]~=0) then -- we have a forbidden reward
+					if (self:GetMissionData(missionID,"class")==k) then -- we have a forbidden reward
+						ns.xprint(missionID,"discarded due to class == ", k)
 						discarded=true
 						break
 					end
@@ -60,24 +62,23 @@ function addon:GMCCreateMissionList(workList)
 			end
 		until true
 	end
+	local parties=self:GetParty()
 	local function msort(i1,i2)
-		local m1=addon:GetMissionData(i1)
-		local m2=addon:GetMissionData(i2)
 		for i=1,#GMC.settings.itemPrio do
 			local criterium=GMC.settings.itemPrio[i]
 			if (criterium) then
-				if (m1[criterium] ~= m2[criterium]) then
-					return m1[criterium] > m2[criterium]
+				if addon:GetMissionData(i1,criterium) ~= addon:GetMissionData(i2,criterium) then
+					return addon:GetMissionData(i1,criterium) > addon:GetMissionData(i2,criterium)
 				end
 			end
 		end
-		if (parties[m1.missionID].perc and parties[m2.missionID].perc) then
-			return parties[m1.missionID].perc > parties[m2.missionID].perc
+		if (parties[i1].perc and parties[i2].perc) then
+			return parties[i1].perc > parties[i2].perc
 		end
-		return m1.level > m2.level
+		return addon:GetMissionData(i1,'level') > addon:GetMissionData(i2,'level')
 	end
 	table.sort(workList,msort)
-	--@debug@
+	--[===[@debug@
 	ns.xprint("Sorted list")
 	local x=new()
 	for i=1,#workList do
@@ -92,7 +93,7 @@ function addon:GMCCreateMissionList(workList)
 	local scroll=self:GetScroller("Sorted missions",nil,600,600)
 	self:cutePrint(scroll,x)
 	del(x)
-	--@end-debug@
+	--@end-debug@]===]
 
 end
 --- This routine can be called both as coroutin and as a standard one
@@ -160,27 +161,22 @@ do
 			else
 				GMC.ml.widget:SetFormattedTitle("Processing mission %d of %d",currentMission,#aMissions)
 				local missionID=aMissions[currentMission]
-				if (dbg) then print(C("Processing ","Red"),missionID) end
-				local party={members={},perc=0}
-				local mission=self:GetMissionData(missionID)
-				if (not mission ) then
-					if dbg then print ("NO data for",missionID) end
-					return
-				end
-				self:MatchMaker(missionID,mission,party) -- I need my mission data
+				local class=self:GetMissionData(missionID,"class")
+				local checkprio=class
+				if checkprio=="itemLevel" then class="equip" end
+				if checkprio=="followerUpgrade" then class= "followerEquip" end
+				ns.xprint(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
 				local minimumChance=0
 				if (GMC.settings.useOneChance) then
-					minimumChance=GMC.settings.minimumChance
+					minimumChance=tonumber(GMC.settings.minimumChance) or 100
+				else
+					minimumChance=tonumber(GMC.settings.rewardChance[checkprio]) or 100
 				end
-				for prio,enabled in pairs(GMC.settings.allowedRewards) do
-					if (dbg) then print("Chance from ",prio,"=",GMC.settings.rewardChance[prio],enabled) end
-					if (enabled and (tonumber(self:GetMissionData(missionID,prio)) or 0) >0) then
-						minimumChance=math.max(GMC.settings.rewardChance[prio],minimumChance)
-					end
-				end
-				if (dbg) then print ("Missionid",missionID,"Chance",minimumChance,"chance",party.perc) end
+				local party={members={},perc=0}
+				self:MCMatchMaker(missionID,party,false,false)
+				ns.xprint ("                           Requested",minimumChance,"Mission",party.perc,party.full)
 				if ( party.full and party.perc >= minimumChance) then
-					if (dbg) then print("Preparing button for",missionID) end
+					ns.xprint("                           Mission accepted")
 					local mb=AceGUI:Create("GMCMissionButton")
 					for i=1,#party.members do
 						GMCUsedFollowers[party.members[i]]=true
@@ -189,7 +185,7 @@ do
 					tinsert(GMC.ml.Parties,party)
 					GMC.ml.widget:PushChild(mb,missionID)
 					mb:SetFullWidth(true)
-					mb:SetMission(mission)
+					mb:SetMission(self:GetMissionData(missionID),party)
 					mb:SetCallback("OnClick",function(...)
 						addon:GMCRunMission(missionID)
 						GMC.ml.widget:RemoveChild(missionID)
@@ -222,13 +218,12 @@ function addon:GMC_OnClick_Run(this,button)
 end
 function addon:GMC_OnClick_Start(this,button)
 	ns.xprint(C("-------------------------------------------------","Yellow"))
-	this:Disable()
 	GMC.ml.widget:ClearChildren()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
-		self:Popup("All followers are busy",10)
-		this:Enable()
+		GMC.ml.widget:SetTitle("All followers are busy")
 		return
 	end
+	this:Disable()
 	addon:GMCCreateMissionList(aMissions)
 	wipe(GMCUsedFollowers)
 	wipe(GMC.ml.Parties)
@@ -247,7 +242,6 @@ function addon:GMCBuildPanel(bigscreen)
 	db=self.db.global
 	dbcache=self.privatedb.profile
 	cache=self.private.profile
-	parties=self:GetParty()
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
 	GMC = CreateFrame('FRAME', 'GMCOptions', GMF)
 	GMC.settings=dbcache.missionControl
@@ -444,15 +438,31 @@ function addon:GMCBuildRewards()
 	local t = {
 		{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
 		{t = 'Enable/Disable other currency awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
-		{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xpBonus'},
-		{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerUpgrade'},
-		{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'itemLevel'}
+		{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
+		{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
+		{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'}
 	}
 	local scale=1.1
 	GMC.ignoreFrames = {}
 	local ref
 	local h=37 -- itemButtonTemplate standard size
 	local gap=5
+	-- converting from old data
+	local ar=GMC.settings.allowedRewards
+	local rc=GMC.settings.rewardChance
+	if ar.xpBonus then ar.xp=true end
+	ar.xpBonus=nil
+	if ar.followerUpgrade then ar.followerequip=true end
+	ar.followerUpgrade=nil
+	if ar.itemLevel then ar.equip=true end
+	ar.itemLevel=nil
+	if rc.xpBonus then rc.xp=rc.xpbonus or 100 end
+	rc.xpBonus=nil
+	if rc.followerUpgrade then rc.followerequip=rc.followerUpgrade or 100 end
+	rc.followerUpgrade=nil
+	if rc.itemLevel then rc.equip=rc.itemLevel or 100 end
+	rc.itemLevel=nil
+
 	for i = 1, #t do
 			local frame = CreateFrame('BUTTON', nil, GMC.aif, 'ItemButtonTemplate')
 			frame:SetScale(scale)
@@ -505,9 +515,9 @@ local addPriorityRule,prioRefresh,removePriorityRule,prioMenu,prioTitles,prioChe
 do
 -- 1 = item, 2 = folitem, 3 = exp, 4 = money, 5 = resource
 	prioTitles={
-		itemLevel="Gear Items",
-		followerUpgrade="Upgrade Items",
-		xpBonus="Follower XP Bonus",
+		itemLevel="Equipment",
+		followerUpgrade="Followr Upgrade",
+		xp="Xp gain",
 		gold="Gold Reward",
 		resources="Resource Rewards"
 	}
@@ -613,7 +623,7 @@ function addon:GMCBuildPriorities()
 		wipe(prioMenu)
 		tinsert(prioMenu,{text = L["Select an item to add as priority."], isTitle = true, isNotRadio=true,disabled=true, notCheckable=true,notClickable=true})
 		for k,v in pairs(prioTitles) do
-			tinsert(prioMenu,{text = v, func = addPriorityRule, notCheckable=true, isNotRadio=true, arg1 = k , disabled=inTable(GMC.settings.itemPrio,k)})
+			tinsert(prioMenu,{text = v, func = addPriorityRule, notCheckable=true, isNotRadio=true, arg1 = k , disabled=tContains(GMC.settings.itemPrio,k)})
 		end
 		EasyMenu(prioMenu, GMC.pmf, "cursor", 0 , 0, "MENU")
 		end
