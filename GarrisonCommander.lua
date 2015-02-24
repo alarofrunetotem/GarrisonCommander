@@ -996,7 +996,7 @@ function addon:ShowHelpWindow(button)
 		helpwindow:Show()
 		local html=CreateFrame("SimpleHTML",nil,helpwindow)
 		html:SetFontObject('h1',MovieSubtitleFont);
-		local f=MailTextFontNormal_KO
+		local f=GameFontNormalLarge
 		html:SetFontObject('h2',f);
 		html:SetFontObject('h3',f);
 		html:SetFontObject('p',f);
