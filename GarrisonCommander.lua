@@ -1353,7 +1353,7 @@ function addon:GenerateMissionButton()
 			frame.Success:Hide()
 			frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,0)
 			frame.Success:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
-			frame.Failure:SetPoint("BOTTOMLEFT",frame.Indicatprs,"BOTTOMRIGHT",0,10)
+			frame.Failure:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
 
 			--widget.frame.MissionType:Hide()
 			--widget.frame.IconBG:Hide()
