@@ -142,7 +142,7 @@ do
 				wipe(aMissions)
 				currentMission=0
 				x=0
-				timeElapsed=0.2
+				timeElapsed=0.5
 			else
 				local missionID=aMissions[currentMission]
 				GMC.ml.widget:SetFormattedTitle("Processing mission %d of %d (%s)",currentMission,#aMissions,G.GetMissionName(missionID))

@@ -2770,7 +2770,7 @@ do
 			local tick=math.floor(GetTime()*10)
 			if (tick == lastcall) then
 			else
-				collectgarbage("step",100)
+				collectgarbage("step",500)
 				lastcall=tick
 				return
 			end
@@ -2816,6 +2816,9 @@ function over.GarrisonMissionPageFollowerFrame_OnEnter(self)
 	if not self.info then
 		return;
 	end
+	if ns.missionautocompleting then
+		return
+	end
 	GarrisonFollowerTooltip:ClearAllPoints();
 	GarrisonFollowerTooltip:SetPoint("TOPLEFT", self, "BOTTOMRIGHT");
 	GarrisonFollowerTooltip_Show(self.info.garrFollowerID,
@@ -2843,6 +2846,7 @@ function over.GarrisonMissionButton_OnEnter(self, button)
 	if (self.info == nil) then
 		return;
 	end
+	collectgarbage("step",100)
 
 	GameTooltip:SetOwner(self, "ANCHOR_CURSOR_RIGHT");
 

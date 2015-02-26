@@ -28,13 +28,17 @@ function addon:GenerateMissionCompleteList(title)
 			end
 			function m:ScrollDown()
 				local obj=self.scroll
-				if (#self.missions >6 and obj.scrollbar and obj.scrollbar:IsShown()) then
+				if (#self.missions >1 and obj.scrollbar and obj.scrollbar:IsShown()) then
 					obj:SetScroll(80)
 					obj.scrollbar.ScrollDownButton:Click()
 				end
 			end
 			function m:OnAcquire()
 				wipe(self.missions)
+			end
+			function m:OnClose()
+				print("azzero completing")
+				ns.missionautocompleting=nil
 			end
 			function m:Show()
 				self.frame:Show()
@@ -143,6 +147,7 @@ function addon:GenerateMissionCompleteList(title)
 	end
 	local w=AceGUI:Create("GCMCList")
 	w:SetTitle(title)
+	w:SetCallback("OnClose", function() ns.missionautocompleting=nil end)
 	return w
 end
 
@@ -179,7 +184,7 @@ do
 		GarrisonMissionList_UpdateMissions()
 		-- Re-enable "view" button
 		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
-		missionautocompleting=nil
+		ns.missionautocompleting=nil
 		GarrisonMissionFrame_SelectTab(1)
 		GarrisonMissionFrame_CheckCompleteMissions()
 	end
