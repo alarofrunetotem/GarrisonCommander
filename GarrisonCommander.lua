@@ -406,7 +406,6 @@ function addon:OnInitialized()
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
 	self:AddToggle("ILV",true,L["Show weapon/armor level"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
 	self:AddToggle("IXP",true,L["Show xp to next level"],L["When checked, show on each follower button missing xp to next level"])
-	self:AddToggle("STP",true,L["Show time left"],L["When checked, show on each follower button time left for on mission followers"])
 	--self:AddPrivateAction("ShowMissionControl",L["Mission control"],L["You can choose some criteria and have GC autosumbit missions for you"])
 --@debug@
 	self:AddLabel("Developers options")
@@ -1297,6 +1296,7 @@ function addon:GenerateMissionButton()
 			if self.type==Type2 then
 				self.frame.Percent:SetFormattedText("%d%%",party.perc)
 				self.frame.Percent:SetTextColor(addon:GetDifficultyColors(party.perc))
+				_G.AX=self.frame
 			end
 		end
 
@@ -1339,8 +1339,9 @@ function addon:GenerateMissionButton()
 			local indicators=CreateFrame("Frame",nil,frame,"GarrisonCommanderIndicators")
 			indicators.Percent:SetJustifyH("LEFT")
 			indicators.Percent:SetJustifyV("CENTER")
-			indicators:SetPoint("LEFT",70,-20)
+			indicators:SetPoint("LEFT",70,0)
 			indicators.Age:Hide()
+			frame.Indicators=indicators
 			frame.Percent=indicators.Percent
 			frame.Failure=frame:CreateFontString()
 			frame.Success=frame:CreateFontString()
@@ -1350,9 +1351,9 @@ function addon:GenerateMissionButton()
 			frame.Success:SetText(SUCCESS)
 			frame.Failure:Hide()
 			frame.Success:Hide()
-			frame.Title:SetPoint("LEFT",frame.Percent,"RIGHT",-20,30)
-			frame.Success:SetPoint("LEFT",frame.Percent,"RIGHT",-20,0)
-			frame.Summary:SetPoint("LEFT",frame.Percent,"RIGHT",-20,-30)
+			frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,0)
+			frame.Success:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
+			frame.Failure:SetPoint("BOTTOMLEFT",frame.Indicatprs,"BOTTOMRIGHT",0,10)
 
 			--widget.frame.MissionType:Hide()
 			--widget.frame.IconBG:Hide()
@@ -1617,23 +1618,12 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 	if not frame.GCIt then
 		frame.GCIt=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 		frame.GCIt:SetPoint("BOTTOMLEFT",frame.Name,"TOPLEFT",0,2)
-		frame.GCTime=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCTime:SetPoint("TOPLEFT",frame.Status,"TOPRIGHT",5,0)
 		frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 	end
 	if not frame.isCollected then
-		frame.GCTime:Hide()
 		frame.GCXp:Hide()
 		frame.GCIt:Hide()
 		return
-	end
-	if self:GetToggle("IST") then
-		if (frame.Status:GetText() == GARRISON_FOLLOWER_ON_MISSION) then
-			frame.GCTime:SetText(self:GetFollowerStatus(follower.followerID,true,true))
-			frame.GCTime:Show()
-		else
-			frame.GCTime:Hide()
-		end
 	end
 	if self:GetToggle("IXP") then
 		if (follower.level < GARRISON_FOLLOWER_MAX_LEVEL or follower.quality < GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) then
@@ -2451,7 +2441,7 @@ function addon:BuildFollowersButtons(button,bg,limit,bigscreen)
 	if (bg.Party) then return end
 	bg.Party={}
 	for numMembers=1,3 do
-		local f=CreateFrame("Button","fol_"..button.info.missionID.."_"..numMembers,bg,bigscreen and "GarrisonCommanderMissionPageFollowerTemplate" or "GarrisonCommanderMissionPageFollowerTemplateSmall" )
+		local f=CreateFrame("Button",nil,bg,bigscreen and "GarrisonCommanderMissionPageFollowerTemplate" or "GarrisonCommanderMissionPageFollowerTemplateSmall" )
 		if (numMembers==1) then
 			f:SetPoint("BOTTOMLEFT",button.Rewards[1],"BOTTOMRIGHT",10,0)
 		else
@@ -2971,9 +2961,9 @@ function addon:DrawSingleSlimButton(page,button,progressing,bigscreen)
 		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		over.GarrisonMissionButton_SetRewards(button, mission.rewards, mission.numRewards);
 		self:AddFollowersToButton(button,mission,missionID,bigscreen)
-		frame.Title:SetPoint("TOPLEFT",frame.Percent,"TOPLEFT",0,15)
-		frame.Success:SetPoint("LEFT",frame.Percent,"RIGHT",0,0)
-		frame.Failure:SetPoint("LEFT",frame.Percent,"RIGHT",0,0)
+		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,-5)
+		frame.Success:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
+		frame.Failure:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
 		frame.Summary:ClearAllPoints()
 		frame.Summary:SetPoint("TOPLEFT",frame.Title,"BOTTOMLEFT",0,-10)
 		button:Show();

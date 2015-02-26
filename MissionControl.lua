@@ -24,7 +24,6 @@ local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
 local xprint=ns.xprint
-xprint=print
 --@debug@
 _G.GAC=addon
 if LibDebug then LibDebug() end
@@ -137,7 +136,7 @@ do
 			end
 			return
 		end
-		if (timeElapsed >=0.1) then
+		if (timeElapsed >=0.05) then
 			currentMission=currentMission+1
 			if (currentMission > #aMissions) then
 				wipe(aMissions)

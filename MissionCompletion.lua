@@ -55,17 +55,19 @@ function addon:GenerateMissionCompleteList(title)
 			function m:AddMissionName(missionID,success)
 				local mission=self.missions[missionID]
 				if mission then
+					local frame=mission.frame
 					if success then
-						mission.frame.Success:Show()
-						mission.frame.Failure:Hide()
-						for i=1,#mission.Rewards do
-							mission.Rewards[i].Icon:SetDesaturated(true)
+						frame.Success:Show()
+						frame.Failure:Hide()
+						for i=1,#frame.Rewards do
+							frame.Rewards[i].Icon:SetDesaturated(false)
 						end
 					else
-						mission.frame.Success:Hide()
-						mission.frame.Failure:Show()
-						for i=1,#mission.Rewards do
-							mission.Rewards[i].Icon:SetDesaturated(true)
+						frame.Success:Hide()
+						frame.Failure:Show()
+						for i=1,#frame.Rewards do
+							frame.Rewards[i].Icon:SetDesaturated(true)
+							frame.Rewards[i].Quantity:Hide()
 						end
 					end
 				end

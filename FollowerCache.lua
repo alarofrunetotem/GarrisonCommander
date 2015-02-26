@@ -62,7 +62,7 @@ local function AddExtraData(follower,refreshrank)
 	follower.abilities=G.GetFollowerAbilities(follower.followerID)
 end
 function addon:FollowerCacheInit()
-	GarrisonFollowerList_UpdateFollowers(Mbase)
+	pcall(GarrisonFollowerList_UpdateFollowers,Mbase)
 end
 function addon:CanCounter(followerID,id)
 	local abilities=self:GetFollowerData(followerID,'abilities')
