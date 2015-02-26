@@ -26,6 +26,13 @@ function addon:GenerateMissionCompleteList(title)
 					GameTooltip:Show()
 				end
 			end
+			function m:ScrollDown()
+				local obj=self.scroll
+				if (#self.missions >6 and obj.scrollbar and obj.scrollbar:IsShown()) then
+					obj:SetScroll(80)
+					obj.scrollbar.ScrollDownButton:Click()
+				end
+			end
 			function m:OnAcquire()
 				wipe(self.missions)
 			end
@@ -46,15 +53,20 @@ function addon:GenerateMissionCompleteList(title)
 				obj:AddChild(b)
 			end
 			function m:AddMissionName(missionID,success)
-				print("Addmissioname",missionID,success)
 				local mission=self.missions[missionID]
 				if mission then
 					if success then
 						mission.frame.Success:Show()
 						mission.frame.Failure:Hide()
+						for i=1,#mission.Rewards do
+							mission.Rewards[i].Icon:SetDesaturated(true)
+						end
 					else
 						mission.frame.Success:Hide()
 						mission.frame.Failure:Show()
+						for i=1,#mission.Rewards do
+							mission.Rewards[i].Icon:SetDesaturated(true)
+						end
 					end
 				end
 			end
@@ -66,10 +78,6 @@ function addon:GenerateMissionCompleteList(title)
 				l:SetColor(...)
 				l:SetFullWidth(true)
 				obj:AddChild(l)
-				if (obj.scrollbar and obj.scrollbar:IsShown()) then
-					obj:SetScroll(80)
-					obj.scrollbar.ScrollDownButton:Click()
-				end
 
 			end
 			function m:AddFollower(followerID,xp,levelup)

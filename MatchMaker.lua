@@ -69,7 +69,7 @@ end
 filters.resources=filters.generic
 filters.gold=filters.generic
 filters.equip=filters.generic
-filters.followerequip=filters.generic
+filters.followerEquip=filters.generic
 filters.epic=filters.generic
 local function CreateFilter(missionClass)
 	local code = [[

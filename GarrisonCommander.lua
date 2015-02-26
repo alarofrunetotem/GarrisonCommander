@@ -405,6 +405,8 @@ function addon:OnInitialized()
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
 	self:AddToggle("ILV",true,L["Show weapon/armor level"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
+	self:AddToggle("IXP",true,L["Show xp to next level"],L["When checked, show on each follower button missing xp to next level"])
+	self:AddToggle("STP",true,L["Show time left"],L["When checked, show on each follower button time left for on mission followers"])
 	--self:AddPrivateAction("ShowMissionControl",L["Mission control"],L["You can choose some criteria and have GC autosumbit missions for you"])
 --@debug@
 	self:AddLabel("Developers options")
@@ -1249,10 +1251,13 @@ function addon:GenerateMissionButton()
 			local frame=self.frame
 			frame.info=nil
 			frame:SetHeight(self.type==Type1 and 80 or 80)
-			self.frame:SetAlpha(1)
-			self.frame:Enable()
+			frame:SetAlpha(1)
+			frame:Enable()
 			for i=1,#self.scripts do
-				self.frame:SetScript(self.scripts[i],nil)
+				frame:SetScript(self.scripts[i],nil)
+			end
+			for i=1,#frame.Rewards do
+				frame.Rewards[i].Icon:SetDesaturated(false)
 			end
 			wipe(self.scripts)
 			return self.frame:SetScale(1.0)
@@ -1612,45 +1617,44 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 	if not frame.GCIt then
 		frame.GCIt=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 		frame.GCIt:SetPoint("BOTTOMLEFT",frame.Name,"TOPLEFT",0,2)
-		if not MP then
-			frame.GCTime=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-			frame.GCTime:SetPoint("TOPLEFT",frame.Status,"TOPRIGHT",5,0)
-			frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		end
+		frame.GCTime=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
+		frame.GCTime:SetPoint("TOPLEFT",frame.Status,"TOPRIGHT",5,0)
+		frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 	end
 	if not frame.isCollected then
-		if not MP then
-			frame.GCTime:Hide()
-			frame.GCXp:Hide()
-		end
+		frame.GCTime:Hide()
+		frame.GCXp:Hide()
 		frame.GCIt:Hide()
 		return
 	end
-	if not MP then
+	if self:GetToggle("IST") then
 		if (frame.Status:GetText() == GARRISON_FOLLOWER_ON_MISSION) then
 			frame.GCTime:SetText(self:GetFollowerStatus(follower.followerID,true,true))
 			frame.GCTime:Show()
 		else
 			frame.GCTime:Hide()
 		end
-		if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL and follower.quality >= GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) then
-			frame.GCXp:Hide()
-		else
+	end
+	if self:GetToggle("IXP") then
+		if (follower.level < GARRISON_FOLLOWER_MAX_LEVEL or follower.quality < GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) then
 			frame.GCXp:SetFormattedText(L["To go: %d"],follower.levelXP-follower.xp)
 			frame.GCXp:Show()
+		else
+			frame.GCXp:Hide()
 		end
 	end
-	if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL and self:GetToggle("ILV") ) then
-		local c1=ITEM_QUALITY_COLORS[follower.weaponQuality or 1]
-		local c2=ITEM_QUALITY_COLORS[follower.armorQuality or 1]
-		frame.GCIt:SetFormattedText("W:%s%3d|r A:%s%3d|r",c1.hex,self:GetFollowerData(follower.followerID,"weaponItemLevel"),c2.hex,self:GetFollowerData(follower.followerID,"armorItemLevel"))
-		frame.GCIt:Show()
-		frame.GCXp:SetPoint("LEFT",frame.GCIt,"RIGHT",2,0)
-	else
-		frame.GCIt:Hide()
-		frame.GCXp:SetPoint("LEFT",frame.Name,"LEFT",0,20)
+	if self:GetToggle("ILV") then
+		if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL) then
+			local c1=ITEM_QUALITY_COLORS[follower.weaponQuality or 1]
+			local c2=ITEM_QUALITY_COLORS[follower.armorQuality or 1]
+			frame.GCIt:SetFormattedText("W:%s%3d|r A:%s%3d|r",c1.hex,self:GetFollowerData(follower.followerID,"weaponItemLevel"),c2.hex,self:GetFollowerData(follower.followerID,"armorItemLevel"))
+			frame.GCIt:Show()
+			frame.GCXp:SetPoint("LEFT",frame.GCIt,"RIGHT",2,0)
+		else
+			frame.GCIt:Hide()
+			frame.GCXp:SetPoint("LEFT",frame.Name,"LEFT",0,20)
+		end
 	end
-
 end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
 	if (frame.info.isCollected) then
@@ -2941,9 +2945,17 @@ function addon:DrawSingleButton(page,button,progressing,bigscreen)
 			addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 		end
 		local a1,f,a2,h,v=button.Title:GetPoint(1)
-		v=v+10
-		button.Title:ClearAllPoints()
-		button.Title:SetPoint(a1,f,a2,h,v)
+		if page then
+			v=v+10
+			button.Title:ClearAllPoints()
+			button.Title:SetPoint(a1,f,a2,h,v)
+		else
+			v=v+20
+			button.Title:ClearAllPoints()
+			button.Title:SetPoint(a1,f,a2,h,v)
+			button.Summary:ClearAllPoints()
+			button.Summary:SetPoint("TOPLEFT",button.Title,"BOTTOMLEFT",0,-5)
+		end
 		button:Show();
 
 	else
@@ -2959,11 +2971,11 @@ function addon:DrawSingleSlimButton(page,button,progressing,bigscreen)
 		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		over.GarrisonMissionButton_SetRewards(button, mission.rewards, mission.numRewards);
 		self:AddFollowersToButton(button,mission,missionID,bigscreen)
-		frame.Title:SetPoint("TOPLEFT",frame.Percent,"TOPLEFT",0,5)
+		frame.Title:SetPoint("TOPLEFT",frame.Percent,"TOPLEFT",0,15)
 		frame.Success:SetPoint("LEFT",frame.Percent,"RIGHT",0,0)
 		frame.Failure:SetPoint("LEFT",frame.Percent,"RIGHT",0,0)
 		frame.Summary:ClearAllPoints()
-		frame.Summary:SetPoint("BOTTOMLEFT",frame.Title,"BOTTOMRIGHT",0,0)
+		frame.Summary:SetPoint("TOPLEFT",frame.Title,"BOTTOMLEFT",0,-10)
 		button:Show();
 	else
 		button:Hide();

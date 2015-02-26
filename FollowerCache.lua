@@ -90,7 +90,10 @@ function addon:GetFollowerData(followerID,key,default)
 	local idx=keyToIndex(followerID)
 	local follower=Mbase.followers[idx]
 	if (not follower) then
-		ns.dprint("Not found",followerID,key,"at",idx,"len",#Mbase.followers)
+--@debug@
+		ns.xprint("Not found",followerID,key,"at",idx,"len",#Mbase.followers)
+		print(debugstack())
+--@end-debug#
 	end
 	if (key==nil) then
 		return follower

@@ -23,7 +23,10 @@ local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
+local xprint=ns.xprint
+xprint=print
 --@debug@
+_G.GAC=addon
 if LibDebug then LibDebug() end
 --@end-debug@
 local dbg
@@ -38,20 +41,20 @@ function addon:GMCCreateMissionList(workList)
 	for _,missionID in self:GetMissionIterator() do
 		local discarded=false
 		repeat
-			ns.xprint("|cffff0000",'Examing',self:GetMissionData(missionID,"name"),self:GetMissionData(missionID,"class"),"|r")
+			xprint("|cffff0000",'Examing',self:GetMissionData(missionID,"name"),self:GetMissionData(missionID,"class"),"|r")
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
-				ns.xprint(missionID,"discarded due to len",durationSeconds /3600)
+				xprint(missionID,"discarded due to len",durationSeconds /3600)
 				break
 			end -- Mission too long, out of here
 			if (self:GetMissionData(missionID,'isRare') and settings.skipRare) then
-				ns.xprint(missionID,"discarded due to rarity")
+				xprint(missionID,"discarded due to rarity")
 				break
 			end
 			for k,v in pairs(ar) do
 				if (not v) then
 					if (self:GetMissionData(missionID,"class")==k) then -- we have a forbidden reward
-						ns.xprint(missionID,"discarded due to class == ", k)
+						xprint(missionID,"discarded due to class == ", k)
 						discarded=true
 						break
 					end
@@ -84,7 +87,7 @@ end
 --@param #integer missionID Optional, to run a single mission
 --@param #bool start Optional, tells that follower already are on mission and that we need just to start it
 function addon:GMCRunMission(missionID,start)
-	ns.xprint("Asked to start mission",missionID)
+	xprint("Asked to start mission",missionID)
 	if (start) then
 		G.StartMission(missionID)
 		PlaySound("UI_Garrison_CommandTable_MissionStart")
@@ -92,7 +95,7 @@ function addon:GMCRunMission(missionID,start)
 	end
 	for i=1,#GMC.ml.Parties do
 		local party=GMC.ml.Parties[i]
-		ns.xprint("Checking",party.missionID)
+		xprint("Checking",party.missionID)
 		if (missionID and party.missionID==missionID or not missionID) then
 			GMC.ml.widget:RemoveChild(party.missionID)
 			GMC.ml.widget:DoLayout()
@@ -134,7 +137,7 @@ do
 			end
 			return
 		end
-		if (timeElapsed >=0.) then
+		if (timeElapsed >=0.1) then
 			currentMission=currentMission+1
 			if (currentMission > #aMissions) then
 				wipe(aMissions)
@@ -142,13 +145,13 @@ do
 				x=0
 				timeElapsed=0.2
 			else
-				GMC.ml.widget:SetFormattedTitle("Processing mission %d of %d",currentMission,#aMissions)
 				local missionID=aMissions[currentMission]
+				GMC.ml.widget:SetFormattedTitle("Processing mission %d of %d (%s)",currentMission,#aMissions,G.GetMissionName(missionID))
 				local class=self:GetMissionData(missionID,"class")
 				local checkprio=class
 				if checkprio=="itemLevel" then class="equip" end
 				if checkprio=="followerUpgrade" then class= "followerEquip" end
-				ns.xprint(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
+				xprint(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
 				local minimumChance=0
 				if (GMC.settings.useOneChance) then
 					minimumChance=tonumber(GMC.settings.minimumChance) or 100
@@ -157,9 +160,9 @@ do
 				end
 				local party={members={},perc=0}
 				self:MCMatchMaker(missionID,party,false,false)
-				ns.xprint ("                           Requested",minimumChance,"Mission",party.perc,party.full)
+				xprint ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full)
 				if ( party.full and party.perc >= minimumChance) then
-					ns.xprint("                           Mission accepted")
+					xprint("                           Mission accepted")
 					local mb=AceGUI:Create("GMCMissionButton")
 					for i=1,#party.members do
 						GMCUsedFollowers[party.members[i]]=true
@@ -200,7 +203,7 @@ function addon:GMC_OnClick_Run(this,button)
 	end
 end
 function addon:GMC_OnClick_Start(this,button)
-	ns.xprint(C("-------------------------------------------------","Yellow"))
+	xprint(C("-------------------------------------------------","Yellow"))
 	GMC.ml.widget:ClearChildren()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
 		GMC.ml.widget:SetTitle("All followers are busy")
@@ -240,7 +243,7 @@ function addon:GMCBuildPanel(bigscreen)
 	chance:SetPoint("TOPLEFT",duration,"TOPRIGHT",bigscreen and 50 or 10,0)
 	priorities:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",25,-40)
 	rewards:SetPoint("TOPLEFT",priorities,"TOPRIGHT",bigscreen and 50 or 15,0)
-	list:SetPoint("TOPLEFT",chance,"TOPRIGHT",10,0)
+	list:SetPoint("TOPLEFT",chance,"TOPRIGHT",10,-30)
 	list:SetPoint("BOTTOMRIGHT",GMF,"BOTTOMRIGHT",-25,25)
 	GMC.startButton = CreateFrame('BUTTON',nil,  list.frame, 'GameMenuButtonTemplate')
 	GMC.startButton:SetText('Calculate')
@@ -268,9 +271,15 @@ function addon:GMCBuildPanel(bigscreen)
 		GMC.settings.skipRare=this:GetChecked()
 		addon:GMC_OnClick_Start(GMC.startButton,"LeftUp")
 	end)
-	GMC.Credits=GMC:CreateFontString(nil,"ARTWORK","ReputationDetailFont")
+	local warning=GMC:CreateFontString(nil,"ARTWORK","CombatTextFont")
+	warning:SetText(L["Epic followers are NEVER sent alone on xp only missions"])
+	warning:SetPoint("TOPLEFT",GMC,"TOPLEFT",0,-25)
+	warning:SetPoint("TOPRIGHT",GMC,"TOPRIGHT",0,-25)
+	warning:SetJustifyH("CENTER")
+	warning:SetTextColor(C.Orange())
+	GMC.Credits=GMC:CreateFontString(nil,"ARTWORK","DestinyFontLarge")
 	GMC.Credits:SetWidth(0)
-	GMC.Credits:SetFormattedText("Original concept and interface by %s",C("Motig","Red") )
+	GMC.Credits:SetFormattedText(C("Original concept and interface by %s",'Yellow'),C("Motig","Red") )
 	GMC.Credits:SetPoint("BOTTOMLEFT",25,25)
 	return GMC
 end
@@ -435,13 +444,13 @@ function addon:GMCBuildRewards()
 	local rc=GMC.settings.rewardChance
 	if ar.xpBonus then ar.xp=true end
 	ar.xpBonus=nil
-	if ar.followerUpgrade then ar.followerequip=true end
+	if ar.followerUpgrade then ar.followerEquip=true end
 	ar.followerUpgrade=nil
 	if ar.itemLevel then ar.equip=true end
 	ar.itemLevel=nil
 	if rc.xpBonus then rc.xp=rc.xpbonus or 100 end
 	rc.xpBonus=nil
-	if rc.followerUpgrade then rc.followerequip=rc.followerUpgrade or 100 end
+	if rc.followerUpgrade then rc.followerEquip=rc.followerUpgrade or 100 end
 	rc.followerUpgrade=nil
 	if rc.itemLevel then rc.equip=rc.itemLevel or 100 end
 	rc.itemLevel=nil

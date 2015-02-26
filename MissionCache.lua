@@ -111,7 +111,7 @@ function AddExtraData(mission)
 		elseif mission.itemLevel >0 then
 			mission.class='equip'
 		elseif mission.followerUpgrade>0 then
-			mission.class='followerequip'
+			mission.class='followerEquip'
 		elseif mission.itemLevel>=645 then
 			mission.class='epic'
 		else
