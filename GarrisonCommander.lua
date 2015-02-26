@@ -276,23 +276,12 @@ local origGarrison_SortMissions
 local sorters={}
 sorters.EndTime=function (mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	if ns.toc >=60100 then
-		local p1=G.GetFollowerMissionTimeLeftSeconds(mission1.followers[1])
-		local p2=G.GetFollowerMissionTimeLeftSeconds(mission2.followers[1])
-		if (p1==p2) then
-			return strcmputf8i(mission1.name, mission2.name) < 0
-		else
-			return p1 < p2
-		end
+	local p1=G.GetFollowerMissionTimeLeftSeconds(mission1.followers[1])
+	local p2=G.GetFollowerMissionTimeLeftSeconds(mission2.followers[1])
+	if (p1==p2) then
+		return strcmputf8i(mission1.name, mission2.name) < 0
 	else
-		local running=addon.privatedb.profile.running
-		local p1=tonumber(running[mission1.missionID].started)+tonumber(running[mission1.missionID].duration)
-		local p2=tonumber(running[mission2.missionID].started)+tonumber(running[mission2.missionID].duration)
-		if (p1==p2) then
-			return strcmputf8i(mission1.name, mission2.name) < 0
-		else
-			return p1 < p2
-		end
+		return p1 < p2
 	end
 end
 sorters.Chance=function (mission1, mission2)
@@ -329,6 +318,7 @@ sorters.Followers=function(mission1, mission2)
 end
 sorters.Xp=function (mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return end
+
 	local p1=addon:GetMissionData(mission1.missionID,'globalXp')
 	local p2=addon:GetMissionData(mission2.missionID,'globalXp')
 	if (p1==p2) then
@@ -621,11 +611,7 @@ local function switch(flag)
 	end
 end
 function addon:RefreshMissions(missionID)
-	if (ns.toc < 60100) then
-		GarrisonMissionFrame_OnUpdate()
-	else
-		GarrisonMissionList_UpdateMissions()
-	end
+	GarrisonMissionList_UpdateMissions()
 end
 
 --[[
@@ -2204,27 +2190,7 @@ function addon:IsFollowerAvailableForMission(followerID,skipbusy)
 		return self:GetFollowerStatus(followerID) == AVAILABLE
 	end
 end
-if ns.toc < 60100 then
-	G.GetFollowerMissionTimeLeft= function(followerID)
-		local running=dbcache.running[dbcache.runningIndex[followerID]]
-		if (running) then
-			return SecondsToTime(running.started + running.duration - time(),true)
-		else
-			return 0
-		end
-	end
-	G.GetFollowerMissionTimeLeftSeconds=function(followerID)
-		local running=dbcache.running[dbcache.runningIndex[followerID]]
-		if (running) then
-			return running.started + running.duration - time()
-		else
-			return 0
-		end
-	end
-	G.IsMechanicFullyCountered=function(missionID,followerID)
-		return G.GetFollowerBiasForMission(missionID,followerID)>0.99
-	end
-end
+
 function addon:GetFollowerStatus(followerID,withTime,colored)
 	--C_Garrison.GetFollowerMissionTimeLeftSeconds(follower.followerID)
 	if (not followerID) then return UNAVAILABLE end
@@ -2280,11 +2246,7 @@ function addon:FillMissionPage(missionInfo)
 			end
 		end
 	end
-	if ns.toc>=60100 then
-		GarrisonMissionPage_UpdateParty()
-	else
-		GarrisonMissionPage_UpdateMissionForParty()
-	end
+	GarrisonMissionPage_UpdateParty()
 	self:releaseEvents()
 end
 local firstcall=true
@@ -2885,20 +2847,14 @@ function over.GarrisonMissionButton_OnEnter(self, button)
 	GameTooltip:SetOwner(self, "ANCHOR_CURSOR_RIGHT");
 
 	if(self.info.inProgress) then
-		if ns.toc < 60100 then
-			orig.GarrisonMissionButton_OnEnter(self,button)
-		else
-			GarrisonMissionButton_SetInProgressTooltip(self.info)
-		end
+		GarrisonMissionButton_SetInProgressTooltip(self.info)
 	else
 		GameTooltip:SetText(self.info.name);
 		GameTooltip:AddLine(string.format(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS, self.info.numFollowers), 1, 1, 1);
 		GarrisonMissionButton_AddThreatsToTooltip(self.info.missionID);
 		--if (self.info.isRare) then
-		if ns.toc >=60100 then
-			GameTooltip:AddLine(GARRISON_MISSION_AVAILABILITY);
-			GameTooltip:AddLine(self.info.offerTimeRemaining, 1, 1, 1);
-		end
+		GameTooltip:AddLine(GARRISON_MISSION_AVAILABILITY);
+		GameTooltip:AddLine(self.info.offerTimeRemaining, 1, 1, 1);
 		if not C_Garrison.IsOnGarrisonMap() then
 			GameTooltip:AddLine(" ");
 			GameTooltip:AddLine(GARRISON_MISSION_TOOLTIP_RETURN_TO_START, nil, nil, nil, 1);
@@ -2910,9 +2866,7 @@ function over.GarrisonMissionButton_OnEnter(self, button)
 	GameTooltip:AddDoubleLine("MissionID",self.info.missionID)
 --@end-debug@
 	GameTooltip:Show();
-	if ns.toc >=60100 then
-		GarrisonMissionFrame.MissionTab.MissionList.newMissionIDs[self.info.missionID] = nil
-	end
+	GarrisonMissionFrame.MissionTab.MissionList.newMissionIDs[self.info.missionID] = nil
 	--GarrisonMissionList_Update();
 end
 ---@function
@@ -3025,7 +2979,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
-	if page and ns.toc>=60100 then
+	if page then
 		local isNewMission = page.newMissionIDs[mission.missionID];
 		if (isNewMission) then
 			if (not button.NewHighlight) then
@@ -3056,11 +3010,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	end
 	button.MissionType:SetAtlas(mission.typeAtlas);
 end
-if ns.toc < 60100 then
-function GarrisonMissionButton_CheckTooltipThreat()
-	print("checktooltip placeholder")
-end
-end
+
 function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 	local threatIndex=1
 	if (not GMF.MissionTab.MissionList.showInProgress) then
@@ -3125,9 +3075,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 		end
 	end
 end
-function addon:CalculateAge(missionID)
-	return "Available in 6.1"
-end
+
 function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	if not button.gcINDICATOR then
 		local indicators=CreateFrame("Frame",nil,button,"GarrisonCommanderIndicators")

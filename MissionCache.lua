@@ -118,6 +118,8 @@ function AddExtraData(mission)
 			mission.class='generic'
 		end
 	end
+	mission.globalXp=(mission.xp+mission.xpBonus+(addon:GetParty(mission.missionID)['xpBonus'] or 0) )*mission.numFollowers
+
 end
 function addon:OnAllMissions(func,inProgress)
 	local list=inProgress and Mbase.inProgressMissions or Mbase.availableMissions
