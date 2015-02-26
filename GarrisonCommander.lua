@@ -3120,7 +3120,9 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 		button.xp:SetTextColor(self:GetDifficultyColors(xp/3000*100))
 		button.xp:Show()
 	else
-		button.xp:Hide()
+		if button.xp then
+			button.xp:Hide()
+		end
 	end
 end
 function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
