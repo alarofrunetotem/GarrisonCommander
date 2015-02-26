@@ -1,4 +1,6 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
+* 2.3.6.2
+** Fix: 132x ...rfaceGarrisonCommander\GarrisonCommander-2.3.6.1.lua:3123: attempt to index field 'xp' (a nil value)
 * 2.3.6
 ** Fix: Removed on mission follower time info because given by Blizzards
 ** Fix: A lua error was appearing on mission completion
