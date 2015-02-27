@@ -1390,6 +1390,8 @@ end
 function addon:Options()
 	-- Main Garrison Commander Header
 	GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
+	local signature=me .. " " .. self.version
+	GCF.Signature:SetText(signature)
 	-- Removing wood corner. I do it here to not derive an xml frame. This shoud play better with ui extensions
 	GCF.CloseButton:Hide()
 	for _,f in pairs({GCF:GetRegions()}) do
