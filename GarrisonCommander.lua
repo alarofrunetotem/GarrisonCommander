@@ -570,7 +570,7 @@ function addon:AddFollowersToTooltip(missionID)
 			GameTooltip:AddDoubleLine(self:GetFollowerData(followerID,'fullname','none'),self:GetFollowerStatus(followerID,true,true))
 		end
 	end
-	local perc=self:GetParty(missionID,'perc')
+	local perc=party.perc
 	local q=self:GetDifficultyColor(perc)
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
 	for _,i in pairs (dbcache.ignored[missionID]) do
@@ -663,16 +663,6 @@ function addon:CreatePrivateDb()
 					['*']={
 					}
 				},
-				running={
-					["*"]={
-						followers={},
-						started=0,
-						duration=0
-					}
-				},
-				runningIndex={
-					["*"]=0
-				},
 				missionControl={
 					allowedRewards = {
 						followerEquip=true,
@@ -711,6 +701,8 @@ function addon:CreatePrivateDb()
 	true)
 	dbcache=self.privatedb.profile
 	cache=self.private.profile
+	cache.running=nil
+	cache.runningIndex=nil
 end
 function addon:SetClean()
 	dirty=false
@@ -765,27 +757,9 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 --@debug@
 	ns.xprint(event,missionID,...)
 --@end-debug@
---				running={
---					["*"]={
---						followers={},
---						started=0,
---						duration=0
---					}
---				},
-	dbcache.running[missionID].started=time()
-	dbcache.running[missionID].duration=select(2,G.GetPartyMissionInfo(missionID))
-	wipe(dbcache.running[missionID].followers)
 	wipe(dbcache.ignored[missionID])
 	local party=self:GetParty(missionID)
-	if party then
-		for i=1,#party.members do
-			local m=party.members[i]
-			if (m) then
-				tinsert(dbcache.running.followers,m)
-				dbcache.runningIndex[m]=missionID
-			end
-		end
-	end
+	wipe(party.members) -- I remove preset party, so PartyCache will refill it with the ones from the actual mission
 	local v=dbcache.seen[missionID]
 	local span=time()-(tonumber(v) or time())
 	if (span > db.lifespan[missionID]) then
@@ -837,7 +811,6 @@ function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed
 --@end-debug@
 	dbcache.history[missionID][time()]={result=100,success=rewards}
 	dbcache.seen[missionID]=nil
-	dbcache.running[missionID]=nil
 	dbcache.seen[missionID]=nil
 end
 -----------------------------------------------------
@@ -1795,131 +1768,6 @@ do
 			end
 		end
 	end
-	function addon:RenderFollowerPageMissionListOld(frame,followerID,force)
-		ns.xprint("hook",followerID,force)
-		if (followerID==lastFollowerID and not force) then return end
-		lastFollowerID=followerID
-		local i=0
-		if (not self:IsFollowerList()) then return end
-		if (not GCFMissions.Missions) then GCFMissions.Missions={} end
-		if (not Busystatusmessage) then Busystatusmessage=C(BUSY_MESSAGE,"Red)") end
-		-- frame has every info you can need on a follower, but here I dont really need them, maybe just counters
-		--ns.xdump(table.Counters)
-		ns.xprint("Passed",followerID)
-		local followerName=self:GetFollowerData(followerID,'name',true)
-		repeat -- a poor man goto
-			if (type(frame.followerID)=="number") then
-				GCFBusyStatus:SetText(NOT_COLLECTED)
-				GCFBusyStatus:SetTextColor(C.Red())
-				self:RenderFollowerButton(GCFMissions.Header,followerID)
-				break
-			end
-
-			local index=new()
-			local partyIndex=new()
-
-			local status=self:GetFollowerStatus(followerID)
-			local list
-			local m1,m2,m3,perc,numFollowers=nil,nil,nil,0,""
-			if (status ~= AVAILABLE and status ~= GARRISON_FOLLOWER_IN_PARTY) then
-				if (status==GARRISON_FOLLOWER_ON_MISSION) then
-					local missionID=dbcache.runningIndex[followerID]
-					if (not missionID) then return end
-					list=GMF.MissionTab.MissionList.inProgressMissions
-					m1=followerID
-					perc=select(4,G.GetPartyMissionInfo(missionID))
-					for j=1,#list do
-						index[list[j].missionID]=j
-					end
-					local pos=index[missionID]
-					if (not pos) then return end
-					numFollowers=#list[index[missionID]].followers
-					tinsert(partyIndex,-missionID)
-					GCFBusyStatus:SetText(GARRISON_FOLLOWER_ON_MISSION)
-				else
-					GCFBusyStatus:SetText(self:GetFollowerStatus(followerID,false,true)) -- no time, colored
-				end
-				GCFBusyStatus:SetTextColor(C.Red())
-
-			else
-				GCFBusyStatus:SetText(Busystatusmessage)
-				list=GMF.MissionTab.MissionList.availableMissions
-				for j=1,#list do
-					index[list[j].missionID]=j
-				end
-				for k,_ in pairs(parties) do
-					tinsert(partyIndex,k)
-				end
-				table.sort(partyIndex,function(a,b) return parties[a].perc > parties[b].perc end)
-			end
-			self:RenderFollowerButton(GCFMissions.Header,followerID)
-			-- Scanning mission list
-			for z = 1,#partyIndex do
-				local missionID=partyIndex[z]
-				if not(tonumber(missionID)) then
-	--@debug@
-					ns.xprint("missionid not a number",missionID)
-					self:Dump("partyIndex table",partyIndex)
-	--@end-debug@
-					perc=-1 --(lowering perc  to ignore this mission
-				end
-
-				if (missionID>0) then
-					local p=parties[missionID]
-					m1,m2,m3,perc=p.members[1],p.members[2],p.members[3],tonumber(p.perc) or 0
-					if (m3) then
-						numFollowers=3
-					elseif(m2) then
-						numFollowers=2
-					else
-						numFollowers=1
-					end
-				else
-					missionID=abs(missionID)
-				end
-				if (perc>MINPERC and ( m1 == followerID or m2==followerID or m3==followerID)) then
-					i=i+1
-					local mission=list[index[missionID]]
-					local panel=GCFMissions.Missions[i]
-					if (not panel) then
-						panel=CreateFrame("Button",nil,GCFMissions,"GarrisonCommanderMissionListButtonTemplate")
-						self:SafeHookScript(panel,"OnClick","OnClick_GarrisonMissionButton",true)
-
-						if (i==1) then
-							panel:SetPoint("TOPLEFT",GCFMissions.Header,"BOTTOMLEFT")
-						else
-							panel:SetPoint("TOPLEFT",GCFMissions.Missions[i-1],"BOTTOMLEFT")
-							panel:SetPoint("TOPRIGHT",GCFMissions.Missions[i-1],"BOTTOMRIGHT")
-						end
-						tinsert(GCFMissions.Missions,panel)
-						--Creo una riga nuova
-						panel:SetScale(0.6)
-						panel.fromFollowerPage=true
-						panel.LocBG:SetPoint("LEFT")
-					end
-					panel.info=mission
-					--panel.id=index[missionID]
-					self:BuildMissionButton(panel)
-					local q=self:GetDifficultyColor(perc)
-					panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
-					panel.Percent:SetTextColor(q.r,q.g,q.b)
-					panel.NumMembers:SetFormattedText(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS,numFollowers)
-					panel:Show()
-					if (i>= MAXMISSIONS) then break end
-				end
-			end
-			del(partyIndex)
-			del(index)
-		until true
-		if (i>0) then
-			GCFBusyStatus:SetPoint("TOPLEFT",GCFMissions.Missions[i],"BOTTOMLEFT",0,-5)
-		else
-			GCFBusyStatus:SetPoint("TOPLEFT",GCFMissions.Header,"BOTTOMLEFT",0,-5)
-		end
-		i=i+1
-		for x=i,#GCFMissions.Missions do GCFMissions.Missions[x]:Hide() end
-	end
-
 end
 ---
 --Initial one time setup
@@ -3045,7 +2893,6 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 					button.Env:SetScript("OnEnter",nil)
 					button.Env:Hide()
 				end
-				--local counteredThreats=P:CalculateThreats(party.members,missionID)
 				for i=1,#mission.enemies do
 					local enemy=mission.enemies[i]
 					for mechanicID, mechanic in pairs(enemy.mechanics) do

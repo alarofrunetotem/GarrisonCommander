@@ -10,6 +10,9 @@ local wipe=wipe
 local tremove=tremove
 local tinsert=tinsert
 local pcall=pcall
+local type=type
+local pairs=pairs
+local format=format
 
 --
 -- Temporary party management
@@ -23,7 +26,11 @@ local parties=setmetatable({},{
 			followerUpgrade=0,
 			xpBonus=0,
 			gold=0,
+			goldMultiplier=1,
+			materialMultiplier=1,
 			resources=0,
+			totalTimeString="Not Running",
+			totalTimeSeconds=0
 		}) return t[k] end
 })
 function ns.inParty(missionID,followerID)
@@ -34,6 +41,19 @@ end
 local followerMissions=setmetatable({},{
 	__index=function(t,k)  rawset(t,k,{}) return t[k] end
 })
+local function addPartyMissionInfo(desttable,missionID)
+	if type(desttable) == "table" then
+		desttable.totalTimeString,
+		desttable.totalTimeSeconds,
+		desttable.isMissionTimeImproved,
+		desttable.perc,
+		desttable.partyBuffs,
+		desttable.isEnvMechanicCountered,
+		desttable.xpBonus,
+		desttable.materialMultiplier,
+		desttable.goldMultiplier = G.GetPartyMissionInfo(missionID)
+	end
+end
 ns.party={}
 local party=ns.party --#party
 local ID,maxFollowers,members,ignored,threats=0,1,{},{},{}
@@ -62,6 +82,9 @@ function party:MaxSlots()
 end
 function party:FreeSlots()
 	return maxFollowers-#members
+end
+function party:CurrentSlot()
+	return #members +1
 end
 function party:IsEmpty()
 	return maxFollowers>0 and #members==0
@@ -137,15 +160,7 @@ function party:Close(desttable)
 		end
 	end
 	if (desttable) then
-		desttable.totalTimeString,
-		desttable.totalTimeSeconds,
-		desttable.isMissionTimeImproved,
-		desttable.perc,
-		desttable.partyBuffs,
-		desttable.isEnvMechanicCountered,
-		desttable.xpBonus,
-		desttable.materialMultiplier,
-		desttable.goldMultiplier = G.GetPartyMissionInfo(ID)
+		addPartyMissionInfo(desttable,ID)
 		if (ns.toc < 60100) then
 			desttable.goldMultiplier = 1
 		end
@@ -176,56 +191,6 @@ function party:Close(desttable)
 	wipe(threats)
 	return perc or 0
 end
-function party:CalculateThreats(followers,missionID)
-	local threats = {};
-	threats.full = {};
-	threats.partial = {};
-	threats.away = {};
-	threats.worker = {};
-	missionID=missionID or ID
-	local followerList=followers or members
-	for i = 1, #followerList do
-		local followerID = followerList[i];
-		local status=G.GetFollowerStatus(followerID)
-		local bias = G.GetFollowerBiasForMission(missionID, followerID);
-		if ( bias > -1.0 ) then
-			local abilities = G.GetFollowerAbilities(followerID);
-			for j = 1, #abilities do
-				for counterMechanicID in pairs(abilities[j].counters) do
-					if ( status ) then
-						if ( status == GARRISON_FOLLOWER_ON_MISSION ) then
-							local time = G.GetFollowerMissionTimeLeftSeconds(followerID);
-							if ( not threats.away[counterMechanicID] ) then
-								threats.away[counterMechanicID] = {};
-							end
-							table.insert(threats.away[counterMechanicID], time);
-						elseif ( status == GARRISON_FOLLOWER_WORKING ) then
-							threats.worker[counterMechanicID] = (threats.worker[counterMechanicID] or 0) + 1;
-						end
-					else
-						local isFullCounter = G.IsMechanicFullyCountered(missionID, followerID, counterMechanicID, abilities[j].id);
-						if ( isFullCounter ) then
-							threats.full[counterMechanicID] = (threats.full[counterMechanicID] or 0) + 1;
-						else
-							threats.partial[counterMechanicID] = (threats.partial[counterMechanicID] or 0) + 1;
-						end
-					end
-				end
-			end
-		end
-	end
-
-	for counter, times in pairs(threats.away) do
-		table.sort(times);
-	end
-	return threats;
-end
-function addon:GetBusyParty(missionID)
-	return self:GetParty(missionID).busy
-end
-function addon:GetReadyParty(missionID,key)
-	return self:GetParty(missionID)
-end
 function addon:GetParties()
 	return self:GetParty()
 end
@@ -233,12 +198,12 @@ function addon:GetParty(missionID,key)
 	if not missionID then return parties end
 	local party=parties[missionID]
 	if #party.members==0 and G.GetNumFollowersOnMission(missionID)>0 then
+		--Running Mission, taking followers from mission data
 		local followers=self:GetMissionData(missionID,'followers')
-		party.perc=select(4,G.GetPartyMissionInfo(missionID))
+		addPartyMissionInfo(party,missionID)
 		for i=1,#followers do
 			party.members[i]=followers[i]
 		end
-		--Running Mission, taking followers from mission data
 	end
 	if key then
 		return party[key]

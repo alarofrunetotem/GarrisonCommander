@@ -71,6 +71,8 @@ filters.gold=filters.generic
 filters.equip=filters.generic
 filters.followerEquip=filters.generic
 filters.epic=filters.generic
+local nop={addRow=function() end}
+local scroller=nop
 local function CreateFilter(missionClass)
 	local code = [[
 	local filters,xprint,pairs = ...
@@ -100,18 +102,27 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 	local missionID=mission.missionID
 	local filter=filters[mission.class]
 	local missionScore=self:MissionScore(mission)
+
 	for p=1,P:FreeSlots() do
-		xprint("Assigning slot ",p+1, " starting with mission score ",missionScore)
+		if dbg then
+			scroller:AddRow("--------------------- Slot " .. P:CurrentSlot() .. " ------------------")
+		end
 		local candidate=nil
 		local candidateScore=missionScore
 		for i=1,#scores do
 			local score,followerID=strsplit('|',scores[i])
-			xprint(C(score,'yellow'),G.GetFollowerName(followerID),filter(followerID,missionID))
 			if (not filter(followerID,missionID) and not P:IsIn(followerID)) then
 				P:AddFollower(followerID)
 				local newScore=self:MissionScore(mission)
-				xprint(C(score,'yellow'),G.GetFollowerName(followerID),"changes score from ",candidateScore,"to",newScore)
-				if (newScore > missionScore or justdo) then
+				if dbg then
+					local c1,c2="green","red"
+					if newScore > candidateScore or justdo then
+						c1="red"
+						c2="green"
+					end
+					scroller:AddRow(addon:GetFollowerData(followerID,'fullname') .." changes score from " .. C(candidateScore,c1).." to "..C(newScore,c2))
+				end
+				if (newScore > candidateScore or justdo) then
 					candidate=followerID
 					candidateScore=newScore
 				end
@@ -119,8 +130,10 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 			end
 		end
 		if candidate then
-			xprint(C(score,'yellow'),G.GetFollowerName(candidate),"assigned to slot",p+1)
-			P:AddFollower(candidate)
+			local slot=P:CurrentSlot()
+			if P:AddFollower(candidate) and dbg then
+				scroller:addRow(C("Slot " .. slot..":","Green").. " " .. addon:GetFollowerData(candidate,'fullname'))
+			end
 			candidate=nil
 		end
 	end
@@ -160,22 +173,26 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		local firstmember
 		table.sort(scores)
 		if (dbg) then
-			local s=self:GetScroller("Scores")
-			self:cutePrint(s,scores)
+			for i=1,#scores do
+				local score,followerID=strsplit('|',scores[i])
+				local t=score:gsub("(%d%d%d)(%d)(%d)(%d)(%d*)","%1%% r:%2 t:%3d b:%4 Rank:%5 ") .. addon:GetFollowerData(followerID,'fullname') .. " " .. tostring(G.GetFollowerStatus(followerID))
+				scroller:addRow(t)
+			end
+		else
+			scroller=nop
 		end
-		xprint("           First member")
 		for i=#scores,1,-1 do
 			local score,followerID=strsplit('|',scores[i])
-			xprint(C(score,'yellow'),G.GetFollowerName(followerID))
 			if not firstmember and not filter(followerID,missionID) then
 				firstmember=followerID
 				break
 			end
 		end
 		if firstmember then
-			P:AddFollower(firstmember)
+			if P:AddFollower(firstmember) and dbg then
+				scroller:AddRow(C("Slot 1:","Green").. " " .. addon:GetFollowerData(firstmember,'fullname'))
+			end
 			if mission.numFollowers > 1 then
-				xprint("           AddMore 1")
 				AddMoreFollowers(self,mission,scores)
 			end
 		end
@@ -224,7 +241,16 @@ function addon:MatchMaker(missionID,party,includeBusy)
 end
 function addon:TestMission(missionID,includeBusy)
 	dbg=true
-	self:MatchMaker(missionID,nil,includeBusy)
+	scroller=self:GetScroller("Scores")
+	local party=new()
+	party.members=new()
+	self:MatchMaker(missionID,party,includeBusy)
+--@debug@
+	DevTools_Dump(party)
+--@end-debug@
+	del(party.members)
+	del(party)
+	scroller=nop
 	dbg=false
 end
 function addon:MatchDebug(d)

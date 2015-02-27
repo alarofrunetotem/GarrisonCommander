@@ -1,8 +1,4 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
-* 2.3.6.2
-** Fix: 132x ...rfaceGarrisonCommander\GarrisonCommander-2.3.6.1.lua:3123: attempt to index field 'xp' (a nil value)
-* 2.3.6
-** Fix: Removed on mission follower time info because given by Blizzards
-** Fix: A lua error was appearing on mission completion
-** Fix: Mission control was not considering some generic reward missions
-** Feature: On failure in completion, mission rewards are grayed out
+* 2.3.7
+** Fix: Party display for In Progress missions sometimes was not not showing the right followers.
+** Fix: Matchmaking was trying too hard te get the lowest usefull follower, sometimes not achieving the best possible score
