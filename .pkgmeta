@@ -25,6 +25,9 @@ externals:
 	GarrisonCommander-Broker/libs/Ace3/AceLocale-3.0:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceLocale-3.0
 		tag: latest
+	GarrisonCommander-Broker/libs/Ace3/AceTimer-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceTimer-3.0
+		tag: latest			
 	GarrisonCommander-Broker/libs/Ace3/CallbackHandler-1.0:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/CallbackHandler-1.0
 		tag: latest
