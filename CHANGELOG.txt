@@ -2,3 +2,4 @@
 * 2.3.7
 ** Fix: Party display for In Progress missions sometimes was not not showing the right followers.
 ** Fix: Matchmaking was trying too hard te get the lowest usefull follower, sometimes not achieving the best possible score
+** Fix: Added missing library to GarrisonCommander-Broker. Most people already had that library so onoy a few ones were impacred from it
