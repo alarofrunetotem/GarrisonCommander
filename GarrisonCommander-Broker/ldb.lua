@@ -39,18 +39,24 @@ end
 function addon:ldbUpdate()
 	local now=time()
 	local completed=0
+	local ready=NONE
+	local prox=NONE
 	for i=1,#self.db.realm.missions do
 		local t,missionID,pc=strsplit('.',self.db.realm.missions[i])
 		t=tonumber(t) or 0
 		if t>now then
 			local duration=t-now
 			local duration=duration < 60 and duration or math.floor(duration/60)*60
-			dataobj.text=format("Next mission on |cff20ff20%s|r in %s (|cff20ff20%d|r completed)",pc,SecondsToTime(duration),completed)
-			return
+			prox=format("|cff20ff20%s|r in %s",pc,SecondsToTime(duration),completed)
+			break;
+		else
+			if ready==NONE then
+				ready=format("|cff20ff20%s|r",pc)
+			end
 		end
 		completed=completed+1
 	end
-	dataobj.text=format("Next mission %s (|cff20ff20%d|r completed)",NONE,completed)
+	dataobj.text=format("%s: %s (Tot: %d) %s: %s",READY,ready,completed,NEXT,prox)
 end
 function addon:GARRISON_MISSION_STARTED(event,missionID)
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
@@ -68,7 +74,7 @@ function addon:OnInitialize()
 end
 dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject(me, {
 	type = "data source",
-	label = "GarrisonCommander",
+	label = "Missions ",
 	text=NONE,
 	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
 })
@@ -90,6 +96,7 @@ function dataobj:OnTooltipShow()
 			end
 		end
 	end
+	self("AddLine",me,0,1,0)
 end
 
 function dataobj:OnEnter()
