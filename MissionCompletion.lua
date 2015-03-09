@@ -233,10 +233,14 @@ do
 			self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
 		end
 	end
+	function addon:CloseMissionPanel()
+		if report then
+			report:Release()
+		end
+	end
 	function addon:MissionComplete(this,button)
-		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false)
+		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		missions=G.GetCompleteMissions()
-		--GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		if (missions and #missions > 0) then
 			ns.missionautocompleting=true
 			report=self:GenerateMissionCompleteList("Missions' results")

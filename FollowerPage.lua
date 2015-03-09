@@ -87,7 +87,7 @@ local function UpgradeFollower(this)
 		addon:Popup(format(CONFIRM2,losing,name),0,DoUpgradeFollower,true,followerID,true)
 	else
 		if addon:GetToggle("NOCONFIRM") then
-			--G.CastSpellOnFollower(followerID);
+			G.CastSpellOnFollower(followerID);
 		else
 			addon:Popup(format(CONFIRM1,mylevel+level,name),0,DoUpgradeFollower,true,followerID,true)
 		end

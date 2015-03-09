@@ -547,6 +547,7 @@ function addon:SetThreatColor(obj,threat)
 		local color=self:GetBiasColor(tonumber(bias) or -1,nil,"Green")
 		local c=C[color]
 		obj.Border:SetVertexColor(c())
+		return (tonumber(bias)or -1)>-1
 	else
 		obj.Border:SetVertexColor(C.red())
 	end
@@ -1688,8 +1689,30 @@ function addon.ClonedGarrisonMissionMechanic_OnEnter(this)
 	local button=this:GetParent()
 	tip:SetOwner(button, "ANCHOR_CURSOR_RIGHT");
 	tip:AddLine(this.Name,C.White())
-	tip:AddTexture(this.Icon:GetTexture())
+	tip:AddTexture(this.texture)
 	tip:AddLine(this.Description,C.Orange())
+	if (this.countered) then
+		if this.IsEnv then
+			local t=G.GetFollowersTraitsForMission(this.missionID)
+			for followerID,k in pairs(t) do
+				for i=1,#k do
+					xprint(k[i].icon)
+					if k[i].icon==this.texture then
+						tip:AddDoubleLine(addon:GetFollowerData(followerID,'fullname'),this.Name)
+					end
+				end
+			end
+		else
+			local t=G.GetBuffedFollowersForMission(this.missionID)
+			for followerID,k in pairs(t) do
+				for i=1,#k do
+					if k[i].name==this.Name then
+						tip:AddDoubleLine(addon:GetFollowerData(followerID,'fullname'),k[i].counterName)
+					end
+				end
+			end
+		end
+	end
 	tip:Show()
 end
 function addon:HookedGarrisonFollowerPage_ShowFollower(frame,followerID,force)
@@ -2019,6 +2042,8 @@ function addon:CleanUp()
 	if (GarrisonFollowerTooltip.fs) then
 		GarrisonFollowerTooltip.fs:Hide()
 	end
+	GMFMissions.CompleteDialog:Hide()
+	self:CloseMissionPanel()
 	--collectgarbage("collect")
 --@debug@
 	ns.xprint("Cleaning up")
@@ -2876,11 +2901,14 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 					button.Env:SetPoint("BOTTOMLEFT",button,165,8)
 					button.GcThreats={}
 				end
+				button.Env.missionID=missionID
 				local party=self:GetParty(missionID)
 				if mission.typeIcon then
 					button.Env.IsEnv=true
 					button.Env:Show()
 					button.Env.Icon:SetTexture(mission.typeIcon)
+					button.Env.texture=mission.typeIcon
+					button.Env.countered=party.isEnvMechanicCountered
 					if (party.isEnvMechanicCountered) then
 						button.Env.Border:SetVertexColor(C.Green())
 					else
@@ -2905,10 +2933,12 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 							th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
 							button.GcThreats[threatIndex]=th
 						end
-						self:SetThreatColor(th,self:GetParty(missionID,'threats')[threatIndex])
+						th.countered=self:SetThreatColor(th,self:GetParty(missionID,'threats')[threatIndex])
 						th.Icon:SetTexture(mechanic.icon)
+						th.texture=mechanic.icon
 						th.Name=mechanic.name
 						th.Description=mechanic.description
+						th.missionID=missionID
 						--GarrisonMissionButton_CheckTooltipThreat(th,missionID,mechanicID,counteredThreats)
 						th:Show()
 						th:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
