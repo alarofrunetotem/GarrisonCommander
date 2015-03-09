@@ -223,16 +223,18 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	P:Close(party)
 	del(buffed)
 end
-function addon:MCMatchMaker(missionID,party)
+function addon:MCMatchMaker(missionID,party,skipEpic)
 	MatchMaker(self,missionID,party,false)
-	if (self:GetMissionData(missionID,'class')=='xp') then
-		for i=1,#party.members do
-			if not self:GetFollowerData(party.members[i],'maxed') then
-				return
+	if (skipEpic) then
+		if (self:GetMissionData(missionID,'class')=='xp') then
+			for i=1,#party.members do
+				if not self:GetFollowerData(party.members[i],'maxed') then
+					return
+				end
 			end
+			party.full=false
+			wipe(party.members)
 		end
-		party.full=false
-		wipe(party.members)
 	end
 end
 function addon:MatchMaker(missionID,party,includeBusy)

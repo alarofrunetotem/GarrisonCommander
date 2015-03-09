@@ -9,9 +9,11 @@ local GetChatFrame=GetChatFrame
 local format=format
 local GetTime=GetTime
 local strjoin=strjoin
+local strspilit=strsplit
 local tostringall=tostringall
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
+if LibDebug then LibDebug() end
 --@end-debug@
 ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
 local chatframe=ns.addon:GetChatFrame("aDebug")
@@ -31,10 +33,11 @@ ns.trace=ns.addon:Wrap("Trace")
 ns.xprint=function() end
 ns.xdump=function() end
 ns.xtrace=function() end
+if not _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL then _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL=675 end
 --@debug@
---ns.xprint=function(...) pd("|cffff9900DBG|r",...) end
---ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
---ns.xtrace=ns.trace
+	ns.xprint=print
+	ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
+	ns.xtrace=print
 --@end-debug@
 do
 	--@debug@
@@ -110,6 +113,99 @@ function addon:releaseEvents()
 end
 local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
 ns.OnLeave=function() GameTooltip:Hide() end
+local upgrades={
+	"wt:120302:1",
+	"we:114128:3",
+	"we:114129:6",
+	"we:114131:9",
+	"wf:114616:615",
+	"wf:114081:630",
+	"wf:114622:645",
+	"at:120301:1",
+	"ae:114745:3",
+	"ae:114808:6",
+	"ae:114822:9",
+	"af:114807:615",
+	"af:114806:630",
+	"af:114746:645",
+}
+local followerItems={}
+local items={
+[114053]={icon='inv_glove_plate_dungeonplate_c_06',quality=2},
+[114052]={icon='inv_jewelry_ring_146',quality=3},
+[114109]={icon='inv_sword_46',quality=3},
+[114068]={icon='inv_misc_pvp_trinket',quality=3},
+[114058]={icon='inv_chest_cloth_reputation_c_01',quality=3},
+[114063]={icon='inv_shoulder_cloth_reputation_c_01',quality=3},
+[114059]={icon='inv_boots_cloth_reputation_c_01',quality=3},
+[114066]={icon='inv_jewelry_necklace_70',quality=3},
+[114057]={icon='inv_bracer_cloth_reputation_c_01',quality=3},
+[114101]={icon='inv_belt_cloth_reputation_c_01',quality=3},
+[114098]={icon='inv_helmet_cloth_reputation_c_01',quality=3},
+[114096]={icon='inv_boots_cloth_reputation_c_01',quality=3},
+[114108]={icon='inv_sword_46',quality=3},
+[114094]={icon='inv_bracer_cloth_reputation_c_01',quality=3},
+[114099]={icon='inv_pants_cloth_reputation_c_01',quality=3},
+[114097]={icon='inv_gauntlets_cloth_reputation_c_01',quality=3},
+[114105]={icon='inv_misc_pvp_trinket',quality=3},
+[114100]={icon='inv_shoulder_cloth_reputation_c_01',quality=3},
+[114110]={icon='inv_sword_46',quality=3},
+[114080]={icon='inv_misc_pvp_trinket',quality=3},
+[114070]={icon='inv_chest_cloth_reputation_c_01',quality=3},
+[114075]={icon='inv_shoulder_cloth_reputation_c_01',quality=3},
+[114071]={icon='inv_boots_cloth_reputation_c_01',quality=3},
+[114078]={icon='inv_jewelry_necklace_70',quality=3},
+[114069]={icon='inv_bracer_cloth_reputation_c_01',quality=3},
+[114112]={icon='inv_sword_46',quality=4},
+[114087]={icon='inv_misc_pvp_trinket',quality=4},
+[114083]={icon='inv_chest_cloth_reputation_c_01',quality=4},
+[114085]={icon='inv_shoulder_cloth_reputation_c_01',quality=4},
+[114084]={icon='inv_boots_cloth_reputation_c_01',quality=4},
+[114086]={icon='inv_jewelry_necklace_70',quality=4},
+[114082]={icon='inv_bracer_cloth_reputation_c_01',quality=4},
+}
+for i=1,#upgrades do
+	local _,id,level=strsplit(':',upgrades[i])
+	followerItems[id]=level
+end
+function addon:GetUpgrades()
+	return upgrades
+end
+function addon:GetItems()
+	return items
+end
+-- to be moved in LibInit
+function addon:coroutineExecute(interval,func)
+	local co=coroutine.wrap(func)
+	local interval=interval
+	local repeater
+	repeater=function()
+		if (co()) then
+			C_Timer.After(interval,repeater)
+		else
+			repeater=nil
+		end
+	end
+	return repeater()
+end
+addon:coroutineExecute(0.1,
+	function ()
+		for itemID,_ in pairs(followerItems) do
+			GetItemInfo(itemID)
+			coroutine.yield(true)
+		end
+		for i,v in pairs(items) do
+			GetItemInfo(i)
+			coroutine.yield(true)
+		end
+	end
+)
+function addon:GetType(itemID)
+	if (items[itemID]) then return "equip" end
+	if (followerItems[itemID]) then return "followerEquip" end
+	return "generic"
+end
+
 
 -------------------- to be estracted to CountersCache
 --
@@ -188,6 +284,39 @@ function addon:DumpSinks()
 	self:cutePrint(scroll,sorted)
 end
 end
+local m={}
+function m:AddRow(text,...)
+	local l=AceGUI:Create("Label")
+	l:SetText(text)
+	l:SetColor(...)
+	l:SetFullWidth(true)
+	self:AddChild(l)
+	return l
+end
+function m:AddIconText(icon,text,qt)
+	local l=AceGUI:Create("InteractiveLabel")
+	l:SetFontObject(GameFontNormalSmall)
+	if (qt) then
+		l:SetText(format("%s x %s",text,qt))
+	else
+		l:SetText(text)
+	end
+	l:SetImage(icon)
+	l:SetImageSize(24,24)
+	l:SetFullWidth(true)
+	l.frame:EnableMouse(true)
+	l.frame:SetFrameLevel(999)
+	self:AddChild(l)
+	return l
+end
+function m:AddItem(itemID,qt)
+	local _,itemlink,itemquality,_,_,_,_,_,_,itemtexture=GetItemInfo(itemID)
+	if not itemlink then
+		return self:AddIconText(itemtexture,itemID)
+	else
+		return self:AddIconText(itemtexture,itemlink)
+	end
+end
 function addon:GetScroller(title,type,h,w)
 	h=h or 800
 	w=w or 400
@@ -210,7 +339,7 @@ function addon:GetScroller(title,type,h,w)
 	scrollerWindow:SetWidth(w)
 	scrollerWindow:SetPoint("CENTER")
 	scrollerWindow:Show()
-	scroll.AddRow=function (self,...) return addon:AddRow(self,...) end
+	for k,v in pairs(m) do scroll[k]=v end
 	scroll.addRow=scroll.AddRow
 	return scroll
 end
@@ -309,16 +438,14 @@ function addon:DumpParty(missionID)
 	self:cutePrint(scroll,parties[missionID])
 end
 function addon:DumpAgeDb()
-	local t=new()
+	local t=ns.new()
 	for i,v in pairs(dbcache.seen) do
 		tinsert(t,format("%80s %s %d",self:GetMissionData(i,'name'),date("%d/%m/%y %H:%M:%S",v),ns.wowhead[i]))
 	end
 	local scroll=self:GetScroller("Expire db")
 	self:cutePrint(scroll,t)
-	del(t)
+	ns.del(t)
 end
-_G.GCF=GCF
-_G.MW=173
 --[[
 PlaySound("UI_Garrison_CommandTable_Open");
 	PlaySound("UI_Garrison_CommandTable_Close");

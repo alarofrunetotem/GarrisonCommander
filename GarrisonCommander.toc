@@ -35,4 +35,5 @@ FollowerPage.lua
 MatchMaker.lua
 FollowerRecruiting.lua
 GarrisonCommander.xml
+BuildingPage.lua
 RelNotes.lua

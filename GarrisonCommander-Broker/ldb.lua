@@ -96,7 +96,7 @@ function dataobj:OnTooltipShow()
 			end
 		end
 	end
-	self("AddLine",me,0,1,0)
+	self:AddLine(me,0,1,0)
 end
 
 function dataobj:OnEnter()

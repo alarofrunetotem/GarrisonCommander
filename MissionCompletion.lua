@@ -5,13 +5,38 @@ local D=ns.D
 local C=ns.C
 local AceGUI=ns.AceGUI
 local _G=_G
+--@debug@
+if LibDebug() then LibDebug() end
+--@end-debug@
+local xprint=ns.xprint
 local new, del, copy =ns.new,ns.del,ns.copy
 local GMF=GarrisonMissionFrame
 local GMFMissions=GarrisonMissionFrameMissions
 local G=C_Garrison
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 ns.missionautocompleting=false
+local pairs=pairs
+local format=format
+local strsplit=strsplit
 local generated
+local salvages={
+114120,114119,114116}
+local converter=CreateFrame("Frame"):CreateTexture()
+function addon:GetFollowerTexture(followerID)
+	local rc,iconID=pcall(addon.GetFollowerData,addon,followerID,"portraitIconID")
+	if rc then
+		xprint(followerID,iconID)
+		if iconID then
+			converter:SetToFileData(iconID)
+			xprint(converter:GetTexture())
+			return converter:GetTexture()
+		end
+		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+	else
+		xprint(iconID)
+		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+	end
+end
 function addon:GenerateMissionCompleteList(title)
 	if not generated then
 		generated=true
@@ -20,12 +45,6 @@ function addon:GenerateMissionCompleteList(title)
 			local Type="GCMCList"
 			local Version=1
 			local m={} --#Widget
-			local function onEnter(self)
-				if (self.itemlink) then
-					GameTooltip:SetHyperlink(self.itemlink)
-					GameTooltip:Show()
-				end
-			end
 			function m:ScrollDown()
 				local obj=self.scroll
 				if (#self.missions >1 and obj.scrollbar and obj.scrollbar:IsShown()) then
@@ -37,7 +56,6 @@ function addon:GenerateMissionCompleteList(title)
 				wipe(self.missions)
 			end
 			function m:OnClose()
-				print("azzero completing")
 				ns.missionautocompleting=nil
 			end
 			function m:Show()
@@ -46,6 +64,14 @@ function addon:GenerateMissionCompleteList(title)
 			function m:Hide()
 				self.frame:Hide()
 				self:Release()
+			end
+			function m:AddButton(text,action)
+				local obj=self.scroll
+				local b=AceGUI:Create("Button")
+				b:SetFullWidth(true)
+				b:SetText(text)
+				b:SetCallback("OnClick",action)
+				obj:AddChild(b)
 			end
 			function m:AddMissionButton(mission)
 				local obj=self.scroll
@@ -56,7 +82,7 @@ function addon:GenerateMissionCompleteList(title)
 				self.missions[mission.missionID]=b
 				obj:AddChild(b)
 			end
-			function m:AddMissionName(missionID,success)
+			function m:AddMissionResult(missionID,success)
 				local mission=self.missions[missionID]
 				if mission then
 					local frame=mission.frame
@@ -89,14 +115,16 @@ function addon:GenerateMissionCompleteList(title)
 			function m:AddFollower(followerID,xp,levelup)
 				local follower=addon:GetFollowerData(followerID)
 				if follower.maxed and not levelup then
-					return self:AddRow(format("%s is already at maximum xp",addon:GetFollowerData(followerID,'fullname')))
+					return self:AddIconText(addon:GetFollowerTexture(followerID),
+										format("%s is already at maximum xp",addon:GetFollowerData(followerID,'fullname')))
 				end
 				local quality=G.GetFollowerQuality(followerID) or follower.quality
 				local level=G.GetFollowerLevel(followerID) or follower.level
 				if levelup then
 					PlaySound("UI_Garrison_CommandTable_Follower_LevelUp");
 				end
-				return self:AddRow(format("%s gained %d xp%s%s",addon:GetFollowerData(followerID,'fullname',true),xp,
+				return self:AddIconText(addon:GetFollowerTexture(followerID),
+				format("%s gained %d xp%s%s",addon:GetFollowerData(followerID,'fullname',true),xp,
 				levelup and " |cffffed1a*** Level Up ***|r ." or ".",
 				format(" %d to go.",addon:GetFollowerData(followerID,'levelXP')-addon:GetFollowerData(followerID,'xp'))))
 			end
@@ -123,9 +151,9 @@ function addon:GenerateMissionCompleteList(title)
 				local obj=self.scroll
 				local _,itemlink,itemquality,_,_,_,_,_,_,itemtexture=GetItemInfo(itemID)
 				if not itemlink then
-					self:AddIconText(itemtexture,itemID)
+					self:AddIconText(itemtexture,itemID,qt)
 				else
-					self:AddIconText(itemtexture,itemlink)
+					self:AddIconText(itemtexture,itemlink,qt)
 				end
 			end
 			local function Constructor()
@@ -157,7 +185,7 @@ do
 	local states={}
 	local currentMission
 	local rewards={
-		items=setmetatable({},{__index=function() return 0 end}),
+		items={},
 		followerBase={},
 		followerXP=setmetatable({},{__index=function() return 0 end}),
 		currencies=setmetatable({},{__index=function(t,k) rawset(t,k,{icon="",qt=0}) return t[k] end}),
@@ -193,13 +221,11 @@ do
 		self:UnregisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 		self:UnregisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 		self:UnregisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
-		self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
 		if start then
 			self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","MissionAutoComplete")
 			self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","MissionAutoComplete")
 			self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","MissionAutoComplete")
 			self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","MissionAutoComplete")
-			self:RegisterEvent("GET_ITEM_INFO_RECEIVED","MissionAutoComplete")
 		else
 			self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT")
 			self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
@@ -229,17 +255,20 @@ do
 				for k,v in pairs(missions[i].followers) do
 					rewards.followerBase[v]=self:GetFollowerData(v,'qLevel')
 				end
+				local m=missions[i]
+				local _
+				_,_,_,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
 			end
 			currentMission=tremove(missions)
-			self:MissionEvents(true)
 			self:MissionAutoComplete("LOOP")
+			self:MissionEvents(true)
 		end
 	end
 	function addon:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
 	--@debug@
-		print("evt",event,ID,arg1,arg2,agr3)
+		print("evt",event,ID,arg1,arg2,arg3)
 	--@end-debug@
 		if self['Event'..event] then
 			self['Event'..event](self,event,ID,arg1,arg2,arg3,arg4)
@@ -259,13 +288,9 @@ do
 				rewards.followerXP[ID]=rewards.followerXP[ID]+tonumber(arg1) or 0
 			end
 			return
-		-- GET_ITEM_INFO_RECEIVED: itemID
-		elseif (event=="GET_ITEM_INFO_RECEIVED") then
-			rewards.items[format("%d:%s",currentMission.missionID,ID)]=1
-			return
-		-- GET_ITEM_INFO_RECEIVED: itemID
+		-- GARRISON_MISSION_BONUS_ROLL_LOOT: itemID
 		elseif (event=="GARRISON_MISSION_BONUS_ROLL_LOOT") then
-			if (currentMissission) then
+			if (currentMission) then
 				rewards.items[format("%d:%s",currentMission.missionID,ID)]=1
 			else
 				rewards.items[format("%d:%s",0,ID)]=1
@@ -280,8 +305,6 @@ do
 				currentMission.state=1
 			else -- failure, just print results
 				currentMission.state=2
-				startTimer(0.1)
-				return
 			end
 			startTimer(0.1)
 			return
@@ -303,9 +326,7 @@ do
 				if (step<1) then
 					step=0
 					currentMission.state=0
-					local _
-					_,_,_,currentMission.successChance,_,_,currentMission.xpBonus,currentMission.multiplier,currentMission.golds=G.GetPartyMissionInfo(currentMission.missionID)
-					currentMission.golds=currentMission.golds or 1
+					currentMission.goldMultiplier=currentMission.goldMultiplier or 1
 					currentMission.xp=select(2,G.GetMissionInfo(currentMission.missionID))
 					report:AddMissionButton(currentMission)
 				end
@@ -322,31 +343,31 @@ do
 				end
 				currentMission.state=step
 			else
-				report:AddRow(L["              Final Report                "])
-				startTimer(0.3,"LOOT")
+				report:AddButton(L["Building Final report"],function() addon:MissionsPrintResult() end)
+				startTimer(1,"LOOT")
 			end
 		end
 	end
 	function addon:GetMissionResults(success)
 		stopTimer()
 		if (success) then
-			report:AddMissionName(currentMission.missionID,true)
+			report:AddMissionResult(currentMission.missionID,true)
 			PlaySound("UI_Garrison_Mission_Complete_Mission_Success")
 		else
-			report:AddMissionName(currentMission.missionID,false)
+			report:AddMissionResult(currentMission.missionID,false)
 			PlaySound("UI_Garrison_Mission_Complete_Encounter_Fail")
 		end
 		if success then
+			local resourceMultiplier=currentMission.resourceMultiplier or 1
+			local goldMultiplier=currentMission.goldMultiplier or 1
 			for k,v in pairs(currentMission.rewards) do
 				v.quantity=v.quantity or 0
-				v.multiplier=v.multiplier or 1
-				v.golds=v.golds or 1
 				if v.currencyID then
 					rewards.currencies[v.currencyID].icon=v.icon
 					if v.currencyID == 0 then
-						rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity * v.golds
+						rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity * goldMultiplier
 					elseif v.currencyID == GARRISON_CURRENCY then
-						rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity * v.multiplier
+						rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity * resourceMultiplier
 					else
 						rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity
 					end
@@ -375,10 +396,19 @@ do
 				report:AddIconText(v.icon,GetCurrencyLink(k),v.qt)
 			end
 		end
+		local items=new()
 		for k,v in pairs(rewards.items) do
 			local missionid,itemid=strsplit(":",k)
-			report:AddItem(itemid,v)
+			if (not items[itemid]) then
+				items[itemid]=1
+			else
+				items[itemid]=items[itemid]+1
+			end
 		end
+		for itemid,qt in pairs(items) do
+			report:AddItem(itemid,qt)
+		end
+		del(items)
 		for k,v in pairs(rewards.followerXP) do
 			report:AddFollower(k,v,self:GetFollowerData(k,'qLevel') > rewards.followerBase[k])
 		end

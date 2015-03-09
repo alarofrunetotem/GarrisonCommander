@@ -1,6 +1,6 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
-* 2.3.7.1
-** Fix: Due to an issue in packaginc, 2.3.7 was build with no embedded libraries
-** Fix: Party display for In Progress missions sometimes was not not showing the right followers.
-** Fix: Matchmaking was trying too hard te get the lowest usefull follower, sometimes not achieving the best possible score
-** Fix: Added missing library to GarrisonCommander-Broker. Most people already had that library so onoy a few ones were impacred from it
+* 2.3.8
+** Feature: Quick mission report now accounts for bonuses
+** Feature: Quick mission competion button has now a name: GCQuickMissionCompletionButton
+** Feature: Easy upgrade. You can now upgraed your followers' equipment with a single click in follower list page
+** Feature: In buildings map, working follower are displayed on plots. Plots with no followers but which could have one are marked
