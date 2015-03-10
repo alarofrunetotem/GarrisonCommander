@@ -186,6 +186,7 @@ end
 
 function addon:GMC_OnClick_Run(this,button)
 	this:Disable()
+	GMC.logoutButton:Disable()
 	do
 	local elapsed=0
 	local co=coroutine.wrap(self.GMCRunMission)
@@ -196,6 +197,7 @@ function addon:GMC_OnClick_Run(this,button)
 			local rc=co(self)
 			if (not rc) then
 				self:Unhook(GMC.runButton,'OnUpdate')
+				GMC.logoutButton:Enable()
 			end
 		end
 	end
@@ -216,7 +218,6 @@ function addon:GMC_OnClick_Start(this,button)
 		return
 	end
 	this:Disable()
-	GMC.runButton:Disable()
 	GMC.ml.widget:SetTitleColor(C.Green())
 	addon:GMCCreateMissionList(aMissions)
 	wipe(GMCUsedFollowers)
@@ -284,7 +285,7 @@ function addon:GMCBuildPanel(bigscreen)
 	GMC.logoutButton=CreateFrame('BUTTON', nil,list.frame, 'GameMenuButtonTemplate')
 	GMC.logoutButton:SetText(LOGOUT)
 	GMC.logoutButton:SetWidth(ns.bigscreen and 148 or 90)
-	GMC.logoutButton:SetScript("OnClick",Logout)
+	GMC.logoutButton:SetScript("OnClick",function() GMF:Hide() Logout() end )
 	GMC.logoutButton:SetPoint('TOP',0,25)
 	GMC.skipRare=factory:Checkbox(GMC,GMC.settings.skipRare,L["Ignore rare missions"])
 	GMC.skipRare:SetPoint("TOPLEFT",priorities,"BOTTOMLEFT",0,-10)
