@@ -2043,7 +2043,6 @@ function addon:CleanUp()
 		GarrisonFollowerTooltip.fs:Hide()
 	end
 	GMFMissions.CompleteDialog:Hide()
-	self:CloseMissionPanel()
 	--collectgarbage("collect")
 --@debug@
 	ns.xprint("Cleaning up")
