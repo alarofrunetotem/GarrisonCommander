@@ -55,9 +55,6 @@ function addon:GenerateMissionCompleteList(title)
 			function m:OnAcquire()
 				wipe(self.missions)
 			end
-			function m:OnClose()
-				ns.missionautocompleting=nil
-			end
 			function m:Show()
 				self.frame:Show()
 			end
@@ -175,7 +172,7 @@ function addon:GenerateMissionCompleteList(title)
 	end
 	local w=AceGUI:Create("GCMCList")
 	w:SetTitle(title)
-	w:SetCallback("OnClose", function() ns.missionautocompleting=nil end)
+	w:SetCallback("OnClose", function(self) self:Release() ns.missionautocompleting=nil end)
 	return w
 end
 
@@ -231,11 +228,6 @@ do
 			self:SafeRegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE")
 			self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 			self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
-		end
-	end
-	function addon:CloseMissionPanel()
-		if report then
-			report:Release()
 		end
 	end
 	function addon:MissionComplete(this,button)
