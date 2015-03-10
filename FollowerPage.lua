@@ -84,12 +84,12 @@ local function UpgradeFollower(this)
 		losing=(mylevel+level)-GARRISON_FOLLOWER_MAX_ITEM_LEVEL
 	end
 	if losing then
-		addon:Popup(format(CONFIRM2,losing,name),0,DoUpgradeFollower,true,followerID,true)
+		return addon:Popup(format(CONFIRM2,losing,name),0,DoUpgradeFollower,true,followerID,true)
 	else
 		if addon:GetToggle("NOCONFIRM") then
-			G.CastSpellOnFollower(followerID);
+			return G.CastSpellOnFollower(followerID);
 		else
-			addon:Popup(format(CONFIRM1,mylevel+level,name),0,DoUpgradeFollower,true,followerID,true)
+			return addon:Popup(format(CONFIRM1,mylevel+level,name),0,DoUpgradeFollower,true,followerID,true)
 		end
 	end
 end
@@ -116,7 +116,7 @@ function addon:ShowUpgradeButtons(force)
 	end
 	if (not gf.noConfirm) then
 		gf.noConfirm=self:GetFactory():Checkbox(gf.Model,self:GetToggle("NOCONFIRM"),self:GetVarInfo("NOCONFIRM"))
-		gf.noConfirm:SetPoint("TOPLEFT",0,-25)
+		gf.noConfirm:SetPoint("TOPLEFT",0,-20)
 		gf.noConfirm:Show()
 		gf.noConfirm:SetScript("OnClick",function(this)
 			addon:SetBoolean("NOCONFIRM",this:GetChecked())
