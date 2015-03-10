@@ -41,7 +41,7 @@ _G.GAC=addon
 if LibDebug then LibDebug() end
 --@end-debug@
 local dbg
-
+local GARRISON_FOLLOWER_MAX_ITEM_LEVEL=GARRISON_FOLLOWER_MAX_ITEM_LEVEL
 function addon:ShowImprovements()
 	local scroller=self:GetScroller("Items")
 	scroller:AddRow("Follower Upgrades",C.Orange())
@@ -136,7 +136,8 @@ function addon:ShowUpgradeButtons(force)
 	end
 	local followerID=gf.followerID
 	local followerInfo = followerID and G.GetFollowerInfo(followerID);
-	if ( followerInfo and followerInfo.isCollected and not followerInfo.status and followerInfo.level == GARRISON_FOLLOWER_MAX_LEVEL ) then
+	local overTheTop=(gf.ItemWeapon.itemLevel + gf.ItemArmor.itemLevel) ==(GARRISON_FOLLOWER_MAX_ITEM_LEVEL *2)
+	if (not overTheTop and  followerInfo and followerInfo.isCollected and not followerInfo.status and followerInfo.level == GARRISON_FOLLOWER_MAX_LEVEL ) then
 		for i=1,#upgrades do
 			if not b[used] then
 				b[used]=CreateFrame("Button",nil,gf,"GarrisonCommanderUpgradeButton,SecureActionbuttonTemplate")
