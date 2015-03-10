@@ -1,12 +1,14 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
 * 2.4.0 Loyal Follower
+** Mission Control
+*** Epic follower cna now be senti on xp mission for salvage
 ** Mission Completion
 *** Feature: Report now accounts for bonuses
 *** Feature: Button has now a name: GCQuickMissionCompletionButton
 *** Feature: New category: generic. I am stiil workin in improving mission selection by better assogning categories to them
 *** Fix: #51 QUick Mission Button was sometimes hard to click
-* Yet to be implemented** Followers
+** Followers
 *** Feature: Easy follower upgrade. You can now upgraed your followers' equipment with a single click in follower list page
 *** Feature: In buildings map, working follower are displayed on plots. Plots with no followers but which could have one are marked
 ** General
-** Feature: threat tooltip in mission list wiht full countering follower list (yet to be implemented)
+** Feature: threat tooltip in mission list wiht full countering follower list
