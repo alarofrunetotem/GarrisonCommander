@@ -14,3 +14,4 @@
 *** Feature: threat tooltip in mission list wiht full countering follower list
 ** Fix from previous beta
 *** Sometimes opening mission after heartstoning to Garrison raised a lua error
+*** Priorities list in mission control was misaligned when choosing more than 5 priorities
