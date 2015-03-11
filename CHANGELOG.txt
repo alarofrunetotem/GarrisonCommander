@@ -5,10 +5,12 @@
 ** Mission Completion
 *** Feature: Report now accounts for bonuses
 *** Feature: Button has now a name: GCQuickMissionCompletionButton
-*** Feature: New category: generic. I am stiil workin in improving mission selection by better assogning categories to them
+*** Fix: Sometimes the quickmission complete button was hard to click*** Feature: New category: generic. I am stiil workin in improving mission selection by better assogning categories to them
 *** Fix: #51 QUick Mission Button was sometimes hard to click
 ** Followers
 *** Feature: Easy follower upgrade. You can now upgraed your followers' equipment with a single click in follower list page
 *** Feature: In buildings map, working follower are displayed on plots. Plots with no followers but which could have one are marked
 ** General
-** Feature: threat tooltip in mission list wiht full countering follower list
+*** Feature: threat tooltip in mission list wiht full countering follower list
+** Fix from previous beta
+*** Sometimes opening mission after heartstoning to Garrison raised a lua error
