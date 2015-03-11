@@ -1934,8 +1934,8 @@ function addon:StartUp(...)
 end
 function addon:RaiseCompleteDialog()
 	local f=GMFMissions.CompleteDialog
-	if f:GetFrameLevel() < 45 then
-		f:SetFrameLevel(45)
+	if f:GetFrameLevel() < 80 then
+		f:SetFrameLevel(80)
 	end
 	--print("Dialog:",GMFMissions.CompleteDialog:GetFrameLevel())
 	--C_Timer.After(0.1,function() local f=GMFMissions.CompleteDialog print("Dialog:",f:GetFrameLevel()) if f:GetFrameLevel() < 45 then f:SetFrameLevel(45) end print("Dialog:",f:GetFrameLevel()) end)
@@ -1949,7 +1949,7 @@ function addon:MarkAsNew(obj,key,message)
 		f:Show()
 	end
 end
--- probably not really needed, havenr seen yet them firing out of garrison
+
 function addon:PermanentEvents()
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
@@ -2078,7 +2078,15 @@ end
 function addon:GetFollowerStatus(followerID,withTime,colored)
 	--C_Garrison.GetFollowerMissionTimeLeftSeconds(follower.followerID)
 	if (not followerID) then return UNAVAILABLE end
-	local status=G.GetFollowerStatus(followerID)
+	local rc,status=pcall(G.GetFollowerStatus,followerID)
+	if (not rc) then
+--@debug@
+		print("WARNING:",followerID,status)
+		ns.raised=true
+--@end-debug@
+		return UNAVAILABLE
+	end
+	ns.raised=nil
 	if (status and status== GARRISON_FOLLOWER_ON_MISSION and withTime) then
 		status=G.GetFollowerMissionTimeLeft(followerID)
 	end
