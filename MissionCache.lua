@@ -79,6 +79,7 @@ function AddExtraData(mission)
 	mission.itemLevel=0
 	mission.xpBonus=0
 	mission.others=0
+	mission.xp=mission.xp or 0
 	local numrewards=0
 	for k,v in pairs(mission.rewards) do
 		numrewards=numrewards+1

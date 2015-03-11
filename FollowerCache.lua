@@ -93,8 +93,8 @@ function addon:GetFollowerData(followerID,key,default)
 --@debug@
 		ns.xprint("Not found",followerID,key,"at",idx,"len",#Mbase.followers)
 		print(debugstack())
-		return default
 --@end-debug@
+		return default
 	end
 	if (key==nil) then
 		return follower

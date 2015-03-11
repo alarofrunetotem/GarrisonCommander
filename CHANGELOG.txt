@@ -12,6 +12,8 @@
 *** Feature: In buildings map, working follower are displayed on plots. Plots with no followers but which could have one are marked
 ** General
 *** Feature: threat tooltip in mission list wiht full countering follower list
+*** Feature: Broker displays not which toon has completed missions
 ** Fix from previous beta
 *** Sometimes opening mission after heartstoning to Garrison raised a lua error
+*** Sometimes opening the mission table as the very first action after login raised a lua error
 *** Priorities list in mission control was misaligned when choosing more than 5 priorities

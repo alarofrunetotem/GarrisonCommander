@@ -56,7 +56,7 @@ function addon:ldbUpdate()
 		end
 		completed=completed+1
 	end
-	dataobj.text=format("%s: %s (Tot: %d) %s: %s",READY,ready,completed,NEXT,prox)
+	dataobj.text=format("%s: %s (Tot: |cff00ff00%d|r) %s: %s",READY,ready,completed,NEXT,prox)
 end
 function addon:GARRISON_MISSION_STARTED(event,missionID)
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
