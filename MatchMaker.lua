@@ -89,18 +89,18 @@ local function CreateFilter(missionClass)
 	return filterdata
 	]]
 	code = code:gsub("TEST", " filters." ..missionClass .."(followerID,missionID)")
-	xprint("Compiling ",missionClass,"filter")
-	return assert(loadstring(code, "Filter for " .. missionClass))(filters,xprint,pairs)
+	xprint("Compiling ",missionClass,"filterOut")
+	return assert(loadstring(code, "filterOut for " .. missionClass))(filters,xprint,pairs)
 end
 
 local filterTypes = setmetatable({}, {__index=function(self, missionClass)
-	local filter = CreateFilter(missionClass)
+	local filterOut = CreateFilter(missionClass)
 	rawset(self, missionClass, CreateFilter(missionClass))
-	return filter
+	return filterOut
 end})
 local function AddMoreFollowers(self,mission,scores,justdo)
 	local missionID=mission.missionID
-	local filter=filters[mission.class]
+	local filterOut=filters[mission.class]
 	local missionScore=self:MissionScore(mission)
 
 	for p=1,P:FreeSlots() do
@@ -111,7 +111,7 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 		local candidateScore=missionScore
 		for i=1,#scores do
 			local score,followerID=strsplit('|',scores[i])
-			if (not filter(followerID,missionID) and not P:IsIn(followerID)) then
+			if (not filterOut(followerID,missionID) and not P:IsIn(followerID)) then
 				P:AddFollower(followerID)
 				local newScore=self:MissionScore(mission)
 				if dbg then
@@ -142,7 +142,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	local mission=self:GetMissionData(missionID)
 	local class=self:GetMissionData(missionID,'class')
 	xprint(C(format("MATCHMAKER %s (%d) class: %s",mission.name,missionID,class),'Orange'),includeBusy and "Busy" or "Ready")
-	local filter=filters[class]
+	local filterOut=filters[class]
 	filters.skipMaxed=self:GetBoolean("IGP")
 	if (includeBusy==nil) then
 		filters.skipBusy=self:GetBoolean("IGM")
@@ -183,7 +183,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		end
 		for i=#scores,1,-1 do
 			local score,followerID=strsplit('|',scores[i])
-			if not firstmember and not filter(followerID,missionID) then
+			if not firstmember and not filterOut(followerID,missionID) then
 				firstmember=followerID
 				break
 			end
