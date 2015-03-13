@@ -33,7 +33,7 @@ ns.trace=ns.addon:Wrap("Trace")
 ns.xprint=function() end
 ns.xdump=function() end
 ns.xtrace=function() end
-if not _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL then _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL=675 end
+_G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 --@debug@
 	ns.xprint=print
 	ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
