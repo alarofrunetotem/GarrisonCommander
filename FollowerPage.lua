@@ -65,31 +65,36 @@ function addon:ShowImprovements()
 		local b=scroller:AddItem(i)
 	end
 end
-local CONFIRM1=L["Upgrading to %d"].."\n" .. CONFIRM_GARRISON_FOLLOWER_UPGRADE
-local CONFIRM2=L["Upgrading to %d"].."\n|cFFFF0000 "..L["You are wasting points!!!"].."|r\n" .. CONFIRM_GARRISON_FOLLOWER_UPGRADE
+local CONFIRM1=L["Upgrading to |cff00ff00%d|r"].."\n" .. CONFIRM_GARRISON_FOLLOWER_UPGRADE
+local CONFIRM2=L["Upgrading to |cff00ff00%d|r"].."\n|cffffd200 "..L["You are wasting |cffff0000%d|cffffd200 point(s)!!!"].."|r\n" .. CONFIRM_GARRISON_FOLLOWER_UPGRADE
 local function DoUpgradeFollower(this)
 		G.CastSpellOnFollower(this.data);
 end
 local function UpgradeFollower(this)
 	local follower=this:GetParent()
 	local followerID=follower.followerID
-	local level=this.rawlevel
+	local upgradelevel=this.rawlevel
 	local genere=this.tipo:sub(1,1)
-	local mylevel=genere=="w" and follower.ItemWeapon.itemLevel or  follower.ItemArmor.itemLevel
+	local currentlevel=genere=="w" and follower.ItemWeapon.itemLevel or  follower.ItemArmor.itemLevel
 	local name = ITEM_QUALITY_COLORS[G.GetFollowerQuality(followerID)].hex..G.GetFollowerName(followerID)..FONT_COLOR_CODE_CLOSE;
 	local losing=false
-	if level > 600 and mylevel>600 then
-		losing=mylevel
-	elseif mylevel+level > GARRISON_FOLLOWER_MAX_ITEM_LEVEL then
-		losing=(mylevel+level)-GARRISON_FOLLOWER_MAX_ITEM_LEVEL
+	local upgrade=math.min(upgradelevel>600 and upgradelevel or upgradelevel+currentlevel,GARRISON_FOLLOWER_MAX_ITEM_LEVEL)
+	if upgradelevel > 600 and currentlevel>600 then
+		if (currentlevel > upgradelevel) then
+			losing=upgradelevel - 600
+		else
+			losing=currentlevel -600
+		end
+	elseif currentlevel+upgradelevel > GARRISON_FOLLOWER_MAX_ITEM_LEVEL then
+		losing=(currentlevel+upgradelevel)-GARRISON_FOLLOWER_MAX_ITEM_LEVEL
 	end
 	if losing then
-		return addon:Popup(format(CONFIRM2,losing,name),0,DoUpgradeFollower,true,followerID,true)
+		return addon:Popup(format(CONFIRM2,upgrade,losing,name),0,DoUpgradeFollower,true,followerID,true)
 	else
 		if addon:GetToggle("NOCONFIRM") then
 			return G.CastSpellOnFollower(followerID);
 		else
-			return addon:Popup(format(CONFIRM1,mylevel+level,name),0,DoUpgradeFollower,true,followerID,true)
+			return addon:Popup(format(CONFIRM1,upgrade,name),0,DoUpgradeFollower,true,followerID,true)
 		end
 	end
 end
