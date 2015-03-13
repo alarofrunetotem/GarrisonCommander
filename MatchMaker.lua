@@ -149,26 +149,28 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		filters.skipBusy=not includeBusy
 	end
 	local scores=new()
+	P:Open(missionID,mission.numFollowers)
+	--[[
 	local buffed=G.GetBuffedFollowersForMission(missionID)
 	local traits=G.GetFollowersTraitsForMission(missionID)
 	local buffeds=0
 	local mechanics=G.GetMissionUncounteredMechanics(missionID)
-	P:Open(missionID,mission.numFollowers)
 	--G.GetFollowerBiasForMission(missionID,followerID)
 	for followerID,_ in pairs(buffed) do
 		P:AddFollower(followerID)
 		-- dirty trick to avoid issue with integer overflow
 		local followerScore=self:FollowerScore(mission,followerID)
-		tinsert(scores,format("%05d%05d1|%s",,followerID))
+		tinsert(scores,format("%s1|%s",self:FollowerScore(mission,followerID),followerID))
 		P:RemoveFollower(followerID)
 		buffeds=buffeds+1
 	end
+	--]]
 	for _,followerID in self:GetFollowerIterator() do
-		if (not buffed[followerID]) then
+		--if (not buffed[followerID]) then
 			P:AddFollower(followerID)
-			tinsert(scores,format("%010d0|%s",self:FollowerScore(mission,followerID),followerID))
+			tinsert(scores,format("%s0|%s",self:FollowerScore(mission,followerID),followerID))
 			P:RemoveFollower(followerID)
-		end
+		--end
 	end
 	if #scores > 0 then
 		local firstmember
@@ -222,7 +224,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	end
 	P:StoreFollowers(party.members)
 	P:Close(party)
-	del(buffed)
+	--del(buffed)
 end
 function addon:MCMatchMaker(missionID,party,skipEpic)
 	MatchMaker(self,missionID,party,false)
