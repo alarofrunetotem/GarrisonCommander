@@ -28,9 +28,8 @@ local xprint=function(...) if dbg then ns.xprint(...) end end
 local xdump=function(...) if dbg then ns.xdump(...) end end
 function addon:MissionScore(mission)
 	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
-	local r=mission.class=='resource' and materialMultiplier or xpBonus/10
+	local r=math.min(mission.class=='resource' and materialMultiplier or xpBonus/100,999)
 	local t=isMissionTimeImproved and 1 or 0
-	if r > 9999 then r= 999 end
 	return format("%03d%03d%01d",successChance,r,t)
 end
 function addon:FollowerScore(mission,followerID)
@@ -43,8 +42,8 @@ function addon:FollowerScore(mission,followerID)
 	end
 
 	local t=isMissionTimeImproved and 1 or 0
-	local c=(isEnvMechanicCountered and 1 or 0)+#partyBuffs
-	return format("%03d%01d%01d%01d%04d",successChance,r,c,t,10000-self:GetFollowerData(followerID,'rank',0))
+	local c=math.min((isEnvMechanicCountered and 1 or 0)+#partyBuffs,9)
+	return format("%03d%01d%01d%01d%04d",successChance,r,c,t,math.min(1000-self:GetFollowerData(followerID,'rank',90),999))
 end
 local filters={skipMaxed=false,skipBusy=false}
 function filters.nop(followerID)
@@ -158,7 +157,9 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	--G.GetFollowerBiasForMission(missionID,followerID)
 	for followerID,_ in pairs(buffed) do
 		P:AddFollower(followerID)
-		tinsert(scores,format("%010d1|%s",self:FollowerScore(mission,followerID),followerID))
+		-- dirty trick to avoid issue with integer overflow
+		local followerScore=self:FollowerScore(mission,followerID)
+		tinsert(scores,format("%05d%05d1|%s",,followerID))
 		P:RemoveFollower(followerID)
 		buffeds=buffeds+1
 	end
