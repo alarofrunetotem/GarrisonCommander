@@ -1,17 +1,6 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
-* 2.4.0 Loyal Follower
-** Mission Control
-*** Epic follower cna now be senti on xp mission for salvage
-** Mission Completion
-*** Feature: Report now accounts for bonuses
-*** Feature: Button has now a name: GCQuickMissionCompletionButton
-*** Fix: Sometimes the quickmission complete button was hard to click*** Feature: New category: generic. I am stiil workin in improving mission selection by better assogning categories to them
-*** Fix: #51 QUick Mission Button was sometimes hard to click
-** Followers
-*** Feature: Easy follower upgrade. You can now upgraed your followers' equipment with a single click in follower list page
-*** Feature: In buildings map, working follower are displayed on plots. Plots with no followers but which could have one are marked
-** General
-*** Feature: threat tooltip in mission list wiht full countering follower list
-*** Feature: Broker displays not which toon has completed missions
-** Fix from previous beta
-*** Fix: integer overflow attempting to store<some big number> [C]: on loading
+* 2.4.1
+Fix: Ticket #58 MissionCache.lua:58: attempt to index local 'mission' (a nil value) (could fix also #57)
+Fix: Ticket #59 bad argument #1 to 'pairs' (table expected, got no value)
+Feature: Useful followers in tooltip have now icons
+Feature: Useful followers level in tooltip is now colored to reflect bias and orderd by descending bias
