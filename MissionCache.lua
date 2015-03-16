@@ -52,8 +52,14 @@ function addon:GetMissionData(missionID,key,default)
 			end
 		end
 	end
+	if not mission then
+		mission=ns.CompletedMissions[missionID]
+	end
 	if (key==nil) then
 		return mission
+	end
+	if not mission then
+		return default
 	end
 	if (type(mission[key])~='nil') then
 		return mission[key]

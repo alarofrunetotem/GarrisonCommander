@@ -256,6 +256,7 @@ do
 				_,_,_,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
 			end
 			currentMission=tremove(missions)
+			ns.CompletedMissions[currentMission.missionID]=currentMission
 			self:MissionAutoComplete("LOOP")
 			self:MissionEvents(true)
 		end
@@ -334,6 +335,7 @@ do
 					self:GetMissionResults(step==3)
 					self:RefreshFollowerStatus()
 					currentMission=tremove(missions)
+					ns.CompletedMissions[currentMission.missionID]=currentMission
 					startTimer()
 					return
 				end

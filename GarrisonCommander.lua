@@ -2056,6 +2056,7 @@ function addon:SafeHookScript(frame,hook,method,postHook)
 end
 
 function addon:CleanUp()
+	wipe(ns.CompletedMissions)
 	self:UnhookAll()
 	self:CancelAllTimers()
 	self:RemoveMenu()
