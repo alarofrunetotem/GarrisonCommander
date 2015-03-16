@@ -335,7 +335,9 @@ do
 					self:GetMissionResults(step==3)
 					self:RefreshFollowerStatus()
 					currentMission=tremove(missions)
-					ns.CompletedMissions[currentMission.missionID]=currentMission
+					if currentMission then
+						ns.CompletedMissions[currentMission.missionID]=currentMission
+					end
 					startTimer()
 					return
 				end

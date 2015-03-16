@@ -1814,6 +1814,7 @@ end
 ---
 --Initial one time setup
 function addon:SetUp(...)
+	ns.CompletedMissions={}
 	self:FollowerCacheInit()
 --@debug@
 	ns.dprint("Setup")
