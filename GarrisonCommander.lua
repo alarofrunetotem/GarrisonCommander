@@ -558,24 +558,46 @@ function addon:HookedGarrisonMissionButton_AddThreatsToTooltip(missionID)
 	if (GMC:IsShown()) then return end
 	return self:RenderTooltip(missionID)
 end
+function addon:AddIconsToFollower(missionID,useful,followers,members)
+	for followerID,icons in pairs(followers) do
+		if not tContains(members,followerID)  then
+			local bias=self:GetBiasColor(followerID,missionID)
+			if (not useful[followerID]) then
+				useful[followerID]=format("%04d%s %s ",
+					1000-self:GetFollowerData(followerID,'rank',0),
+					C(self:GetFollowerData(followerID,'rank'),bias),
+					self:GetFollowerData(followerID,'coloredname')
+				)
+			end
+			for i=1,#icons do
+				useful[followerID]=format("%s |T%s:0|t",useful[followerID],icons[i].icon)
+			end
+		end
+	end
+
+end
 function addon:AddFollowersToTooltip(missionID)
 	--local f=GarrisonMissionListTooltipThreatsFrame
 	-- Adding All available followers
 	local party=self:GetParty(missionID)
 	local members=party.members
-	local partystring=strjoin("|",tostringall(unpack(members)))
-	GameTooltip:AddLine(L["Other useful followers"])
-	for followerID,_ in pairs(G.GetFollowersTraitsForMission(missionID)) do
-		if not tContains(members,followerID) and G.GetFollowerBiasForMission(missionID,followerID) > -0.1 then
-			GameTooltip:AddDoubleLine(self:GetFollowerData(followerID,'fullname','none'),self:GetFollowerStatus(followerID,true,true))
+	local useful=new()
+	local traited=G.GetFollowersTraitsForMission(missionID)
+	local buffed=G.GetBuffedFollowersForMission(missionID)
+	if (type(traited)=='table') then
+		self:AddIconsToFollower(missionID,useful,traited,members)
+	end
+	if (type(buffed)=='table') then
+		self:AddIconsToFollower(missionID,useful,buffed,members)
+	end
+	if next(useful) then
+		table.sort(useful)
+		GameTooltip:AddDoubleLine(L["Other useful followers"],L["(Ignores low bias ones)"])
+		for followerID,data in pairs(useful) do
+			GameTooltip:AddDoubleLine(data:sub(5),self:GetFollowerStatus(followerID,true,true))
 		end
 	end
-	GameTooltip:AddLine("---------------------------------------")
-	for followerID,_ in pairs(G.GetBuffedFollowersForMission(missionID)) do
-		if not tContains(members,followerID) and G.GetFollowerBiasForMission(missionID,followerID) > -0.1 then
-			GameTooltip:AddDoubleLine(self:GetFollowerData(followerID,'fullname','none'),self:GetFollowerStatus(followerID,true,true))
-		end
-	end
+	del(useful)
 	local perc=party.perc
 	local q=self:GetDifficultyColor(perc)
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
