@@ -79,14 +79,15 @@ local function UpgradeFollower(this)
 	local name = ITEM_QUALITY_COLORS[G.GetFollowerQuality(followerID)].hex..G.GetFollowerName(followerID)..FONT_COLOR_CODE_CLOSE;
 	local losing=false
 	local upgrade=math.min(upgradelevel>600 and upgradelevel or upgradelevel+currentlevel,GARRISON_FOLLOWER_MAX_ITEM_LEVEL)
+	print(currentlevel,upgradelevel,upgrade)
 	if upgradelevel > 600 and currentlevel>600 then
 		if (currentlevel > upgradelevel) then
 			losing=upgradelevel - 600
 		else
 			losing=currentlevel -600
 		end
-	elseif currentlevel+upgradelevel > GARRISON_FOLLOWER_MAX_ITEM_LEVEL then
-		losing=(currentlevel+upgradelevel)-GARRISON_FOLLOWER_MAX_ITEM_LEVEL
+	elseif upgrade > GARRISON_FOLLOWER_MAX_ITEM_LEVEL then
+		losing=(upgrade)-GARRISON_FOLLOWER_MAX_ITEM_LEVEL
 	end
 	if losing then
 		return addon:Popup(format(CONFIRM2,upgrade,losing,name),0,DoUpgradeFollower,true,followerID,true)
