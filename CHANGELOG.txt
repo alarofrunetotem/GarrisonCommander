@@ -1,6 +1,4 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
-* 2.4.1
-Fix: Ticket #58 MissionCache.lua:58: attempt to index local 'mission' (a nil value) (could fix also #57)
-Fix: Ticket #59 bad argument #1 to 'pairs' (table expected, got no value)
-Feature: Useful followers in tooltip have now icons
-Feature: Useful followers level in tooltip is now colored to reflect bias and orderd by descending bias
+* 2.4.2
+Fix: Using a full upgrade token on follower was warning about lost points
+Fix: Possible soloution for a couple of very rare lua errors
