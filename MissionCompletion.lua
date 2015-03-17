@@ -6,7 +6,7 @@ local C=ns.C
 local AceGUI=ns.AceGUI
 local _G=_G
 --@debug@
-if LibDebug() then LibDebug() end
+--if LibDebug() then LibDebug() end
 --@end-debug@
 local xprint=ns.xprint
 local new, del, copy =ns.new,ns.del,ns.copy
@@ -25,15 +25,12 @@ local converter=CreateFrame("Frame"):CreateTexture()
 function addon:GetFollowerTexture(followerID)
 	local rc,iconID=pcall(addon.GetFollowerData,addon,followerID,"portraitIconID")
 	if rc then
-		xprint(followerID,iconID)
 		if iconID then
 			converter:SetToFileData(iconID)
-			xprint(converter:GetTexture())
 			return converter:GetTexture()
 		end
 		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
 	else
-		xprint(iconID)
 		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
 	end
 end
@@ -194,6 +191,9 @@ do
 		delay=delay or 0.2
 		event=event or "LOOP"
 		addon:ScheduleTimer("MissionAutoComplete",delay,event)
+		--@alpha@
+		addon:Dprint("Timer rearmed for",event,delay)
+		--@end-alpha@
 	end
 	local function stopTimer()
 		timer=nil
@@ -230,6 +230,9 @@ do
 			self:SafeRegisterEvent("GARRISON_FOLLOWER_XP_CHANGED")
 		end
 	end
+	function addon:CloseReport()
+		if report then pcall(report.Close,report) end
+	end
 	function addon:MissionComplete(this,button)
 		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		missions=G.GetCompleteMissions()
@@ -264,12 +267,9 @@ do
 	function addon:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
-	--@debug@
-		print("evt",event,ID,arg1,arg2,arg3)
-	--@end-debug@
-		if self['Event'..event] then
-			self['Event'..event](self,event,ID,arg1,arg2,arg3,arg4)
-		end
+	--@alpha@
+		self:Dprint("evt",event,ID,arg1,arg2,arg3)
+	--@end-alpha@
 		if event=="LOOT" then
 			return addon:MissionsPrintResults()
 		end
@@ -312,12 +312,10 @@ do
 				currentMission.state=1
 			else
 				currentMission.state=3
-				startTimer(0.1)
-				return
 			end
 			startTimer(0.1)
 			return
-		else
+		else -- event == LOOP
 			if (currentMission) then
 				local step=currentMission.state or -1
 				if (step<1) then
@@ -328,8 +326,14 @@ do
 					report:AddMissionButton(currentMission)
 				end
 				if (step==0) then
+					--@alpha@
+					self:Dprint("Fired mission complete for",currentMission.missionID)
+					--@end-alpha@
 					G.MarkMissionComplete(currentMission.missionID)
 				elseif (step==1) then
+					--@alpha@
+					self:Dprint("Fired bonus roll complete for",currentMission.missionID)
+					--@end-alpha@
 					G.MissionBonusRoll(currentMission.missionID)
 				elseif (step>=2) then
 					self:GetMissionResults(step==3)
