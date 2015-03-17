@@ -277,9 +277,11 @@ end
 local origGarrison_SortMissions
 local sorters={}
 sorters.EndTime=function (mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=G.GetFollowerMissionTimeLeftSeconds(mission1.followers[1])
-	local p2=G.GetFollowerMissionTimeLeftSeconds(mission2.followers[1])
+	if type(mission1)~="table" or type(mission2) ~="table" then return true end
+	local rc1,p1=pcall(G.GetFollowerMissionTimeLeftSeconds,mission1.followers[1])
+	if not rc1 then p1 = mission1.durationSeconds end
+	local rc2,p2=pcall(G.GetFollowerMissionTimeLeftSeconds,mission2.followers[1])
+	if not rc2 then p2 = mission2.durationSeconds end
 	if (p1==p2) then
 		return strcmputf8i(mission1.name, mission2.name) < 0
 	else
@@ -330,27 +332,22 @@ sorters.Xp=function (mission1, mission2)
 	end
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
-	xprint("Sorting on chance")
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Chance);
 end
 function addon.Garrison_SortMissions_Age(missionsList)
-	xprint("Sorting on age")
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Age);
 end
 function addon.Garrison_SortMissions_Followers(missionsList)
-	xprint("Sorting on followers")
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Followers);
 end
 function addon.Garrison_SortMissions_Xp(missionsList)
-	xprint("Sorting on xp")
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Xp);
 end
 function addon.Garrison_SortMissions_Original(missionsList)
-	xprint("Sorting on original")
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	origGarrison_SortMissions(missionsList)
 end
@@ -358,8 +355,8 @@ end
 function addon:OnInitialized()
 --@debug@
 	ns.xprint("OnInitialized")
-	self.evdebug=CreateFrame("Frame")
-	self.evdebug:SetScript("OnEvent",function(...) return print('|cffff2020event|r',...) end)
+	--self.evdebug=CreateFrame("Frame")
+	--self.evdebug:SetScript("OnEvent",function(...) return print('|cffff2020event|r',...) end)
 --@end-debug@
 	--parties=self:GetParty()
 	for _,b in ipairs(GMFMissionsListScrollFrame.buttons) do
@@ -473,7 +470,6 @@ function addon:ApplyIGP(value)
 	self:RefreshMissions()
 end
 function addon:ApplyMSORT(value)
-	ns.xprint("Sorting by ",value)
 	if (not origGarrison_SortMissions) then
 		origGarrison_SortMissions=Garrison_SortMissions
 	end
@@ -749,24 +745,15 @@ end
 -- Fires after GarrisonMissionFrame OnShow. Pretty useless
 
 function addon:EventGARRISON_MISSION_NPC_OPENED(event,...)
---@debug@
-	ns.xprint(event,...)
---@end-debug@
 	if (GCF) then GCF:Show() end
 end
 function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
---@debug@
-	ns.xprint(event,...)
---@end-debug@
 	if (GCF) then
 		self:RemoveMenu()
 		GCF:Hide()
 	end
 end
 function addon:EventGARRISON_MISSION_LIST_UPDATE(event)
-	local n=0
-	for _,k in pairs(event) do n=n+1 end
-	ns.xprint("GARRISON_MISSION_LIST_UPDATE",n,date("%d/%m/%y %H:%M:%S"))
 	local t=new()
 	G.GetAvailableMissions(t)
 	local now=time()
@@ -834,9 +821,6 @@ end
 --GARRISON_MISSION_BONUS_ROLL_LOOY missionID nil
 --
 function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards)
---@debug@
-	ns.xprint('evt',event,missionID,completed,rewards)
---@end-debug@
 	dbcache.history[missionID][time()]={result=100,success=rewards}
 	dbcache.seen[missionID]=nil
 	dbcache.seen[missionID]=nil
@@ -1096,6 +1080,9 @@ function addon:GenerateContainer()
 		local Type="GCGUIContainer"
 		local Version=1
 		local m={}
+		function m:Close()
+			self.frame.CloseButton:Click()
+		end
 		function m:OnAcquire()
 			self.frame:EnableMouse(true)
 			self:SetTitleColor(C.Yellow())
@@ -1792,9 +1779,6 @@ do
 		end
 		wipe(partyIndex)
 		local parties=self:GetParty()
-		for missionID,party in pairs(parties) do
-			if (tContains(party.members,followerID)) then ns.xprint("Found mission",missionID) tinsert(partyIndex,missionID) end
-		end
 		table.sort(partyIndex,function(a,b) return parties[a].perc > parties[b].perc end)
 		for i=1,#partyIndex do
 			local missionID=partyIndex[i]
@@ -1938,7 +1922,6 @@ function addon:StartUp(...)
 	-- Mission management
 	self:SafeHookScript(GMF.MissionComplete.NextMissionButton,"OnClick","OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton",true)
 	self:SafeHookScript(GMFMissions.CompleteDialog,"OnShow","RaiseCompleteDialog")
-	self:SafeHookScript(GMFMissions.CompleteDialog,"OnHide",function() print("Closing reward frame") end)
 	if (GMFMissions.CompleteDialog:IsShown()) then
 		self:RaiseCompleteDialog()
 	end
@@ -2000,11 +1983,6 @@ function addon:checkMethod(method,hook)
 	end
 end
 function addon:SafeRegisterEvent(event)
---@debug@
-	if not self.evdebug:IsEventRegistered(event) then
-		self.evdebug:RegisterEvent(event)
-	end
---@end-debug@
 	local method="Event"..event
 	if (self:checkMethod(method,event)) then
 		return self:RegisterEvent(event,method)
@@ -2067,10 +2045,8 @@ function addon:CleanUp()
 		GarrisonFollowerTooltip.fs:Hide()
 	end
 	GMFMissions.CompleteDialog:Hide()
+	self:CloseReport()
 	--collectgarbage("collect")
---@debug@
-	ns.xprint("Cleaning up")
---@end-debug@
 end
 function addon:EventGARRISON_FOLLOWER_XP_CHANGED(event,followerID,iLevel,xp,level,quality)
 	local i=followersCacheIndex[followerID]
@@ -2906,7 +2882,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	local n=mission.numRewards
 	local w=button:GetWidth()-175 -- 655 for standard 830 button
 	if button:GetWidth()<1000 then n=n+mission.numFollowers end
-	ns.xprint(format("%d %d %d %d",w,button.Title:GetWidth() + button.Summary:GetWidth() + 8,n,w - n * 65))
+	--ns.xprint(format("%d %d %d %d",w,button.Title:GetWidth() + button.Summary:GetWidth() + 8,n,w - n * 65))
 	if ( button.Title:GetWidth() + button.Summary:GetWidth() + 8 < w - n * 65 ) then
 		button.Title:SetPoint("LEFT", 165, 0);
 		button.Summary:ClearAllPoints();
