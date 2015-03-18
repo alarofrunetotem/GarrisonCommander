@@ -79,7 +79,6 @@ local function UpgradeFollower(this)
 	local name = ITEM_QUALITY_COLORS[G.GetFollowerQuality(followerID)].hex..G.GetFollowerName(followerID)..FONT_COLOR_CODE_CLOSE;
 	local losing=false
 	local upgrade=math.min(upgradelevel>600 and upgradelevel or upgradelevel+currentlevel,GARRISON_FOLLOWER_MAX_ITEM_LEVEL)
-	print(currentlevel,upgradelevel,upgrade)
 	if upgradelevel > 600 and currentlevel>600 then
 		if (currentlevel > upgradelevel) then
 			losing=upgradelevel - 600
