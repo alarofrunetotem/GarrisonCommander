@@ -113,7 +113,7 @@ function party:AddFollower(followerID)
 		else
 			ns.xprint("Unable to add",followerID, G.GetFollowerName(followerID),"to",ID,code,self:IsIn(followerID),G.GetFollowerStatus(followerID))
 			ns.xprint(members[1],members[2],members[3])
-			ns.xprint(debugstack(1,6,0))
+			print(debugstack(1,6,0))
 --@end-debug@
 		end
 	end

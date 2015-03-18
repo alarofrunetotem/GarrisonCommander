@@ -76,6 +76,7 @@ dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject(me, {
 	type = "data source",
 	label = "Missions ",
 	text=NONE,
+	category = "Interface",
 	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
 })
 function dataobj:OnTooltipShow()
@@ -111,8 +112,12 @@ end
 function dataobj:OnLeave()
 	GameTooltip:Hide()
 end
+function dataobj:OnClick(button)
+	if (button=="LeftButton") then
+		GarrisonLandingPage_Toggle()
+	end
+end
+
 --@debug@
 _G.GACDB=addon
 --@end-debug@
---function dataobj:OnClick(button)
---end

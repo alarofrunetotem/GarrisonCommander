@@ -933,9 +933,6 @@ do
 	end
 end
 function addon:ShowMissionControl()
-	ns.xprint("Click1")
-	--if ns.missionautocompleting then return end
-	ns.xprint("Click2")
 	if (not GMC:IsShown()) then
 		GarrisonMissionFrame_SelectTab(999)
 		GMF.FollowerTab:Hide()
@@ -1503,7 +1500,7 @@ end
 
 function addon:ScriptTrace(hook,frame,...)
 --@debug@
-	ns.xprint("Triggered " .. C(hook,"red").." script on",C(frame,"Azure"),...)
+	pp("Triggered " .. C(hook,"red").." script on",C(frame,"Azure"),...)
 --@end-debug@
 end
 function addon:IsProgressMissionPage()
@@ -1797,9 +1794,6 @@ end
 function addon:SetUp(...)
 	ns.CompletedMissions={}
 	self:FollowerCacheInit()
---@debug@
-	ns.dprint("Setup")
---@end-debug@
 --@alpha@
 	if (not db.alfa.v220) then
 		self:Popup(L["You are using an Alpha version of Garrison Commander. Please post bugs on Curse if you find them"],10)
@@ -1888,9 +1882,6 @@ end
 -- This method is called every time garrison mission panel is open because
 -- when it closes, I remove most of used hooks
 function addon:StartUp(...)
---@debug@
-	ns.dprint("Startup")
---@end-debug@
 	self:GrowPanel()
 	self:Unhook(GMF,"OnShow")
 	if (self:GetBoolean("PIN")) then
@@ -2332,7 +2323,6 @@ end
 function addon:OnShow_FollowerPage(page)
 	self:ShowUpgradeButtons()
 	if not GCFMissions then return end
-	ns.xprint("Onshow")
 	if type(GCFMissions.Header.info)=="table" then
 		self:HookedGarrisonFollowerPage_ShowFollower(page,GCFMissions.Header.info.followerID,true)
 --		local s =self:GetScroller("GFCMissions.Header")

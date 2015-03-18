@@ -167,9 +167,10 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	--]]
 	for _,followerID in self:GetFollowerIterator() do
 		--if (not buffed[followerID]) then
-			P:AddFollower(followerID)
+		if P:AddFollower(followerID) then
 			tinsert(scores,format("%s0|%s",self:FollowerScore(mission,followerID),followerID))
 			P:RemoveFollower(followerID)
+		end
 		--end
 	end
 	if #scores > 0 then
