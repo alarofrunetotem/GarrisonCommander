@@ -353,12 +353,6 @@ function addon.Garrison_SortMissions_Original(missionsList)
 end
 
 function addon:OnInitialized()
---@debug@
-	ns.xprint("OnInitialized")
-	--self.evdebug=CreateFrame("Frame")
-	--self.evdebug:SetScript("OnEvent",function(...) return print('|cffff2020event|r',...) end)
---@end-debug@
-	--parties=self:GetParty()
 	for _,b in ipairs(GMFMissionsListScrollFrame.buttons) do
 		local scale=0.8
 		local f,h,s=b.Title:GetFont()
@@ -617,11 +611,11 @@ function addon:AddFollowersToTooltip(missionID)
 		end
 		local ratio=floor(success/tot*100)
 		if (tot > 0) then
-			GameTooltip:AddDoubleLine(format("You performed this mission %d times with a win ratio of",tot),ratio..'%',0,1,0,self:GetDifficultyColors(ratio))
+			GameTooltip:AddDoubleLine(format(L["You performed this mission %d times with a win ratio of"],tot),ratio..'%',0,1,0,self:GetDifficultyColors(ratio))
 			return
 		end
 	end
-	GameTooltip:AddLine("You never performed this mission",1,0,0)
+	GameTooltip:AddLine(L["You never performed this mission"],1,0,0)
 end
 
 local function switch(flag)
@@ -911,7 +905,7 @@ function addon:Shrink(button)
 end
 do
 	local s=setmetatable({},{__index=function(t,k) return 0 end})
-	local FOLLOWER_STATUS_FORMAT=(ns.bigscreen and "Followers status " or "" )..
+	local FOLLOWER_STATUS_FORMAT=(ns.bigscreen and L["Followers status "] or "" )..
 								C(AVAILABLE..':%d ','green') ..
 								C(GARRISON_FOLLOWER_WORKING .. ":%d ",'cyan') ..
 								C(GARRISON_FOLLOWER_ON_MISSION .. ":%d ",'red') ..
@@ -947,7 +941,7 @@ function addon:ShowMissionControl()
 		GMF.FollowerTab:Hide()
 		GMF.FollowerList:Hide()
 		GMF.MissionTab:Hide()
-		GMF.TitleText:SetText("Garrison Commander Mission Control")
+		GMF.TitleText:SetText(L["Garrison Commander Mission Control"])
 		GMC:Show()
 		GMC.startButton:Click()
 		GMF.tabMC:SetChecked(true)
@@ -1731,7 +1725,6 @@ do
 	local Busystatusmessage
 	local lastFollowerID=""
 	local ml=nil
-	local partyIndex={}
 	local tContains=tContains
 	local function MissionOnClick(this,...)
 		GarrisonMissionButton_OnClick(this.frame,"LeftUp")
@@ -1777,8 +1770,11 @@ do
 			ml:SetTitleColor(C.Red())
 			return
 		end
-		wipe(partyIndex)
+		local partyIndex=new()
 		local parties=self:GetParty()
+		for missionID,party in pairs(parties) do
+			if (tContains(party.members,followerID)) then tinsert(partyIndex,missionID) end
+		end
 		table.sort(partyIndex,function(a,b) return parties[a].perc > parties[b].perc end)
 		for i=1,#partyIndex do
 			local missionID=partyIndex[i]
@@ -1793,6 +1789,7 @@ do
 				mb:SetCallback("OnClick",MissionOnClick)
 			end
 		end
+		del(partyIndex)
 	end
 end
 ---
