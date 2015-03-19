@@ -411,13 +411,13 @@ function addon:CheckMP()
 		end
 		if GetAddOnMetadata("MasterPlan","Version")>="0.23" then
 			-- New compatible version
-			self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switches between Garrison Commander and Master Plan mission interface. Tested with MP >0.23"])
+			self:AddToggle("CKMP",true,L["Use GC Interface"],L["GCMPSWITCH"])
 			MPGoodGuy=true
 			MPSwitch=true
 		end
 		MP=true
 		MPSwitch=true
-		self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switches between Garrison Commander and Master Plan mission interface. Tested with MP >0.20"])
+		self:AddToggle("CKMP",true,L["Use GC Interface"],L["GCMPSWITCH"])
 	end
 end
 function addon:CheckGMM()
@@ -999,7 +999,6 @@ Since 2.0.2, the "big screen" mode became optional. If you choosed to disable it
 <h2>Mission Control:</h2>
 <p>Thanks to Motig which donated the code, we have an auto lancher for mission<br/>
 You specify some criteria mission should satisfy (success chance, rewards type etc) and matching missions will be autosubmitted<br/>
-BE WARNED, FEATURE IS |cffff0000EXPERIMENTAL|r
 </p>
 ]]
 if (MP) then
