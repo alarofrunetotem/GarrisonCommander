@@ -26,6 +26,8 @@ embeds.xml
 localization.lua
 wowhead.lua
 Init.lua
+Widgets.lua
+GarrisonCommander.xml
 MissionCache.lua
 FollowerCache.lua
 PartyCache.lua
@@ -34,6 +36,5 @@ MissionCompletion.lua
 FollowerPage.lua
 MatchMaker.lua
 FollowerRecruiting.lua
-GarrisonCommander.xml
 BuildingPage.lua
 RelNotes.lua

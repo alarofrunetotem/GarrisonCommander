@@ -9,11 +9,6 @@ local xprint=ns.xprint
 local _G=_G
 local pp=print
 local HD=false
-local print=ns.print
-local pairs=pairs
-local select=select
-local next=next
-local tinsert=tinsert
 local tremove=tremove
 local setmetatable=setmetatable
 local getmetatable=getmetatable
@@ -34,7 +29,7 @@ local pin=false
 local baseHeight
 local minHeight
 --@debug@
-if LibDebug() then LibDebug() end
+if LibDebug then LibDebug() end
 --@end-debug@
 ns.bigscreen=true
 -- Blizzard functions override support
@@ -233,20 +228,7 @@ end
 local counters=setmetatable({},t2)
 local counterThreatIndex=setmetatable({},t2)
 local counterFollowerIndex=setmetatable({},t2)
---- Quick backdrop
---
-local backdrop = {
-	bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
-	edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
-	tile=true,
-	tileSize=16,
-	edgeSize=16,
-	insets={bottom=7,left=7,right=7,top=7}
-}
-local function addBackdrop(f,color)
-	f:SetBackdrop(backdrop)
-	f:SetBackdropBorderColor(C[color or 'Yellow']())
-end
+
 
 --generic table scan
 
@@ -1056,278 +1038,6 @@ function addon:Toggle(button)
 		button:SetChecked(f:IsShown())
 	end
 end
--- Unused, experimenting with acegui
-function addon:GenerateMissionsWidgets()
-	self:GenerateMissionContainer()
-	self:GenerateMissionButton()
-end
-do
-local generated
-function addon:GenerateContainer()
-	if generated then return end
-	generated=true
-	do
-		local Type="GCGUIContainer"
-		local Version=1
-		local m={}
-		function m:Close()
-			self.frame.CloseButton:Click()
-		end
-		function m:OnAcquire()
-			self.frame:EnableMouse(true)
-			self:SetTitleColor(C.Yellow())
-			self.frame:SetFrameStrata("HIGH")
-			self.frame:SetFrameLevel(999)
-		end
-		function m:SetContentWidth(x)
-			self.content:SetWidth(x)
-		end
-		local function Constructor()
-			local frame=CreateFrame("Frame",nil,nil,"GarrisonUITemplate")
-			for _,f in pairs({frame:GetRegions()}) do
-				if (f:GetObjectType()=="Texture" and f:GetAtlas()=="Garr_WoodFrameCorner") then f:Hide() end
-			end
-			local widget={frame=frame,missions={}}
-			widget.type=Type
-			widget.SetTitle=function(self,...) self.frame.TitleText:SetText(...) end
-			widget.SetTitleColor=function(self,...) self.frame.TitleText:SetTextColor(...) end
-			for k,v in pairs(m) do widget[k]=v end
-			frame:SetScript("OnHide",function(self) self.obj:Fire('OnClose') end)
-			frame.obj=widget
-			--Container Support
-			local content = CreateFrame("Frame",nil,frame)
-			widget.content = content
-			--addBackdrop(content,'Green')
-			content.obj = widget
-			content:SetPoint("TOPLEFT",25,-25)
-			content:SetPoint("BOTTOMRIGHT",-25,25)
-			AceGUI:RegisterAsContainer(widget)
-			return widget
-		end
-		AceGUI:RegisterWidgetType(Type,Constructor,Version)
-	end
-end
-end
-function addon:GenerateMissionContainer()
-	do
-		local Type="GMCLayer"
-		local Version=1
-		local function OnRelease(self)
-			wipe(self.childs)
-		end
-		local m={}
-		function m:OnAcquire()
-			self.frame:SetParent(UIParent)
-			self.frame:SetFrameStrata("HIGH")
-			self.frame:SetHeight(50)
-			self.frame:SetWidth(100)
-			self.frame:Show()
-			self.frame:SetPoint("LEFT")
-		end
-		function m:Show()
-			return self.frame:Show()
-		end
-		function m:Hide()
-			self.frame:Hide()
-			self:Release()
-		end
-		function m:SetScript(...)
-			return self.frame:SetScript(...)
-		end
-		function m:SetParent(...)
-			return self.frame:SetParent(...)
-		end
-		function m:PushChild(child,index)
-			self.childs[index]=child
-			self.scroll:AddChild(child)
-		end
-		function m:RemoveChild(index)
-			local child=self.childs[index]
-			if (child) then
-				self.childs[index]=nil
-				child:Hide()
-				self:DoLayout()
-			end
-		end
-		function m:ClearChildren()
-			wipe(self.childs)
-			self:AddScroll()
-		end
-		function m:AddScroll()
-			if (self.scroll) then
-				self:ReleaseChildren()
-				self.scroll=nil
-			end
-			self.scroll=AceGUI:Create("ScrollFrame")
-			local scroll=self.scroll
-			self:AddChild(scroll)
-			scroll:SetLayout("List") -- probably?
-			scroll:SetFullWidth(true)
-			scroll:SetFullHeight(true)
-			scroll:SetPoint("TOPLEFT",self.title,"BOTTOMLEFT",0,0)
-			scroll:SetPoint("TOPRIGHT",self.title,"BOTTOMRIGHT",0,0)
-			scroll:SetPoint("BOTTOM",self.content,"BOTTOM",0,0)
-		end
-		local function Constructor()
-			local frame=CreateFrame("Frame")
-			local title=frame:CreateFontString(nil, "BACKGROUND", "GameFontNormalHugeBlack")
-			title:SetJustifyH("CENTER")
-			title:SetJustifyV("CENTER")
-			title:SetPoint("TOPLEFT")
-			title:SetPoint("TOPRIGHT")
-			title:SetHeight(0)
-			title:SetWidth(0)
-			addBackdrop(frame)
-			local widget={childs={}}
-			widget.title=title
-			widget.type=Type
-			widget.SetTitle=function(self,...) self.title:SetText(...) end
-			widget.SetTitleColor=function(self,...) self.title:SetTextColor(...) end
-			widget.SetFormattedTitle=function(self,...) self.title:SetFormattedText(...) end
-			widget.SetTitleWidth=function(self,...) self.title:SetWidth(...) end
-			widget.SetTitleHeight=function(self,...) self.title:SetHeight(...) end
-			widget.frame=frame
-			frame.obj=widget
-			for k,v in pairs(m) do widget[k]=v end
-			frame:SetScript("OnHide",function(self) self.obj:Fire('OnClose') end)
-			--Container Support
-			local content = CreateFrame("Frame",nil,frame)
-			widget.content = content
-			content.obj = self
-			content:SetPoint("TOPLEFT",title,"BOTTOMLEFT")
-			content:SetPoint("BOTTOMRIGHT")
-			AceGUI:RegisterAsContainer(widget)
-			return widget
-		end
-		AceGUI:RegisterWidgetType(Type,Constructor,Version)
-	end
-end
-
-function addon:GenerateMissionButton()
-	do
-		local Type1="GMCMissionButton"
-		local Type2="GMCSlimMissionButton"
-		local Version=1
-		local unique=0
-		local m={}
-		function m:OnAcquire()
-			local frame=self.frame
-			frame.info=nil
-			frame:SetHeight(self.type==Type1 and 80 or 80)
-			frame:SetAlpha(1)
-			frame:Enable()
-			for i=1,#self.scripts do
-				frame:SetScript(self.scripts[i],nil)
-			end
-			for i=1,#frame.Rewards do
-				frame.Rewards[i].Icon:SetDesaturated(false)
-			end
-			wipe(self.scripts)
-			return self.frame:SetScale(1.0)
-		end
-		function m:Show()
-			return self.frame:Show()
-		end
-		function m:SetHeight(h)
-			return self.frame:SetHeight(h)
-		end
-		function m:Hide()
-			self.frame:SetHeight(1)
-			self.frame:SetAlpha(0)
-			return self.frame:Disable()
-		end
-		function m:SetScript(name,method)
-			tinsert(self.scripts,name)
-			return self.frame:SetScript(name,method)
-		end
-		function m:SetScale(s)
-			return self.frame:SetScale(s)
-		end
-		function m:SetMission(mission,party)
-			self.frame.info=mission
-			self.frame.fromFollowerPage=true
-			self.frame:EnableMouse(true)
-			self.frame.party=party
-			if self.type==Type1 then
-				addon:DrawSingleButton(false,self.frame,false,false)
-				self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
-				self.frame:SetScript("OnLeave",ns.OnLeave)
-			else
-				addon:DrawSingleSlimButton(false,self.frame,false,false)
-				self.frame:SetScript("OnEnter",nil)
-				self.frame:SetScript("OnLeave",nil)
-			end
-			if self.type==Type2 then
-				self.frame.Percent:SetFormattedText("%d%%",party.perc)
-				self.frame.Percent:SetTextColor(addon:GetDifficultyColors(party.perc))
-				_G.AX=self.frame
-			end
-		end
-
-		local function Constructor()
-			unique=unique+1
-			local frame=CreateFrame("Button",nil,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
-			frame.Title:SetFontObject("QuestFont_Shadow_Small")
-			frame.Summary:SetFontObject("QuestFont_Shadow_Small")
-			frame:SetScript("OnEnter",nil)
-			frame:SetScript("OnLeave",nil)
-			frame:SetScript("OnClick",function(self,button) return self.obj:Fire("OnClick",self,button) end)
-			frame.LocBG:SetPoint("LEFT")
-			frame.MissionType:SetPoint("TOPLEFT",5,-2)
-			--[[
-			frame.members={}
-			for i=1,3 do
-				local f=CreateFrame("Button",nil,frame,"GarrisonCommanderMissionPageFollowerTemplateSmall" )
-				frame.members[i]=f
-				f:SetPoint("BOTTOMRIGHT",-65 -65 *i,5)
-				f:SetScale(0.8)
-			end
-			--]]
-			local widget={}
-			setmetatable(widget,{__index=frame})
-			widget.frame=frame
-			widget.scripts={}
-			frame.obj=widget
-			for k,v in pairs(m) do widget[k]=v end
-			return widget
-		end
-		local function Constructor1()
-			local widget=Constructor()
-			widget.type=Type1
-			return AceGUI:RegisterAsWidget(widget)
-		end
-		local function Constructor2()
-			local widget=Constructor()
-			local frame=widget.frame
-			widget.type=Type2
-			local indicators=CreateFrame("Frame",nil,frame,"GarrisonCommanderIndicators")
-			indicators.Percent:SetJustifyH("LEFT")
-			indicators.Percent:SetJustifyV("CENTER")
-			indicators:SetPoint("LEFT",70,0)
-			indicators.Age:Hide()
-			frame.Indicators=indicators
-			frame.Percent=indicators.Percent
-			frame.Failure=frame:CreateFontString()
-			frame.Success=frame:CreateFontString()
-			frame.Failure:SetFontObject("GameFontRedLarge")
-			frame.Success:SetFontObject("GameFontGreenLarge")
-			frame.Failure:SetText(FAILED)
-			frame.Success:SetText(SUCCESS)
-			frame.Failure:Hide()
-			frame.Success:Hide()
-			frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,0)
-			frame.Success:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
-			frame.Failure:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
-
-			--widget.frame.MissionType:Hide()
-			--widget.frame.IconBG:Hide()
-			return AceGUI:RegisterAsWidget(widget)
-		end
-		AceGUI:RegisterWidgetType(Type1,Constructor1,Version)
-		AceGUI:RegisterWidgetType(Type2,Constructor2,Version)
-
-	end
-end
 
 function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
@@ -1804,7 +1514,6 @@ function addon:SetUp(...)
 	self:CheckMP()
 	self:CheckGMM()
 	self:Options()
-	self:GenerateMissionsWidgets()
 	GMC=self:GMCBuildPanel(ns.bigscreen)
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabMC=tabMC
@@ -1843,6 +1552,9 @@ function addon:SetUp(...)
 	return self:StartUp()
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
+end
+function addon:MissionComplete()
+	return self:GetModule("MissionCompletion"):MissionComplete()
 end
 function addon:AddMenu()
 	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT')
@@ -2020,6 +1732,19 @@ function addon:SafeHookScript(frame,hook,method,postHook)
 		end
 	end
 end
+local converter=CreateFrame("Frame"):CreateTexture()
+function addon:GetFollowerTexture(followerID)
+	local rc,iconID=pcall(self.GetFollowerData,self,followerID,"portraitIconID")
+	if rc then
+		if iconID then
+			converter:SetToFileData(iconID)
+			return converter:GetTexture()
+		end
+		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+	else
+		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+	end
+end
 
 function addon:CleanUp()
 	wipe(ns.CompletedMissions)
@@ -2032,7 +1757,7 @@ function addon:CleanUp()
 		GarrisonFollowerTooltip.fs:Hide()
 	end
 	GMFMissions.CompleteDialog:Hide()
-	self:CloseReport()
+	self:GetModule("MissionCompletion"):CloseReport()
 	--collectgarbage("collect")
 end
 function addon:EventGARRISON_FOLLOWER_XP_CHANGED(event,followerID,iLevel,xp,level,quality)

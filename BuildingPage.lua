@@ -60,7 +60,6 @@ function module:AddFollowerToPlot(plot)
 	if (addon:GetToggle("HF")) then
 		return frame:Hide()
 	end
-	ns.xprint(plot.followerTooltip,plot.plotID)
 	if plot.followerTooltip then
 		local followerName, level, quality, displayID, followerID, garrFollowerID, status, portraitIconID = G.GetFollowerInfoForBuilding(plot.plotID)
 		if followerName then

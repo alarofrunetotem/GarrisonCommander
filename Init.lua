@@ -27,6 +27,7 @@ ns.AceGUI=LibStub("AceGUI-3.0")
 ns.D=LibStub("LibDeformat-3.0")
 ns.C=ns.addon:GetColorTable()
 ns.L=ns.addon:GetLocale()
+ns.G=C_Garrison
 ns.print=ns.addon:Wrap("Print")
 ns.dprint=ns.print
 ns.trace=ns.addon:Wrap("Trace")

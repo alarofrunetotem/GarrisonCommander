@@ -4,3 +4,4 @@ Fix: Using a full upgrade token on follower was warning about lost points
 Fix: Possible soloution for a couple of very rare lua errors
 Feature: Clicking on data broker opens missions report (same as clicking on minimap icon)
 Feature: In follower rectuiting page, information about which follower have traits and counter are show in dropdown
+Feature: Broker now reports status of producing lot.

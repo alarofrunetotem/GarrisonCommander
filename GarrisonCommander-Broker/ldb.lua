@@ -7,8 +7,11 @@ if (not LibStub:GetLibrary("LibDataBroker-1.1",true)) then
 end
 if (LibDebug) then LibDebug() end
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
-local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0")
-local dataobj
+--local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
+local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
+local C=addon:GetColorTable()
+local dataobj --#Missions
+local farmobj --#Farms
 local SecondsToTime=SecondsToTime
 local type=type
 local strsplit=strsplit
@@ -16,12 +19,41 @@ local tonumber=tonumber
 local tremove=tremove
 local time=time
 local tinsert=tinsert
+local tContains=tContains
 local G=C_Garrison
-local NONE=NONE
-local DONE=DONE
 local format=format
 local table=table
 local math=math
+local GetQuestResetTime=GetQuestResetTime
+local CalendarGetDate=CalendarGetDate
+local CalendarGetAbsMonth=CalendarGetAbsMonth
+local GameTooltip=GameTooltip
+local pairs=pairs
+local select=select
+local READY=READY
+local NEXT=NEXT
+local NONE=C(NONE,"Red")
+local DONE=C(DONE,"Green")
+local NEED=C(NEED,"Red")
+local dbversion=2
+
+local spellids={
+	[158754]='herb',
+	[158745]='mine',
+	[170599]='mine',
+	[170691]='herb',
+}
+local buildids={
+	mine={61,62,63},
+	herb={29,136,137}
+}
+local names={
+	mine="Lunar Fall",
+	herb="Herb Garden"
+}
+local today=0
+local yesterday=0
+local lastreset=0
 function addon:ldbCleanup()
 	local now=time()
 	for i=1,#self.db.realm.missions do
@@ -37,26 +69,9 @@ function addon:ldbCleanup()
 	end
 end
 function addon:ldbUpdate()
-	local now=time()
-	local completed=0
-	local ready=NONE
-	local prox=NONE
-	for i=1,#self.db.realm.missions do
-		local t,missionID,pc=strsplit('.',self.db.realm.missions[i])
-		t=tonumber(t) or 0
-		if t>now then
-			local duration=t-now
-			local duration=duration < 60 and duration or math.floor(duration/60)*60
-			prox=format("|cff20ff20%s|r in %s",pc,SecondsToTime(duration),completed)
-			break;
-		else
-			if ready==NONE then
-				ready=format("|cff20ff20%s|r",pc)
-			end
-		end
-		completed=completed+1
-	end
-	dataobj.text=format("%s: %s (Tot: |cff00ff00%d|r) %s: %s",READY,ready,completed,NEXT,prox)
+	self:CheckDailyReset()
+	dataobj:Update()
+	farmobj:Update()
 end
 function addon:GARRISON_MISSION_STARTED(event,missionID)
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
@@ -65,20 +80,168 @@ function addon:GARRISON_MISSION_STARTED(event,missionID)
 	table.sort(self.db.realm.missions)
 	self:ldbUpdate()
 end
-function addon:OnInitialize()
+function addon:CheckEvents()
+	if (G.IsOnGarrisonMap()) then
+		self:RegisterEvent("UNIT_SPELLCAST_START")
+		--self:RegisterEvent("ITEM_PUSH")
+	else
+		self:UnregisterEvent("UNIT_SPELLCAST_START")
+		--self:UnregisterEvent("ITEM_PUSH")
+	end
+end
+function addon:ZONE_CHANGED_NEW_AREA()
+	self:ScheduleTimer("CheckEvents",1)
+	self:ScheduleTimer("DiscoverFarms",1)
+
+end
+function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
+	if (unit=='player') then
+		if spellids[spellID] then
+			name=names[spellids[spellID]]
+			if not self.db.realm.farms[ns.me][name] then
+				self.db.realm.farms[ns.me][name]=true
+				farmobj:Update()
+			end
+		end
+	end
+end
+function addon:ITEM_PUSH(event,bag,icon)
+	--@debug@
+	print(event,bag,icon)
+	--@end-debug@
+end
+function addon:CalculateModifiedDate()
+	local weekday, month, day, year = CalendarGetDate()
+	today=format("%04d%02d%02d",year,month,day)
+	if month==1 and day==1 then
+		local m, y, numdays, firstday = CalendarGetAbsMonth( 12, year-1 )
+		yesterday=format("%04d%02d%02d",y,m,numdays)
+	elseif day==1 then
+		local m, y, numdays, firstday = CalendarGetAbsMonth( month-1, year)
+		yesterday=format("%04d%02d%02d",y,m,numdays)
+	else
+		yesterday=format("%04d%02d%02d",year,month,day-1)
+	end
+	if (GetQuestResetTime()<3600*3) then
+		today=yesterday
+	end
+end
+function addon:CheckDailyReset()
+	if lastreset < GetQuestResetTime() then
+		lastreset =GetQuestResetTime()
+		self:CleanFarms()
+	end
+
+end
+function addon:CleanFarms()
+	for p,j in pairs(self.db.realm.farms) do
+		for s,_ in pairs(j) do
+			j[s]=false
+		end
+	end
+end
+function addon:CountMissing()
+	local tot=0
+	local missing=0
+	for p,j in pairs(self.db.realm.farms) do
+		for s,_ in pairs(j) do
+			tot=tot+1
+			if not j[s] then missing=missing+1 end
+		end
+	end
+	return missing,tot
+end
+function addon:DiscoverFarms()
+	local shipmentIndex = 1;
+	local buildings = C_Garrison.GetBuildings();
+	for i = 1, #buildings do
+		local buildingID = buildings[i].buildingID;
+		if ( buildingID) then
+			local name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemIcon, itemQuality, itemID = C_Garrison.GetLandingPageShipmentInfo(buildingID);
+			if (tContains(buildids.mine,buildingID)) then
+				names.mine=name
+				if not self.db.realm.farms[ns.me][name] then
+					self.db.realm.farms[ns.me][name]=false
+				end
+			end
+			if (tContains(buildids.herb,buildingID)) then
+				names.herb=name
+				if not self.db.realm.farms[ns.me][name] then
+					self.db.realm.farms[ns.me][name]=false
+				end
+			end
+
+		end
+	end
+end
+function addon:SetDbDefaults(default)
+	default.realm={
+		missions={},
+		farms={["**"]={}},
+		lastday="0",
+		dbversion=1
+	}
+end
+function addon:OnInitialized()
+	lastreset=GetQuestResetTime()
 	ns.me=GetUnitName("player",false)
 	self:RegisterEvent("GARRISON_MISSION_STARTED")
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
+	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	if dbversion>self.db.realm.dbversion then
+		self.db:ResetDB()
+		self.db.realm.dbversion=dbversion
+	end
+	self:CalculateModifiedDate()
+	if self.db.realm.lastday<today then addon:CleanFarms() end
+	self.db.realm.lastday=today
 	self:ScheduleRepeatingTimer("ldbUpdate",1)
-	self.db=LibStub("AceDB-3.0"):New("dbGACB",{realm={missions={}}})
+	self:ScheduleTimer("ZONE_CHANGED_NEW_AREA",1)
 end
-dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject(me, {
+dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Missions", {
 	type = "data source",
-	label = "Missions ",
+	label = "GC Missions ",
 	text=NONE,
 	category = "Interface",
 	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
 })
+farmobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Farms", {
+	type = "data source",
+	label = "GC Farms ",
+	text=L["Harvesting status"],
+	category = "Interface",
+	icon = "Interface\\Icons\\Trade_Engineering"
+})
+function farmobj:Update()
+	local n,t=addon:CountMissing()
+	if (t>0) then
+		local c1=C.Green.c
+		local c2=C.Green.c
+		if n>t/2 then
+			c1=C.Red.c
+		elseif n>0 then
+			c1=C.Orange.c
+		end
+		farmobj.text=format("%s |cff%s%d|r/|cff%s%d|r",L["Harvest"],c1,t-n,c2,t)
+	else
+		farmobj.text=NONE
+	end
+end
+function farmobj:OnTooltipShow()
+	self:AddDoubleLine(L["Time to next reset"],SecondsToTime(GetQuestResetTime()))
+	for k,v in pairs(addon.db.realm.farms) do
+		if (k==ns.me) then
+			self:AddLine(k,C.Green())
+		else
+			self:AddLine(k,C.Orange())
+		end
+		for s,d in pairs(v) do
+			self:AddDoubleLine(s,d and DONE or NEED)
+		end
+	end
+	self:AddLine(me,C.Silver())
+end
+
 function dataobj:OnTooltipShow()
 	self:AddLine(L["Mission awaiting"])
 	local db=addon.db.realm.missions
@@ -87,17 +250,18 @@ function dataobj:OnTooltipShow()
 		if db[i] then
 			local t,missionID,pc=strsplit('.',db[i])
 			t=tonumber(t) or 0
-			local name=C_Garrison.GetMissionName(missionID)
+			local name=G.GetMissionName(missionID)
 			if (name) then
+				local msg=format("|cff%s%s|r: %s",pc==ns.me and C.Green.c or C.Orange.c,pc,name)
 				if t > now then
-					self:AddDoubleLine(format("|cffff9900%s|r: %s",pc,name),SecondsToTime(t-now),nil,nil,nil,0,1,0)
+					self:AddDoubleLine(msg,SecondsToTime(t-now),nil,nil,nil,C.Red())
 				else
-					self:AddDoubleLine(format("|cffff9900%s|r: %s",pc,name),DONE,nil,nil,nil,1,0,0)
+					self:AddDoubleLine(msg,DONE)
 				end
 			end
 		end
 	end
-	self:AddLine(me,0,1,0)
+	self:AddLine(me,C.Silver())
 end
 
 function dataobj:OnEnter()
@@ -112,12 +276,46 @@ end
 function dataobj:OnLeave()
 	GameTooltip:Hide()
 end
+function farmobj:OnEnter()
+	GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
+	GameTooltip:ClearLines()
+	farmobj.OnTooltipShow(GameTooltip)
+	GameTooltip:Show()
+end
+farmobj.OnLeave=dataobj.OnLeave
+
 function dataobj:OnClick(button)
 	if (button=="LeftButton") then
 		GarrisonLandingPage_Toggle()
 	end
 end
+function dataobj:Update()
+	local now=time()
+	local completed=0
+	local ready=NONE
+	local prox=NONE
+	for i=1,#addon.db.realm.missions do
+		local t,missionID,pc=strsplit('.',addon.db.realm.missions[i])
+		t=tonumber(t) or 0
+		if t>now then
+			local duration=t-now
+			local duration=duration < 60 and duration or math.floor(duration/60)*60
+			prox=format("|cff20ff20%s|r in %s",pc,SecondsToTime(duration),completed)
+			break;
+		else
+			if ready==NONE then
+				ready=format("|cff20ff20%s|r",pc)
+			end
+		end
+		completed=completed+1
+	end
+	self.text=format("%s: %s (Tot: |cff00ff00%d|r) %s: %s",READY,ready,completed,NEXT,prox)
+end
 
 --@debug@
-_G.GACDB=addon
+function addon:Dump()
+	DevTools_Dump(self.db.realm)
+end
+_G.GACB=addon
 --@end-debug@
