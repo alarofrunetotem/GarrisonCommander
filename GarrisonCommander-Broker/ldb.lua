@@ -125,8 +125,13 @@ function addon:CalculateModifiedDate()
 	if (GetQuestResetTime()<3600*3) then
 		today=yesterday
 	end
+	return today,yesterday
 end
 function addon:CheckDailyReset()
+	if lastreset < 0 then
+		lastreset= GetQuestResetTime()
+		return
+	end
 	if lastreset < GetQuestResetTime() then
 		lastreset =GetQuestResetTime()
 		self:CleanFarms()
@@ -183,7 +188,6 @@ function addon:SetDbDefaults(default)
 	}
 end
 function addon:OnInitialized()
-	lastreset=GetQuestResetTime()
 	ns.me=GetUnitName("player",false)
 	self:RegisterEvent("GARRISON_MISSION_STARTED")
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
@@ -193,8 +197,11 @@ function addon:OnInitialized()
 		self.db.realm.dbversion=dbversion
 	end
 	self:CalculateModifiedDate()
-	if self.db.realm.lastday<today then addon:CleanFarms() end
+	if self.db.realm.lastday<today then print("Cleaning due to day changed") addon:CleanFarms() end
 	self.db.realm.lastday=today
+end
+function addon:OnEnabled()
+	lastreset=GetQuestResetTime()
 	self:ScheduleRepeatingTimer("ldbUpdate",1)
 	self:ScheduleTimer("ZONE_CHANGED_NEW_AREA",1)
 end
@@ -239,6 +246,9 @@ function farmobj:OnTooltipShow()
 			self:AddDoubleLine(s,d and DONE or NEED)
 		end
 	end
+	self:AddLine("Manually mark my tasks:",C:Cyan())
+	self:AddDoubleLine(KEY_BUTTON1,DONE)
+	self:AddDoubleLine(KEY_BUTTON2,NEED)
 	self:AddLine(me,C.Silver())
 end
 
@@ -261,6 +271,7 @@ function dataobj:OnTooltipShow()
 			end
 		end
 	end
+
 	self:AddLine(me,C.Silver())
 end
 
@@ -284,6 +295,16 @@ function farmobj:OnEnter()
 	GameTooltip:Show()
 end
 farmobj.OnLeave=dataobj.OnLeave
+function farmobj:OnClick(button)
+	for k,v in pairs(addon.db.realm.farms) do
+		if (k==ns.me) then
+			for s,d in pairs(v) do
+				v[s]=button=="LeftButton"
+			end
+		end
+	end
+
+end
 
 function dataobj:OnClick(button)
 	if (button=="LeftButton") then
