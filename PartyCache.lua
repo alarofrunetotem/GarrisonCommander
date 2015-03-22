@@ -194,7 +194,7 @@ end
 function addon:GetParties()
 	return self:GetParty()
 end
-function addon:GetParty(missionID,key)
+function addon:GetParty(missionID,key,default)
 	if not missionID then return parties end
 	local party=parties[missionID]
 	if #party.members==0 and G.GetNumFollowersOnMission(missionID)>0 then

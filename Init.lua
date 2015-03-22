@@ -176,6 +176,7 @@ function addon:GetItems()
 	return items
 end
 -- to be moved in LibInit
+--[[
 function addon:coroutineExecute(interval,func)
 	local co=coroutine.wrap(func)
 	local interval=interval
@@ -189,6 +190,7 @@ function addon:coroutineExecute(interval,func)
 	end
 	return repeater()
 end
+--]]
 addon:coroutineExecute(0.1,
 	function ()
 		for itemID,_ in pairs(followerItems) do

@@ -257,7 +257,7 @@ end
 -- First time i am called to verride it I save it, so I give other modules a chance to hook it, too
 -- Could even do a trick and secureHook it at the expense of a double sort...
 local origGarrison_SortMissions
-local sorters={}
+local sorters={} --#Sorters
 sorters.EndTime=function (mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return true end
 	local rc1,p1=pcall(G.GetFollowerMissionTimeLeftSeconds,mission1.followers[1])
@@ -282,10 +282,20 @@ sorters.Chance=function (mission1, mission2)
 		return p1.perc > p2.perc
 	end
 end
+sorters.Duration=function (mission1, mission2)
+	if type(mission1)~="table" or type(mission2) ~="table" then return end
+	local p1=addon:GetMissionData(mission1.missionID,'improvedDurationSeconds',0)
+	local p2=addon:GetMissionData(mission2.missionID,'improvedDurationSeconds',0)
+	if (p1==p2) then
+		return strcmputf8i(mission1.name, mission2.name) < 0
+	else
+		return p1 < p2
+	end
+end
 sorters.Age=function (mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetMissionData(mission1.missionID,'offerEndTime')
-	local p2=addon:GetMissionData(mission2.missionID,'offerEndTime')
+	local p1=addon:GetMissionData(mission1.missionID,'offerEndTime',0)
+	local p2=addon:GetMissionData(mission2.missionID,'offerEndTime',0)
 	if (p1==p2) then
 		return strcmputf8i(mission1.name, mission2.name) < 0
 	else
@@ -294,8 +304,8 @@ sorters.Age=function (mission1, mission2)
 end
 sorters.Followers=function(mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetMissionData(mission1.missionID,'numFollowers')
-	local p2=addon:GetMissionData(mission2.missionID,'numFollowers')
+	local p1=addon:GetMissionData(mission1.missionID,'numFollowers',1)
+	local p2=addon:GetMissionData(mission2.missionID,'numFollowers',1)
 	if (p1==p2) then
 		return strcmputf8i(mission1.name, mission2.name) < 0
 	else
@@ -305,8 +315,8 @@ end
 sorters.Xp=function (mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return end
 
-	local p1=addon:GetMissionData(mission1.missionID,'globalXp')
-	local p2=addon:GetMissionData(mission2.missionID,'globalXp')
+	local p1=addon:GetMissionData(mission1.missionID,'globalXp',0)
+	local p2=addon:GetMissionData(mission2.missionID,'globalXp',0)
 	if (p1==p2) then
 		return strcmputf8i(mission1.name, mission2.name) < 0
 	else
@@ -320,6 +330,10 @@ end
 function addon.Garrison_SortMissions_Age(missionsList)
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Age);
+end
+function addon.Garrison_SortMissions_Duration(missionsList)
+	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	table.sort(missionsList, sorters.Duration);
 end
 function addon.Garrison_SortMissions_Followers(missionsList)
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
@@ -363,6 +377,7 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Followers=L["Number of followers"],
 		Garrison_SortMissions_Age=L["Expiration Time"],
 		Garrison_SortMissions_Xp=L["Global approx. xp reward"],
+		Garrison_SortMissions_Duration=L["Duration Time"],
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
@@ -574,7 +589,7 @@ function addon:AddFollowersToTooltip(missionID)
 	local q=self:GetDifficultyColor(perc)
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
 	for _,i in pairs (dbcache.ignored[missionID]) do
-		GameTooltip:AddLine(L["You have ignored followers"])
+		GameTooltip:AddLine(L["You have ignored followers"],C.Orange())
 		break;
 	end
 	if party.goldMultiplier>1 and party.class=='gold' then
@@ -586,6 +601,10 @@ function addon:AddFollowersToTooltip(missionID)
 	if party.xpBonus>0 then
 		GameTooltip:AddDoubleLine(L["Xp incremented!"],'+'..party.xpBonus,C.Green())
 	end
+	if party.isMissionTimeImproved then
+		GameTooltip:AddLine(L["Mission time reduced!"],C.Green())
+	end
+
 	if (dbcache.history[missionID]) then
 		local tot,success=0,0
 		for d,r in pairs(dbcache.history[missionID]) do
@@ -2526,11 +2545,14 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	button.Title:SetWidth(0);
 	button.Title:SetText(mission.name);
 	button.Level:SetText(mission.level);
-	if ( mission.durationSeconds >= GARRISON_LONG_MISSION_TIME ) then
-		local duration = format(GARRISON_LONG_MISSION_TIME_FORMAT, mission.duration);
-		button.Summary:SetFormattedText(PARENS_TEMPLATE, duration);
+	local seconds=self:GetMissionData(missionID,'improvedDurationSeconds')
+	local duration=SecondsToTime(seconds)
+	if ( seconds >= GARRISON_LONG_MISSION_TIME ) then
+		button.Summary:SetFormattedText(PARENS_TEMPLATE, format(GARRISON_LONG_MISSION_TIME_FORMAT,duration))
+	elseif (seconds<mission.durationSeconds) then
+		button.Summary:SetFormattedText(PARENS_TEMPLATE, format("%s%s%s",GREEN_FONT_COLOR_CODE,duration,FONT_COLOR_CODE_CLOSE))
 	else
-		button.Summary:SetFormattedText(PARENS_TEMPLATE, mission.duration);
+		button.Summary:SetFormattedText(PARENS_TEMPLATE, duration);
 	end
 	if ( mission.locPrefix ) then
 		button.LocBG:Show();

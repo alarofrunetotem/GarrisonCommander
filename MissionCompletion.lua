@@ -99,6 +99,9 @@ function module:MissionComplete(this,button)
 			for k,v in pairs(missions[i].followers) do
 				rewards.followerBase[v]=self:GetFollowerData(v,'qLevel')
 			end
+			for k,v in pairs(missions[i].rewards) do
+				if v.itemID then GetItemInfo(v.itemID) end -- tickling server
+			end
 			local m=missions[i]
 			local _
 			_,_,_,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)

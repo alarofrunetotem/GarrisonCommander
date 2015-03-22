@@ -64,6 +64,13 @@ function addon:GetMissionData(missionID,key,default)
 	if (type(mission[key])~='nil') then
 		return mission[key]
 	end
+	if key=='improvedDurationSeconds' then
+		if self:GetParty(missionID,'isMissionTimeImproved') then
+			return mission.durationSeconds/2
+		else
+			return mission.durationSeconds
+		end
+	end
 	if (key=='rank') then
 		mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 		return mission.rank
