@@ -50,16 +50,18 @@ local function GMCList()
 		b:SetCallback("OnClick",action)
 		obj:AddChild(b)
 	end
-	function m:AddMissionButton(mission)
-		local obj=self.scroll
-		local b=AceGUI:Create("GMCSlimMissionButton")
-		b:SetMission(mission,addon:GetParty(mission.missionID))
-		b:SetScale(0.7)
-		b:SetFullWidth(true)
-		self.missions[mission.missionID]=b
-		obj:AddChild(b)
-		b.frame.Spinner:Show()
-		b.frame.Spinner.Anim:Play()
+	function m:AddMissionButton(mission,perc)
+		if not self.missions[mission.missionID] then
+			local obj=self.scroll
+			local b=AceGUI:Create("GMCSlimMissionButton")
+			b:SetMission(mission,perc)
+			b:SetScale(0.7)
+			b:SetFullWidth(true)
+			self.missions[mission.missionID]=b
+			obj:AddChild(b)
+			b.frame.Spinner:Show()
+			b.frame.Spinner.Anim:Play()
+		end
 
 	end
 	function m:AddMissionResult(missionID,success)
@@ -329,11 +331,11 @@ local function GMCMissionButton()
 		function m:SetScale(s)
 			return self.frame:SetScale(s)
 		end
-		function m:SetMission(mission,party)
+		function m:SetMission(mission,perc)
 			self.frame.info=mission
 			self.frame.fromFollowerPage=true
 			self.frame:EnableMouse(true)
-			self.frame.party=party
+			self.frame.party=addon:GetParty(mission.missionID)
 			if self.type==Type1 then
 				addon:DrawSingleButton(false,self.frame,false,false)
 				self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
@@ -344,8 +346,8 @@ local function GMCMissionButton()
 				self.frame:SetScript("OnLeave",nil)
 			end
 			if self.type==Type2 then
-				self.frame.Percent:SetFormattedText("%d%%",party.perc)
-				self.frame.Percent:SetTextColor(addon:GetDifficultyColors(party.perc))
+				self.frame.Percent:SetFormattedText("%d%%",perc)
+				self.frame.Percent:SetTextColor(addon:GetDifficultyColors(perc))
 				_G.AX=self.frame
 			end
 		end

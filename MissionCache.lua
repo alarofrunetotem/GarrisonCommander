@@ -53,7 +53,10 @@ function addon:GetMissionData(missionID,key,default)
 		end
 	end
 	if not mission then
-		mission=ns.CompletedMissions[missionID]
+		mission=self:GetModule("MissionCompletion"):GetMission(missionID)
+		if mission then
+			mission.improvedDurationSeconds=mission.isMissionTimeImproved and mission.improvedDurationSeconds/2 or mission.improvedDurationSeconds
+		end
 	end
 	if (key==nil) then
 		return mission

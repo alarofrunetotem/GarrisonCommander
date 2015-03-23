@@ -14,7 +14,6 @@ local GMF=GarrisonMissionFrame
 local GMFMissions=GarrisonMissionFrameMissions
 local G=C_Garrison
 local GARRISON_CURRENCY=GARRISON_CURRENCY
-ns.missionautocompleting=false
 local pairs=pairs
 local format=format
 local strsplit=strsplit
@@ -25,12 +24,11 @@ local module=addon:NewSubClass('MissionCompletion') --#Module
 function module:GenerateMissionCompleteList(title)
 	local w=AceGUI:Create("GCMCList")
 	w:SetTitle(title)
-	w:SetCallback("OnClose", function(self) self:Release() ns.missionautocompleting=nil end)
+	w:SetCallback("OnClose",function() w:Release() return module:MissionsCleanup() end)
 	return w
 end
 local missions={}
 local states={}
-local currentMission
 local rewards={
 	items={},
 	followerBase={},
@@ -56,6 +54,7 @@ local function startTimer(delay,event,...)
 	--@end-alpha@
 end
 function module:MissionsCleanup()
+	self:Events(false)
 	stopTimer()
 	GMF.MissionTab.MissionList.CompleteDialog:Hide()
 	GMF.MissionComplete:Hide()
@@ -65,24 +64,26 @@ function module:MissionsCleanup()
 	GarrisonMissionList_UpdateMissions()
 	-- Re-enable "view" button
 	GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
-	ns.missionautocompleting=nil
 	GarrisonMissionFrame_SelectTab(1)
 	GarrisonMissionFrame_CheckCompleteMissions()
 end
-function module:OnInitialized(start)
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","MissionAutoComplete")
-	self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","MissionAutoComplete")
-	self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","MissionAutoComplete")
-	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","MissionAutoComplete")
+function module:Events(on)
+	if (on) then
+		self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_LOOT","MissionAutoComplete")
+		self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","MissionAutoComplete")
+		self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","MissionAutoComplete")
+		self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","MissionAutoComplete")
+	else
+		self:UnregisterAllEvents()
+	end
 end
 function module:CloseReport()
-	if report then pcall(report.Close,report) end
+	if report then pcall(report.Close,report) report=nil end
 end
 function module:MissionComplete(this,button)
 	GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 	missions=G.GetCompleteMissions()
 	if (missions and #missions > 0) then
-		ns.missionautocompleting=true
 		report=self:GenerateMissionCompleteList("Missions' results")
 		--report:SetPoint("TOPLEFT",GMFMissions.CompleteDialog.BorderFrame)
 		--report:SetPoint("BOTTOMRIGHT",GMFMissions.CompleteDialog.BorderFrame)
@@ -90,7 +91,6 @@ function module:MissionComplete(this,button)
 		report:SetPoint("TOP",GMF)
 		report:SetPoint("BOTTOM",GMF)
 		report:SetWidth(500)
-		report:SetCallback("OnClose",function() return module:MissionsCleanup() end)
 		wipe(rewards.followerBase)
 		wipe(rewards.followerXP)
 		wipe(rewards.currencies)
@@ -103,12 +103,26 @@ function module:MissionComplete(this,button)
 				if v.itemID then GetItemInfo(v.itemID) end -- tickling server
 			end
 			local m=missions[i]
+--totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier, goldMultiplier = C_Garrison.GetPartyMissionInfo(MISSION_PAGE_FRAME.missionInfo.missionID);
+
 			local _
-			_,_,_,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
+			_,_,m.isMissionTimeImproved,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
 		end
-		currentMission=tremove(missions)
-		ns.CompletedMissions[currentMission.missionID]=currentMission
+		self:Dump("Completed missions",missions)
+		report:SetUserData('missions',missions)
+		report:SetUserData('current',1)
+		self:Events(true)
 		self:MissionAutoComplete("INIT")
+	end
+end
+function module:GetMission(missionID)
+	local missions=report:GetUserData('missions')
+	if missions then
+		for i=1,#missions do
+			if missions[i].missionID==missionID then
+				return missions[i]
+			end
+		end
 	end
 end
 function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
@@ -120,11 +134,9 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 	if event=="LOOT" then
 		return self:MissionsPrintResults()
 	end
-
-	if (event =="LOOP" or event=="INIT") then
-		ID=currentMission and currentMission.missionID or "none"
-		arg1=currentMission and currentMission.state or "none"
-	end
+	local current=report:GetUserData('current')
+	local currentMission=report:GetUserData('missions')[current]
+	local missionID=currentMission and currentMission.missionID or 0
 	-- GARRISON_FOLLOWER_XP_CHANGED: followerID, xpGained, actualXp, newLevel, quality
 	if (event=="GARRISON_FOLLOWER_XP_CHANGED") then
 		if (arg1 > 0) then
@@ -134,8 +146,8 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 		return
 	-- GARRISON_MISSION_BONUS_ROLL_LOOT: itemID
 	elseif (event=="GARRISON_MISSION_BONUS_ROLL_LOOT") then
-		if (currentMission) then
-			rewards.items[format("%d:%s",currentMission.missionID,ID)]=1
+		if (missionID) then
+			rewards.items[format("%d:%s",missionID,ID)]=1
 		else
 			rewards.items[format("%d:%s",0,ID)]=1
 		end
@@ -170,7 +182,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 				currentMission.state=0
 				currentMission.goldMultiplier=currentMission.goldMultiplier or 1
 				currentMission.xp=select(2,G.GetMissionInfo(currentMission.missionID))
-				report:AddMissionButton(currentMission)
+				report:AddMissionButton(currentMission,currentMission.successChance)
 			end
 			if (step==0) then
 				--@alpha@
@@ -185,12 +197,10 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 				G.MissionBonusRoll(currentMission.missionID)
 				startTimer(2)
 			elseif (step>=2) then
-				self:GetMissionResults(step==3)
+				self:GetMissionResults(step==3,currentMission)
 				self:RefreshFollowerStatus()
-				currentMission=tremove(missions)
-				if currentMission then
-					ns.CompletedMissions[currentMission.missionID]=currentMission
-				end
+				local current=report:GetUserData('current')
+				report:SetUserData('current',current+1)
 				startTimer()
 				return
 			end
@@ -201,7 +211,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 		end
 	end
 end
-function module:GetMissionResults(success)
+function module:GetMissionResults(success,currentMission)
 	stopTimer()
 	if (success) then
 		report:AddMissionResult(currentMission.missionID,true)
@@ -225,7 +235,6 @@ function module:GetMissionResults(success)
 					rewards.currencies[v.currencyID].qt=rewards.currencies[v.currencyID].qt+v.quantity
 				end
 			elseif v.itemID then
-				GetItemInfo(v.itemID) -- Triggering the cache
 				rewards.items[format("%d:%s",currentMission.missionID,v.itemID)]=1
 			end
 		end
