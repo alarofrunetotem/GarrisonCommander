@@ -110,8 +110,15 @@ function addon:ITEM_PUSH(event,bag,icon)
 	print(event,bag,icon)
 	--@end-debug@
 end
-function addon:CalculateModifiedDate()
+function addon:CheckDateReset()
+	local reset=GetQuestResetTime()
 	local weekday, month, day, year = CalendarGetDate()
+	self:Print("Calendar",weekday,month,day,year)
+	if (day <1 or reset<1) then
+		self:ScheduleTimer("CheckDateReset",1)
+		return day,reset
+	end
+
 	today=format("%04d%02d%02d",year,month,day)
 	if month==1 and day==1 then
 		local m, y, numdays, firstday = CalendarGetAbsMonth( 12, year-1 )
@@ -122,10 +129,11 @@ function addon:CalculateModifiedDate()
 	else
 		yesterday=format("%04d%02d%02d",year,month,day-1)
 	end
-	if (GetQuestResetTime()<3600*3) then
+	if (reset<3600*3) then
 		today=yesterday
 	end
-	return today,yesterday
+	if self.db.realm.lastday<today then self:Print("Daily reset due to day changed") addon:CleanFarms() end
+	self.db.realm.lastday=today
 end
 function addon:CheckDailyReset()
 	if lastreset < 0 then
@@ -196,13 +204,11 @@ function addon:OnInitialized()
 		self.db:ResetDB()
 		self.db.realm.dbversion=dbversion
 	end
-	self:CalculateModifiedDate()
-	if self.db.realm.lastday<today then print("Cleaning due to day changed") addon:CleanFarms() end
-	self.db.realm.lastday=today
 end
 function addon:OnEnabled()
 	lastreset=GetQuestResetTime()
-	self:ScheduleRepeatingTimer("ldbUpdate",1)
+	self:ScheduleTimer("CheckDateReset",2)
+	self:ScheduleRepeatingTimer("ldbUpdate",2)
 	self:ScheduleTimer("ZONE_CHANGED_NEW_AREA",1)
 end
 dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Missions", {
