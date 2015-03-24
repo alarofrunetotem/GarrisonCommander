@@ -23,10 +23,26 @@ local salvages={
 local module=addon:NewSubClass('MissionCompletion') --#Module
 function module:GenerateMissionCompleteList(title)
 	local w=AceGUI:Create("GCMCList")
+--@debug@
+	title=format("%s %s %s",title,w.frame:GetName(),GetTime()*1000)
+--@end-debug@
 	w:SetTitle(title)
-	w:SetCallback("OnClose",function() w:Release() return module:MissionsCleanup() end)
+	w:SetCallback("OnClose",function(widget) widget:Release() return module:MissionsCleanup() end)
+	--report:SetPoint("TOPLEFT",GMFMissions.CompleteDialog.BorderFrame)
+	--report:SetPoint("BOTTOMRIGHT",GMFMissions.CompleteDialog.BorderFrame)
+	w:ClearAllPoints()
+	w:SetPoint("TOP",GMF)
+	w:SetPoint("BOTTOM",GMF)
+	w:SetWidth(500)
+	w:SetParent(GMF)
+	w.frame:SetFrameStrata("HIGH")
 	return w
 end
+--@debug@
+function addon.ShowRewards()
+	module:GenerateMissionCompleteList("Test")
+end
+--@end-debu@
 local missions={}
 local states={}
 local rewards={
@@ -81,16 +97,10 @@ function module:CloseReport()
 	if report then pcall(report.Close,report) report=nil end
 end
 function module:MissionComplete(this,button)
-	GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 	missions=G.GetCompleteMissions()
 	if (missions and #missions > 0) then
+		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		report=self:GenerateMissionCompleteList("Missions' results")
-		--report:SetPoint("TOPLEFT",GMFMissions.CompleteDialog.BorderFrame)
-		--report:SetPoint("BOTTOMRIGHT",GMFMissions.CompleteDialog.BorderFrame)
-		report:SetParent(GMF)
-		report:SetPoint("TOP",GMF)
-		report:SetPoint("BOTTOM",GMF)
-		report:SetWidth(500)
 		wipe(rewards.followerBase)
 		wipe(rewards.followerXP)
 		wipe(rewards.currencies)
@@ -182,7 +192,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 				currentMission.state=0
 				currentMission.goldMultiplier=currentMission.goldMultiplier or 1
 				currentMission.xp=select(2,G.GetMissionInfo(currentMission.missionID))
-				report:AddMissionButton(currentMission,currentMission.successChance)
+				report:AddMissionButton(currentMission,addon:GetParty(currentMission.missionID),currentMission.successChance)
 			end
 			if (step==0) then
 				--@alpha@

@@ -107,7 +107,7 @@ function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
 end
 function addon:ITEM_PUSH(event,bag,icon)
 	--@debug@
-	print(event,bag,icon)
+	self:print(event,bag,icon)
 	--@end-debug@
 end
 function addon:CheckDateReset()
@@ -132,7 +132,7 @@ function addon:CheckDateReset()
 	if (reset<3600*3) then
 		today=yesterday
 	end
-	if self.db.realm.lastday<today then self:Print("Daily reset due to day changed") addon:CleanFarms() end
+	if self.db.realm.lastday<today then self:Print("Daily reset") addon:CleanFarms() end
 	self.db.realm.lastday=today
 end
 function addon:CheckDailyReset()
@@ -141,17 +141,28 @@ function addon:CheckDailyReset()
 		return
 	end
 	if lastreset < GetQuestResetTime() then
+	--@debug@
+		self:Print("Time reset")
+	--@end-debug@
+
 		lastreset =GetQuestResetTime()
 		self:CleanFarms()
 	end
 
 end
 function addon:CleanFarms()
-	for p,j in pairs(self.db.realm.farms) do
-		for s,_ in pairs(j) do
-			j[s]=false
+--@debug@
+	self:Popup(L["Are you oaky if I reset daily timer?"].. " " .. self.db.realm.lastday .. " " .. today,
+		function()
+--@end-debug@
+		for p,j in pairs(self.db.realm.farms) do
+			for s,_ in pairs(j) do
+				j[s]=false
+			end
 		end
-	end
+--@debug@
+	end)
+--@end-debug@
 end
 function addon:CountMissing()
 	local tot=0

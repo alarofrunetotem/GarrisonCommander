@@ -24,7 +24,7 @@ end
 local function GMCList()
 	local Type="GCMCList"
 	local Version=1
-	local m={} --#GCMList
+	local m={} --#GMCList
 	function m:ScrollDown()
 		local obj=self.scroll
 		if (#self.missions >1 and obj.scrollbar and obj.scrollbar:IsShown()) then
@@ -50,11 +50,11 @@ local function GMCList()
 		b:SetCallback("OnClick",action)
 		obj:AddChild(b)
 	end
-	function m:AddMissionButton(mission,perc)
+	function m:AddMissionButton(mission,party,perc)
 		if not self.missions[mission.missionID] then
 			local obj=self.scroll
 			local b=AceGUI:Create("GMCSlimMissionButton")
-			b:SetMission(mission,perc)
+			b:SetMission(mission,party,perc)
 			b:SetScale(0.7)
 			b:SetFullWidth(true)
 			self.missions[mission.missionID]=b
@@ -140,6 +140,7 @@ local function GMCList()
 			self:AddIconText(itemtexture,itemlink,qt)
 		end
 	end
+	---@function [parent=#GMCList]
 	local function Constructor()
 		local widget=AceGUI:Create("GMCGUIContainer")
 		widget:SetLayout("Fill")
@@ -174,7 +175,7 @@ local function GMCGUIContainer()
 	end
 	---@function [parent=#GMCGUIContainer]
 	local function Constructor()
-		local frame=CreateFrame("Frame",nil,nil,"GarrisonUITemplate")
+		local frame=CreateFrame("Frame",Type..(GetTime()*1000),nil,"GarrisonUITemplate")
 		for _,f in pairs({frame:GetRegions()}) do
 			if (f:GetObjectType()=="Texture" and f:GetAtlas()=="Garr_WoodFrameCorner") then f:Hide() end
 		end
@@ -292,134 +293,133 @@ local function GMCLayer()
 end
 
 local function GMCMissionButton()
-	do
-		local Type1="GMCMissionButton"
-		local Type2="GMCSlimMissionButton"
-		local Version=1
-		local unique=0
-		local m={} --#GMCMissionButton
-		function m:OnAcquire()
-			local frame=self.frame
-			frame.info=nil
-			frame:SetHeight(self.type==Type1 and 80 or 80)
-			frame:SetAlpha(1)
-			frame:Enable()
-			for i=1,#self.scripts do
-				frame:SetScript(self.scripts[i],nil)
-			end
-			for i=1,#frame.Rewards do
-				frame.Rewards[i].Icon:SetDesaturated(false)
-			end
-			wipe(self.scripts)
-			return self.frame:SetScale(1.0)
+	local Type1="GMCMissionButton"
+	local Type2="GMCSlimMissionButton"
+	local Version=1
+	local unique=0
+	local m={} --#GMCMissionButton
+	function m:OnAcquire()
+		local frame=self.frame
+		print("Acquired button ",frame:GetName())
+		frame.info=nil
+		frame:SetHeight(self.type==Type1 and 80 or 80)
+		frame:SetAlpha(1)
+		frame:SetScale(1.0)
+		frame:Enable()
+		for i=1,#self.scripts do
+			frame:SetScript(self.scripts[i],nil)
 		end
-		function m:Show()
-			return self.frame:Show()
+		for i=1,#frame.Rewards do
+			frame.Rewards[i].Icon:SetDesaturated(false)
 		end
-		function m:SetHeight(h)
-			return self.frame:SetHeight(h)
-		end
-		function m:Hide()
-			self.frame:SetHeight(1)
-			self.frame:SetAlpha(0)
-			return self.frame:Disable()
-		end
-		function m:SetScript(name,method)
-			tinsert(self.scripts,name)
-			return self.frame:SetScript(name,method)
-		end
-		function m:SetScale(s)
-			return self.frame:SetScale(s)
-		end
-		function m:SetMission(mission,perc)
-			self.frame.info=mission
-			self.frame.fromFollowerPage=true
-			self.frame:EnableMouse(true)
-			self.frame.party=addon:GetParty(mission.missionID)
-			if self.type==Type1 then
-				addon:DrawSingleButton(false,self.frame,false,false)
-				self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
-				self.frame:SetScript("OnLeave",ns.OnLeave)
-			else
-				addon:DrawSingleSlimButton(false,self.frame,false,false)
-				self.frame:SetScript("OnEnter",nil)
-				self.frame:SetScript("OnLeave",nil)
-			end
-			if self.type==Type2 then
-				self.frame.Percent:SetFormattedText("%d%%",perc)
-				self.frame.Percent:SetTextColor(addon:GetDifficultyColors(perc))
-				_G.AX=self.frame
-			end
-		end
-
-		local function Constructor()
-			unique=unique+1
-			local frame=CreateFrame("Button",nil,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
-			frame.Title:SetFontObject("QuestFont_Shadow_Small")
-			frame.Summary:SetFontObject("QuestFont_Shadow_Small")
-			frame:SetScript("OnEnter",nil)
-			frame:SetScript("OnLeave",nil)
-			frame:SetScript("OnClick",function(self,button) return self.obj:Fire("OnClick",self,button) end)
-			frame.LocBG:SetPoint("LEFT")
-			frame.MissionType:SetPoint("TOPLEFT",5,-2)
-			--[[
-			frame.members={}
-			for i=1,3 do
-				local f=CreateFrame("Button",nil,frame,"GarrisonCommanderMissionPageFollowerTemplateSmall" )
-				frame.members[i]=f
-				f:SetPoint("BOTTOMRIGHT",-65 -65 *i,5)
-				f:SetScale(0.8)
-			end
-			--]]
-			local widget={}
-			setmetatable(widget,{__index=frame})
-			widget.frame=frame
-			widget.scripts={}
-			frame.obj=widget
-			for k,v in pairs(m) do widget[k]=v end
-			return widget
-		end
-		---@function [parent=#GMCMissionButton]
-		local function Constructor1()
-			local widget=Constructor()
-			widget.type=Type1
-			return AceGUI:RegisterAsWidget(widget)
-		end
-		---@function [parent=#GMCMissionButton]
-		local function Constructor2()
-			local widget=Constructor()
-			local frame=widget.frame
-			widget.type=Type2
-			local indicators=CreateFrame("Frame",nil,frame,"GarrisonCommanderIndicators")
-			indicators.Percent:SetJustifyH("LEFT")
-			indicators.Percent:SetJustifyV("CENTER")
-			indicators:SetPoint("LEFT",70,0)
-			indicators.Age:Hide()
-			local spinner=CreateFrame("Frame",nil,frame,"LoadingSpinnerTemplate")
-			frame.Spinner=spinner
-			frame.Indicators=indicators
-			frame.Percent=indicators.Percent
-			frame.Failure=frame:CreateFontString()
-			frame.Success=frame:CreateFontString()
-			frame.Failure:SetFontObject("GameFontRedLarge")
-			frame.Success:SetFontObject("GameFontGreenLarge")
-			frame.Failure:SetText(FAILED)
-			frame.Success:SetText(SUCCESS)
-			frame.Failure:Hide()
-			frame.Success:Hide()
-			frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,0)
-			frame.Success:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
-			frame.Failure:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
-			frame.Spinner:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,-2)
-
-			--widget.frame.MissionType:Hide()
-			--widget.frame.IconBG:Hide()
-			return AceGUI:RegisterAsWidget(widget)
-		end
-		AceGUI:RegisterWidgetType(Type1,Constructor1,Version)
-		AceGUI:RegisterWidgetType(Type2,Constructor2,Version)
-
+		wipe(self.scripts)
+		return
 	end
+	function m:Show()
+		return self.frame:Show()
+	end
+	function m:SetHeight(h)
+		return self.frame:SetHeight(h)
+	end
+	function m:Hide()
+		self.frame:SetHeight(1)
+		self.frame:SetAlpha(0)
+		return self.frame:Disable()
+	end
+	function m:SetScript(name,method)
+		tinsert(self.scripts,name)
+		return self.frame:SetScript(name,method)
+	end
+	function m:SetScale(s)
+		return self.frame:SetScale(s)
+	end
+	function m:SetMission(mission,party,perc)
+		self.frame.info=mission
+		self.frame.fromFollowerPage=true
+		self.frame:EnableMouse(true)
+		self.frame.party=party
+		if self.type==Type1 then
+			addon:DrawSingleButton(false,self.frame,false,false)
+			self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
+			self.frame:SetScript("OnLeave",ns.OnLeave)
+		else
+			addon:DrawSingleSlimButton(false,self.frame,false,false)
+			self.frame:SetScript("OnEnter",nil)
+			self.frame:SetScript("OnLeave",nil)
+		end
+		if self.type==Type2 then
+			self.frame.Percent:SetFormattedText("%d%%",perc or party.perc)
+			self.frame.Percent:SetTextColor(addon:GetDifficultyColors(perc or party.perc))
+		end
+	end
+
+	local function Constructor(type)
+		unique=unique+1
+		local frame=CreateFrame("Button",type..unique,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
+		print("Building button ",frame:GetName())
+		frame.Title:SetFontObject("QuestFont_Shadow_Small")
+		frame.Summary:SetFontObject("QuestFont_Shadow_Small")
+		frame:SetScript("OnEnter",nil)
+		frame:SetScript("OnLeave",nil)
+		frame:SetScript("OnClick",function(self,button) return self.obj:Fire("OnClick",self,button) end)
+		frame.LocBG:SetPoint("LEFT")
+		frame.MissionType:SetPoint("TOPLEFT",5,-2)
+		--[[
+		frame.members={}
+		for i=1,3 do
+			local f=CreateFrame("Button",nil,frame,"GarrisonCommanderMissionPageFollowerTemplateSmall" )
+			frame.members[i]=f
+			f:SetPoint("BOTTOMRIGHT",-65 -65 *i,5)
+			f:SetScale(0.8)
+		end
+		--]]
+		local widget={}
+		setmetatable(widget,{__index=frame})
+		widget.frame=frame
+		widget.scripts={}
+		frame.obj=widget
+		for k,v in pairs(m) do widget[k]=v end
+		return widget
+	end
+	---@function [parent=#GMCMissionButton]
+	local function Constructor1()
+		local widget=Constructor(Type1)
+		widget.type=Type1
+		return AceGUI:RegisterAsWidget(widget)
+	end
+	---@function [parent=#GMCMissionButton]
+	local function Constructor2()
+		local widget=Constructor(Type2)
+		local frame=widget.frame
+		widget.type=Type2
+		local indicators=CreateFrame("Frame",nil,frame,"GarrisonCommanderIndicators")
+		indicators.Percent:SetJustifyH("LEFT")
+		indicators.Percent:SetJustifyV("CENTER")
+		indicators:SetPoint("LEFT",70,0)
+		indicators.Age:Hide()
+		local spinner=CreateFrame("Frame",nil,frame,"LoadingSpinnerTemplate")
+		frame.Spinner=spinner
+		frame.Indicators=indicators
+		frame.Percent=indicators.Percent
+		frame.Failure=frame:CreateFontString()
+		frame.Success=frame:CreateFontString()
+		frame.Failure:SetFontObject("GameFontRedLarge")
+		frame.Success:SetFontObject("GameFontGreenLarge")
+		frame.Failure:SetText(FAILED)
+		frame.Success:SetText(SUCCESS)
+		frame.Failure:Hide()
+		frame.Success:Hide()
+		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,0)
+		frame.Success:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
+		frame.Failure:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,10)
+		frame.Spinner:SetPoint("BOTTOMLEFT",frame.Indicators,"BOTTOMRIGHT",0,-2)
+
+		--widget.frame.MissionType:Hide()
+		--widget.frame.IconBG:Hide()
+		return AceGUI:RegisterAsWidget(widget)
+	end
+	AceGUI:RegisterWidgetType(Type1,Constructor1,Version)
+	AceGUI:RegisterWidgetType(Type2,Constructor2,Version)
 end
 function module:OnInitialized()
 	print("Module widget called")

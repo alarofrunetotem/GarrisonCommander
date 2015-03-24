@@ -537,12 +537,12 @@ local addPriorityRule,prioRefresh,removePriorityRule,prioMenu,prioTitles,prioChe
 do
 -- 1 = item, 2 = folitem, 3 = exp, 4 = money, 5 = resource
 	prioTitles={
-		itemLevel="Equipment",
-		followerUpgrade="Followr Upgrade",
-		xp="Xp gain",
-		gold="Gold Reward",
-		resources="Resource Rewards",
-		generic="Other Rewards"
+		itemLevel=L["Equipment"],
+		followerUpgrade=L["Follower Upgrade"],
+		xp=L["Xp gain"],
+		gold=L["Gold Reward"],
+		resources=L["Resource Rewards"],
+		generic=L["Other Rewards"]
 	}
 	prioVoices=0
 	for _ in pairs(prioTitles) do prioVoices=prioVoices+1 end
