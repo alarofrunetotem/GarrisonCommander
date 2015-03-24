@@ -118,7 +118,9 @@ function module:MissionComplete(this,button)
 			local _
 			_,_,m.isMissionTimeImproved,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
 		end
+--@debug@
 		self:Dump("Completed missions",missions)
+--@end-debug@
 		report:SetUserData('missions',missions)
 		report:SetUserData('current',1)
 		self:Events(true)

@@ -106,14 +106,16 @@ function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
 	end
 end
 function addon:ITEM_PUSH(event,bag,icon)
-	--@debug@
+--@debug@
 	self:print(event,bag,icon)
-	--@end-debug@
+--@end-debug@
 end
 function addon:CheckDateReset()
 	local reset=GetQuestResetTime()
 	local weekday, month, day, year = CalendarGetDate()
+--@debug@
 	self:Print("Calendar",weekday,month,day,year)
+--@end-debug@
 	if (day <1 or reset<1) then
 		self:ScheduleTimer("CheckDateReset",1)
 		return day,reset
