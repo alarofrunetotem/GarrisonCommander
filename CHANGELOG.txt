@@ -1,5 +1,5 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
-* 2.4.2
+* 2.4.5
 Fix: Using a full upgrade token on follower was warning about lost points
 Fix: Possible soloution for a couple of very rare lua errors
 Feature: Clicking on data broker opens missions report (same as clicking on minimap icon)
