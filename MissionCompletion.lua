@@ -42,7 +42,7 @@ end
 function addon.ShowRewards()
 	module:GenerateMissionCompleteList("Test")
 end
---@end-debu@
+--@end-debug@
 local missions={}
 local states={}
 local rewards={
