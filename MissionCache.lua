@@ -58,6 +58,12 @@ function addon:GetMissionData(missionID,key,default)
 			mission.improvedDurationSeconds=mission.isMissionTimeImproved and mission.improvedDurationSeconds/2 or mission.improvedDurationSeconds
 		end
 	end
+--@debug@
+	if not mission then
+		self:Print("Could not find info for mission",missionID,G.GetMissionName(missionID))
+	end
+--@end.debug@
+
 	if (key==nil) then
 		return mission
 	end
