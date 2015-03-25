@@ -128,6 +128,9 @@ function module:MissionComplete(this,button)
 	end
 end
 function module:GetMission(missionID)
+	if not report then
+		return
+	end
 	local missions=report:GetUserData('missions')
 	if missions then
 		for i=1,#missions do
@@ -258,7 +261,9 @@ function module:MissionsPrintResults(success)
 --@debug@
 	--self:Dump("Ended Mission",rewards)
 --@end-debug@
+	local reported
 	for k,v in pairs(rewards.currencies) do
+		reported=true
 		if k == 0 then
 			-- Money reward
 			report:AddIconText(v.icon,GetMoneyString(v.qt))
@@ -280,10 +285,15 @@ function module:MissionsPrintResults(success)
 		end
 	end
 	for itemid,qt in pairs(items) do
+		reported=true
 		report:AddItem(itemid,qt)
 	end
 	del(items)
 	for k,v in pairs(rewards.followerXP) do
+		reported=true
 		report:AddFollower(k,v,self:GetFollowerData(k,'qLevel') > rewards.followerBase[k])
+	end
+	if (not reported) then
+		report:AddRow(L["Nothing to report"])
 	end
 end
