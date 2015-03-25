@@ -49,7 +49,7 @@
 					<TexCoords left="0" right="0.5" top="0.5" bottom="1"/>
 				</Texture>
 				<FontString parentKey="Signature" inherits="QuestTitleFontBlackShadow" justifyH="RIGHT" justifyV="TOP" text="Garrison Commander" >
-					<Size x="220" y="80"/>
+					<Size x="300" y="80"/>
 					<Anchors>
 						<Anchor point="TOPRIGHT"  x="-30" y="-2"/>
 					</Anchors>
