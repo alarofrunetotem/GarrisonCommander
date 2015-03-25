@@ -159,6 +159,9 @@ function addon:ShowUpgradeButtons(force)
 				if level > 600 and level <= currentlevel then
 					break -- Pointless item for this toon
 				end
+				if level<600 and level + currentlevel > GARRISON_FOLLOWER_MAX_ITEM_LEVEL then
+					break
+				end
 				used=used+1
 				if (tipo:sub(1,1)=="a") then
 					A:SetPoint("TOPLEFT",axpos,aypos)
