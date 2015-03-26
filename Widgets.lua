@@ -59,6 +59,8 @@ local function GMCList()
 			b:SetFullWidth(true)
 			self.missions[mission.missionID]=b
 			obj:AddChild(b)
+			b.frame.Success:Hide()
+			b.frame.Failure:Hide()
 			b.frame.Spinner:Show()
 			b.frame.Spinner.Anim:Play()
 		end
