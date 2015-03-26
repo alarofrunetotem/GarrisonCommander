@@ -203,11 +203,11 @@ end
 function addon:DelayedInit()
 	self:CheckDateReset()
 	self:ZONE_CHANGED_NEW_AREA()
-	self:ScheduleRepeatingTimer("ldbUpdate",2)
+	self:ScheduleRepeatingTimer("ldbUpdate",1)
 	farmobj:Update()
 end
 function addon:OnEnabled()
-	self:ScheduleTimer("DelayedInit",2)
+	self:ScheduleTimer("DelayedInit",5)
 end
 dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Missions", {
 	type = "data source",
