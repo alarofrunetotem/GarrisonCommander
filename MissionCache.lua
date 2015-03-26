@@ -62,7 +62,7 @@ function addon:GetMissionData(missionID,key,default)
 	if not mission then
 		self:Print("Could not find info for mission",missionID,G.GetMissionName(missionID))
 	end
---@end.debug@
+--@end-debug@
 
 	if (key==nil) then
 		return mission
