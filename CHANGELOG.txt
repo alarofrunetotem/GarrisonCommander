@@ -6,3 +6,4 @@ Feature: Clicking on data broker opens missions report (same as clicking on mini
 Feature: In follower rectuiting page, information about which follower have traits and counter are show in dropdown
 Feature: Broker now reports status of producing lot.
 Feature: In available mission we now show the improved mission duration
+Feature: meaningless enhancements are no loger shown in follower page
