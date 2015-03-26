@@ -35,7 +35,7 @@ local NEXT=NEXT
 local NONE=C(NONE,"Red")
 local DONE=C(DONE,"Green")
 local NEED=C(NEED,"Red")
-local dbversion=2
+local dbversion=1
 
 local spellids={
 	[158754]='herb',
@@ -69,9 +69,7 @@ function addon:ldbCleanup()
 	end
 end
 function addon:ldbUpdate()
-	self:CheckDailyReset()
 	dataobj:Update()
-	farmobj:Update()
 end
 function addon:GARRISON_MISSION_STARTED(event,missionID)
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
@@ -98,8 +96,9 @@ function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
 	if (unit=='player') then
 		if spellids[spellID] then
 			name=names[spellids[spellID]]
-			if not self.db.realm.farms[ns.me][name] then
-				self.db.realm.farms[ns.me][name]=true
+			if not self.db.realm.farms[ns.me][name] or  today > self.db.realm.farms[ns.me][name] then
+				self:CheckDateReset()
+				self.db.realm.farms[ns.me][name]=today
 				farmobj:Update()
 			end
 		end
@@ -121,50 +120,21 @@ function addon:CheckDateReset()
 		return day,reset
 	end
 
-	today=format("%04d%02d%02d",year,month,day)
+	today=year*10000+month*100+day
 	if month==1 and day==1 then
 		local m, y, numdays, firstday = CalendarGetAbsMonth( 12, year-1 )
-		yesterday=format("%04d%02d%02d",y,m,numdays)
+		yesterday=y*10000+m*100+numdays
 	elseif day==1 then
 		local m, y, numdays, firstday = CalendarGetAbsMonth( month-1, year)
-		yesterday=format("%04d%02d%02d",y,m,numdays)
+		yesterday=y*10000+m*100+numdays
 	else
-		yesterday=format("%04d%02d%02d",year,month,day-1)
+		yesterday=year*10000+month*100+day
 	end
 	if (reset<3600*3) then
 		today=yesterday
 	end
-	if self.db.realm.lastday<today then self:Print("Daily reset") addon:CleanFarms() end
-	self.db.realm.lastday=today
-end
-function addon:CheckDailyReset()
-	if lastreset < 0 then
-		lastreset= GetQuestResetTime()
-		return
-	end
-	if lastreset < GetQuestResetTime() then
-	--@debug@
-		self:Print("Time reset")
-	--@end-debug@
+	self:ScheduleTimer("CheckDateReset",60)
 
-		lastreset =GetQuestResetTime()
-		self:CleanFarms()
-	end
-
-end
-function addon:CleanFarms()
---@debug@
-	self:Popup(L["Are you oaky if I reset daily timer?"].. " " .. self.db.realm.lastday .. " " .. today,
-		function()
---@end-debug@
-		for p,j in pairs(self.db.realm.farms) do
-			for s,_ in pairs(j) do
-				j[s]=false
-			end
-		end
---@debug@
-	end)
---@end-debug@
 end
 function addon:CountMissing()
 	local tot=0
@@ -172,14 +142,14 @@ function addon:CountMissing()
 	for p,j in pairs(self.db.realm.farms) do
 		for s,_ in pairs(j) do
 			tot=tot+1
-			if not j[s] then missing=missing+1 end
+			if not j[s] or j[s] < today then missing=missing+1 end
 		end
 	end
 	return missing,tot
 end
 function addon:DiscoverFarms()
 	local shipmentIndex = 1;
-	local buildings = C_Garrison.GetBuildings();
+	local buildings = G.GetBuildings();
 	for i = 1, #buildings do
 		local buildingID = buildings[i].buildingID;
 		if ( buildingID) then
@@ -187,24 +157,26 @@ function addon:DiscoverFarms()
 			if (tContains(buildids.mine,buildingID)) then
 				names.mine=name
 				if not self.db.realm.farms[ns.me][name] then
-					self.db.realm.farms[ns.me][name]=false
+					self.db.realm.farms[ns.me][name]=0
 				end
 			end
 			if (tContains(buildids.herb,buildingID)) then
 				names.herb=name
 				if not self.db.realm.farms[ns.me][name] then
-					self.db.realm.farms[ns.me][name]=false
+					self.db.realm.farms[ns.me][name]=0
 				end
 			end
 
 		end
 	end
+	farmobj:Update()
 end
 function addon:SetDbDefaults(default)
 	default.realm={
 		missions={},
-		farms={["**"]={}},
-		lastday="0",
+		farms={["*"]={
+				["*"]=false
+			}},
 		dbversion=1
 	}
 end
@@ -217,12 +189,25 @@ function addon:OnInitialized()
 		self.db:ResetDB()
 		self.db.realm.dbversion=dbversion
 	end
+	-- Compatibility with alpha
+	if self.db.realm.lastday then
+		for k,v in pairs(addon.db.realm.farms) do
+			for s,d in pairs(v) do
+				v[s]=self.db.realm.lastday
+			end
+		end
+		self.db.realm.lastday=nil
+	end
+
+end
+function addon:DelayedInit()
+	self:CheckDateReset()
+	self:ZONE_CHANGED_NEW_AREA()
+	self:ScheduleRepeatingTimer("ldbUpdate",2)
+	farmobj:Update()
 end
 function addon:OnEnabled()
-	lastreset=GetQuestResetTime()
-	self:ScheduleTimer("CheckDateReset",2)
-	self:ScheduleRepeatingTimer("ldbUpdate",2)
-	self:ScheduleTimer("ZONE_CHANGED_NEW_AREA",1)
+	self:ScheduleTimer("DelayedInit",2)
 end
 dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Missions", {
 	type = "data source",
@@ -262,7 +247,7 @@ function farmobj:OnTooltipShow()
 			self:AddLine(k,C.Orange())
 		end
 		for s,d in pairs(v) do
-			self:AddDoubleLine(s,d and DONE or NEED)
+			self:AddDoubleLine(s,(d and d==today) and DONE or NEED)
 		end
 	end
 	self:AddLine("Manually mark my tasks:",C:Cyan())
