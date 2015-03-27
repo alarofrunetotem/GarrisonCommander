@@ -96,7 +96,7 @@ function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
 	if (unit=='player') then
 		if spellids[spellID] then
 			name=names[spellids[spellID]]
-			if not self.db.realm.farms[ns.me][name] or  today > self.db.realm.farms[ns.me][name] then
+			if not self.db.realm.farms[ns.me][name] or  today > (tonumber(self.db.realm.farms[ns.me][name]) or 0) then
 				self:CheckDateReset()
 				self.db.realm.farms[ns.me][name]=today
 				farmobj:Update()
@@ -193,7 +193,7 @@ function addon:OnInitialized()
 	if self.db.realm.lastday then
 		for k,v in pairs(addon.db.realm.farms) do
 			for s,d in pairs(v) do
-				v[s]=self.db.realm.lastday
+				v[s]=tonumber(self.db.realm.lastday)
 			end
 		end
 		self.db.realm.lastday=nil
