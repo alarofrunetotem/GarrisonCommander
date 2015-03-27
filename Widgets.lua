@@ -428,7 +428,6 @@ local function GMCMissionButton()
 	AceGUI:RegisterWidgetType(Type2,Constructor2,Version)
 end
 function module:OnInitialized()
-	print("Module widget called")
 	GMCGUIContainer()
 	GMCLayer()
 	GMCMissionButton()
