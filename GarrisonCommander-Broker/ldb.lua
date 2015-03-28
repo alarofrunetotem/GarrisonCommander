@@ -5,13 +5,18 @@ if (not LibStub:GetLibrary("LibDataBroker-1.1",true)) then
 	--@end-debug@
 	return
 end
+local pp=print
 if (LibDebug) then LibDebug() end
+--@debug@
+LoadAddOn("Blizzard_DebugTools")
+--@end-debug@
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
 --local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
-local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
+local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0","AceHook-3.0") --#addon
 local C=addon:GetColorTable()
 local dataobj --#Missions
 local farmobj --#Farms
+local workobj --#Works
 local SecondsToTime=SecondsToTime
 local type=type
 local strsplit=strsplit
@@ -35,6 +40,19 @@ local NEXT=NEXT
 local NONE=C(NONE,"Red")
 local DONE=C(DONE,"Green")
 local NEED=C(NEED,"Red")
+
+local CAPACITANCE_SHIPMENT_COUNT=CAPACITANCE_SHIPMENT_COUNT -- "%d of %d Work Orders Available";
+local CAPACITANCE_SHIPMENT_READY=CAPACITANCE_SHIPMENT_READY -- "Work Order ready for pickup!";
+local CAPACITANCE_START_WORK_ORDER=CAPACITANCE_START_WORK_ORDER -- "Start Work Order";
+local CAPACITANCE_WORK_ORDERS=CAPACITANCE_WORK_ORDERS -- "Work Orders";
+local GARRISON_FOLLOWER_XP_ADDED_SHIPMENT=GARRISON_FOLLOWER_XP_ADDED_SHIPMENT -- "%s has earned %d XP for completing %d |4Work Order:Work Orders;.";
+local GARRISON_LANDING_SHIPMENT_LABEL=GARRISON_LANDING_SHIPMENT_LABEL -- "Work Order";
+local GARRISON_LANDING_SHIPMENT_STARTED_ALERT=GARRISON_LANDING_SHIPMENT_STARTED_ALERT -- "Work Order Started";
+local GARRISON_SHIPMENT_IN_PROGRESS=GARRISON_SHIPMENT_IN_PROGRESS -- "Work Order In-Progress";
+local GARRISON_SHIPMENT_READY=GARRISON_SHIPMENT_READY -- "Work Order Ready";
+local QUEUED_STATUS_WAITING=QUEUED_STATUS_WAITING -- "Waiting"
+local CAPACITANCE_ALL_COMPLETE=format(CAPACITANCE_ALL_COMPLETE,'') -- "All work orders will be completed in: %s";
+local EMPTY=EMPTY -- "Empty"
 local dbversion=1
 
 local spellids={
@@ -110,11 +128,9 @@ function addon:ITEM_PUSH(event,bag,icon)
 --@end-debug@
 end
 function addon:CheckDateReset()
+	local oldToday=today
 	local reset=GetQuestResetTime()
 	local weekday, month, day, year = CalendarGetDate()
---@debug@
-	self:Print("Calendar",weekday,month,day,year)
---@end-debug@
 	if (day <1 or reset<1) then
 		self:ScheduleTimer("CheckDateReset",1)
 		return day,reset
@@ -134,7 +150,11 @@ function addon:CheckDateReset()
 		today=yesterday
 	end
 	self:ScheduleTimer("CheckDateReset",60)
-
+--@debug@
+	if (today~=oldToday) then
+		self:Popup(format("o:%s t:%s r:%s [w:%s m:%s d:%s y:%s] ",oldToday,today,reset,CalendarGetDate()))
+	end
+--@end-debug@
 end
 function addon:CountMissing()
 	local tot=0
@@ -147,13 +167,43 @@ function addon:CountMissing()
 	end
 	return missing,tot
 end
+function addon:CountEmpty()
+	local tot=0
+	local missing=0
+	local expire=time()+3600*24
+	for p,j in pairs(self.db.realm.orders) do
+		for s,_ in pairs(j) do
+			tot=tot+1
+			if not j[s] or j[s] < expire then missing=missing+1 end
+		end
+	end
+	return missing,tot
+end
+function addon:WorkUpdate(event,success,shipments_running,shipmentCapacity,plotID)
+
+	local buildings = G.GetBuildings();
+	for i = 1, #buildings do
+		if plotID == buildings[i].plotID then
+			local buildingID,name=G.GetBuildingInfo(buildings[i].buildingID)
+			local numPending = G.GetNumPendingShipments()
+			if not numPending or numPending==0 then
+				if not shipments_running or shipments_running==0 then
+					self.db.realm.orders[ns.me][name]=0
+				end
+			else
+				local endQueue=select(6,G.GetPendingShipmentInfo(numPending))
+				self.db.realm.orders[ns.me][name]=time()+endQueue
+				table.sort(self.db.realm.orders[ns.me])
+			end
+		end
+	end
+end
 function addon:DiscoverFarms()
-	local shipmentIndex = 1;
 	local buildings = G.GetBuildings();
 	for i = 1, #buildings do
 		local buildingID = buildings[i].buildingID;
 		if ( buildingID) then
-			local name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemIcon, itemQuality, itemID = C_Garrison.GetLandingPageShipmentInfo(buildingID);
+			local name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemIcon, itemQuality, itemID = G.GetLandingPageShipmentInfo(buildingID);
 			if (tContains(buildids.mine,buildingID)) then
 				names.mine=name
 				if not self.db.realm.farms[ns.me][name] then
@@ -166,7 +216,17 @@ function addon:DiscoverFarms()
 					self.db.realm.farms[ns.me][name]=0
 				end
 			end
-
+			if (shipmentCapacity ) then
+				if (creationTime) then
+					local numPending=shipmentsTotal-shipmentsReady
+					local endQueue=duration*numPending-(time()-creationTime)
+					if not numPending or numPending==0 then
+						self.db.realm.orders[ns.me][name]=0
+					else
+						self.db.realm.orders[ns.me][name]=time()+endQueue
+					end
+				end
+			end
 		end
 	end
 	farmobj:Update()
@@ -177,14 +237,13 @@ function addon:SetDbDefaults(default)
 		farms={["*"]={
 				["*"]=false
 			}},
+		orders={["*"]={
+				["*"]=false
+			}},
 		dbversion=1
 	}
 end
 function addon:OnInitialized()
-	ns.me=GetUnitName("player",false)
-	self:RegisterEvent("GARRISON_MISSION_STARTED")
-	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
-	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	if dbversion>self.db.realm.dbversion then
 		self.db:ResetDB()
 		self.db.realm.dbversion=dbversion
@@ -193,47 +252,87 @@ function addon:OnInitialized()
 	if self.db.realm.lastday then
 		for k,v in pairs(addon.db.realm.farms) do
 			for s,d in pairs(v) do
-				v[s]=tonumber(self.db.realm.lastday)
+				v[s]=tonumber(self.db.realm.lastday) or 0
 			end
 		end
 		self.db.realm.lastday=nil
 	end
+	-- Extra sanity check for cases where a broken version messed up things
+	for k,v in pairs(addon.db.realm.farms) do
+		for s,d in pairs(v) do
+			v[s]=tonumber(v[s]) or 0
+		end
+	end
+
+	ns.me=GetUnitName("player",false)
+	self:RegisterEvent("GARRISON_MISSION_STARTED")
+	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
+	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	self:RegisterEvent("SHIPMENT_CRAFTER_INFO")
+	--self:RegisterEvent("SHIPMENT_CRAFTER_REAGENT_UPDATE",print)
+end
+function addon:SHIPMENT_CRAFTER_INFO(...)
+	self:WorkUpdate(...)
 
 end
 function addon:DelayedInit()
 	self:CheckDateReset()
+	self:WorkUpdate()
 	self:ZONE_CHANGED_NEW_AREA()
 	self:ScheduleRepeatingTimer("ldbUpdate",1)
 	farmobj:Update()
+	workobj:Update()
 end
 function addon:OnEnabled()
 	self:ScheduleTimer("DelayedInit",5)
 end
+function addon:Gradient(perc)
+	return self:ColorGradient(perc,1,0,0,1,1,0,0,1,0)
+end
+
+function addon:ColorGradient(perc, ...)
+	if perc >= 1 then
+		local r, g, b = select(select('#', ...) - 2, ...)
+		return r, g, b
+	elseif perc <= 0 then
+		local r, g, b = ...
+		return r, g, b
+	end
+	local num = select('#', ...) / 3
+	local segment, relperc = math.modf(perc*(num-1))
+	local r1, g1, b1, r2, g2, b2 = select((segment*3)+1, ...)
+	return r1 + (r2-r1)*relperc, g1 + (g2-g1)*relperc, b1 + (b2-b1)*relperc
+end
+function addon:ColorToString(r,g,b)
+	return format("%02X%02X%02X", 255*r, 255*g, 255*b)
+end
+
 dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Missions", {
 	type = "data source",
 	label = "GC Missions ",
-	text=NONE,
+	text=QUEUED_STATUS_WAITING,
 	category = "Interface",
 	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
 })
 farmobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Farms", {
 	type = "data source",
 	label = "GC Farms ",
-	text=L["Harvesting status"],
+	text=QUEUED_STATUS_WAITING,
+	category = "Interface",
+	icon = "Interface\\Icons\\Trade_Engineering"
+})
+workobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-" .. CAPACITANCE_WORK_ORDERS, {
+	type = "data source",
+	label = "GC " ..CAPACITANCE_WORK_ORDERS,
+	text=QUEUED_STATUS_WAITING,
 	category = "Interface",
 	icon = "Interface\\Icons\\Trade_Engineering"
 })
 function farmobj:Update()
 	local n,t=addon:CountMissing()
 	if (t>0) then
-		local c1=C.Green.c
-		local c2=C.Green.c
-		if n>t/2 then
-			c1=C.Red.c
-		elseif n>0 then
-			c1=C.Orange.c
-		end
-		farmobj.text=format("%s |cff%s%d|r/|cff%s%d|r",L["Harvest"],c1,t-n,c2,t)
+		local c=addon:ColorToString(addon:Gradient((t-n)/t))
+		farmobj.text=format("%s |cff%s%d|r/|cff%s%d|r",L["Harvest"],c,t-n,C.Green.c,t)
 	else
 		farmobj.text=NONE
 	end
@@ -284,7 +383,6 @@ function dataobj:OnEnter()
 	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
 	GameTooltip:ClearLines()
 	dataobj.OnTooltipShow(GameTooltip)
-
 	GameTooltip:Show()
 end
 
@@ -298,7 +396,46 @@ function farmobj:OnEnter()
 	farmobj.OnTooltipShow(GameTooltip)
 	GameTooltip:Show()
 end
+function workobj:OnEnter()
+	GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
+	GameTooltip:ClearLines()
+	workobj.OnTooltipShow(GameTooltip)
+	GameTooltip:Show()
+end
+function workobj:Update()
+	local n,t=addon:CountEmpty()
+	if (t>0) then
+		local c=addon:ColorToString(addon:Gradient((t-n)/t))
+		workobj.text=format("%s |cff%s%d|r/|cff%s%d|r",CAPACITANCE_WORK_ORDERS,c,t-n,C.Green.c,t)
+	else
+		workobj.text=NONE
+	end
+
+end
+function workobj:OnTooltipShow()
+	self:AddLine(CAPACITANCE_WORK_ORDERS)
+	for k,v in pairs(addon.db.realm.orders) do
+		if (k==ns.me) then
+			self:AddLine(k,C.Green())
+		else
+			self:AddLine(k,C.Orange())
+		end
+		for s,d in pairs(v) do
+			local delta=d-time()
+			if (delta >0) then
+				local hours=delta/(3600*48)
+				self:AddDoubleLine(s,SecondsToTime(delta),nil,nil,nil,addon:Gradient(hours))
+			else
+				self:AddDoubleLine(s,EMPTY,nil,nil,nil,C:Red())
+			end
+		end
+	end
+	self:AddLine(me,C.Silver())
+end
+
 farmobj.OnLeave=dataobj.OnLeave
+workobj.OnLeave=dataobj.OnLeave
 function farmobj:OnClick(button)
 	for k,v in pairs(addon.db.realm.farms) do
 		if (k==ns.me) then
@@ -339,8 +476,5 @@ function dataobj:Update()
 end
 
 --@debug@
-function addon:Dump()
-	DevTools_Dump(self.db.realm)
-end
 _G.GACB=addon
 --@end-debug@
