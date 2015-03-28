@@ -198,7 +198,6 @@ function addon:GetDifficultyColor(perc,usePurple)
 		return not usePurple and C.Silver or C.Fuchsia
 	end
 end
-if (LibDebug) then LibDebug() end
 ----- Local variables
 --
 -- Forces a table to countain other tables,
