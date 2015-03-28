@@ -9,7 +9,7 @@
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
-## OptionalDeps:
+## OptionalDeps: LibInit
 ## DefaultState: Enabled
 ## LoadOnDemand: 1
 ## LoadWith: Blizzard_GarrisonUI
