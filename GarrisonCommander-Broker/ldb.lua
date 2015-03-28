@@ -321,7 +321,7 @@ farmobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Farms", {
 	category = "Interface",
 	icon = "Interface\\Icons\\Trade_Engineering"
 })
-workobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-" .. CAPACITANCE_WORK_ORDERS, {
+workobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-WorkOrders", {
 	type = "data source",
 	label = "GC " ..CAPACITANCE_WORK_ORDERS,
 	text=QUEUED_STATUS_WAITING,
