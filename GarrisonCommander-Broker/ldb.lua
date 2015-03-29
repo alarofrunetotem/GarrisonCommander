@@ -144,7 +144,7 @@ function addon:CheckDateReset()
 		local m, y, numdays, firstday = CalendarGetAbsMonth( month-1, year)
 		yesterday=y*10000+m*100+numdays
 	else
-		yesterday=year*10000+month*100+day
+		yesterday=year*10000+month*100+day-1
 	end
 	if (reset<3600*3) then
 		today=yesterday
@@ -152,7 +152,7 @@ function addon:CheckDateReset()
 	self:ScheduleTimer("CheckDateReset",60)
 --@debug@
 	if (today~=oldToday) then
-		self:Popup(format("o:%s t:%s r:%s [w:%s m:%s d:%s y:%s] ",oldToday,today,reset,CalendarGetDate()))
+		self:Popup(format("o:%s y:%s t:%s r:%s [w:%s m:%s d:%s y:%s] ",oldToday,yesterday,today,reset,CalendarGetDate()))
 	end
 --@end-debug@
 end
