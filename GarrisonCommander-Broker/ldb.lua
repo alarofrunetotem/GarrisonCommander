@@ -52,6 +52,8 @@ local GARRISON_SHIPMENT_IN_PROGRESS=GARRISON_SHIPMENT_IN_PROGRESS -- "Work Order
 local GARRISON_SHIPMENT_READY=GARRISON_SHIPMENT_READY -- "Work Order Ready";
 local QUEUED_STATUS_WAITING=QUEUED_STATUS_WAITING -- "Waiting"
 local CAPACITANCE_ALL_COMPLETE=format(CAPACITANCE_ALL_COMPLETE,'') -- "All work orders will be completed in: %s";
+local  GARRISON_NUM_COMPLETED_MISSIONS=format(GARRISON_NUM_COMPLETED_MISSIONS,'999'):gsub('999','') -- "%d Completed |4Mission:Missions;";
+
 local EMPTY=EMPTY -- "Empty"
 local dbversion=1
 
@@ -270,6 +272,9 @@ function addon:OnInitialized()
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("SHIPMENT_CRAFTER_INFO")
 	--self:RegisterEvent("SHIPMENT_CRAFTER_REAGENT_UPDATE",print)
+	self:AddLabel(GARRISON_NUM_COMPLETED_MISSIONS)
+	self:AddToggle("OLDINT",false,L["Use old interface"],L["Uses the old, more intrusive interface"])
+	self:AddToggle("SHOWNEXT",false,L["Show next toon"],L["Show the next toon whicg will complete a mission"])
 end
 function addon:SHIPMENT_CRAFTER_INFO(...)
 	self:WorkUpdate(...)
@@ -309,17 +314,18 @@ end
 
 dataobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Missions", {
 	type = "data source",
-	label = "GC Missions ",
+	label = "GC "  .. GARRISON_NUM_COMPLETED_MISSIONS,
 	text=QUEUED_STATUS_WAITING,
 	category = "Interface",
 	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
 })
 farmobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Farms", {
 	type = "data source",
-	label = "GC Farms ",
+	label = "GC " .. "Harvesting",
 	text=QUEUED_STATUS_WAITING,
 	category = "Interface",
-	icon = "Interface\\Icons\\Trade_Engineering"
+	icon = "Interface\\Icons\\Inv_ore_gold_nugget"
+	--icon = "Interface\\Icons\\Trade_Engineering"
 })
 workobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-WorkOrders", {
 	type = "data source",
@@ -332,7 +338,7 @@ function farmobj:Update()
 	local n,t=addon:CountMissing()
 	if (t>0) then
 		local c=addon:ColorToString(addon:Gradient((t-n)/t))
-		farmobj.text=format("%s |cff%s%d|r/|cff%s%d|r",L["Harvest"],c,t-n,C.Green.c,t)
+		farmobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
 	else
 		farmobj.text=NONE
 	end
@@ -407,7 +413,7 @@ function workobj:Update()
 	local n,t=addon:CountEmpty()
 	if (t>0) then
 		local c=addon:ColorToString(addon:Gradient((t-n)/t))
-		workobj.text=format("%s |cff%s%d|r/|cff%s%d|r",CAPACITANCE_WORK_ORDERS,c,t-n,C.Green.c,t)
+		workobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
 	else
 		workobj.text=NONE
 	end
@@ -440,10 +446,15 @@ function farmobj:OnClick(button)
 	for k,v in pairs(addon.db.realm.farms) do
 		if (k==ns.me) then
 			for s,d in pairs(v) do
-				v[s]=button=="LeftButton"
+				if (button=="LeftButton") then
+					v[s]=today;
+				else
+					v[s]=today-1;
+				end
 			end
 		end
 	end
+	farmobj:Update()
 
 end
 
@@ -453,6 +464,33 @@ function dataobj:OnClick(button)
 	end
 end
 function dataobj:Update()
+	if addon:GetBoolean("OLDINT") then return self:OldUpdate() end
+	local now=time()
+	local n=0
+	local t=0
+	local prox=false
+	for i=1,#addon.db.realm.missions do
+		local tm,missionID,pc=strsplit('.',addon.db.realm.missions[i])
+		tm=tonumber(tm) or 0
+		t=t+1
+		if tm>now then
+			if not prox then
+				local duration=tm-now
+				local duration=duration < 60 and duration or math.floor(duration/60)*60
+				prox=format("|cff20ff20%s|r in %s",pc,SecondsToTime(duration))
+			end
+		else
+			n=n+1
+		end
+	end
+	local c=addon:ColorToString(addon:Gradient(n/t))
+	if (prox and addon:GetBoolean("SHOWNEXT")) then
+		self.text=format("|cff%s%d|r/|cff%s%d|r (%s)",c,n,C.Green.c,t,prox)
+	else
+		self.text=format("|cff%s%d|r/|cff%s%d|r",c,n,C.Green.c,t)
+	end
+end
+function dataobj:OldUpdate()
 	local now=time()
 	local completed=0
 	local ready=NONE
