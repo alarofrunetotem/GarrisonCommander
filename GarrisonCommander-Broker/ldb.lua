@@ -155,6 +155,9 @@ function addon:CheckDateReset()
 --@debug@
 	if (today~=oldToday) then
 		self:Popup(format("o:%s y:%s t:%s r:%s [w:%s m:%s d:%s y:%s] ",oldToday,yesterday,today,reset,CalendarGetDate()))
+		dataobj:Update()
+		farmobj:Update()
+		workobj:Update()
 	end
 --@end-debug@
 end

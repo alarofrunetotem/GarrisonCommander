@@ -1,6 +1,61 @@
 if true then return end
 --@do-not-package@
 local me, ns = ...
+if (me=="doc") then
+	local mt={
+		keys=setmetatable({},{__index=function(t,k) rawset(t,k,{}) return t[k] end }),
+		__metatable=true
+
+	}
+	function mt:__index(k)
+
+		if k=="n" then
+			return #mt.keys[self]
+		end
+		return rawget(self,k)
+	end
+	function mt:__len()
+		return #mt.keys[self]
+	end
+	function mt:__newindex(k,v)
+		local keys=mt.keys[self]
+		local pos=#keys+1
+		print("Inserting",k)
+		for i,x in ipairs(keys) do
+			if x>k then
+				pos=i
+				break;
+			end
+		end
+		table.insert(keys,pos,k)
+		print("Inserted",k,"at",pos)
+		rawset(self,k,v)
+	end
+	function a()
+				return function(unsorted,i)
+				i=i+1
+				local k=mt.keys[unsorted][i]
+				if k then return i,k end
+			end,self,0
+	end
+	function mt:__call()
+		do
+			local current=0
+			return function(unsorted,i)
+				current=current+1
+				local k=mt.keys[unsorted][current]
+				if k then return k,self[k] end
+			end,self,0
+		end
+end
+	local my=setmetatable({},mt)
+	my.pippo=3
+	my.pluto=4
+	my.andrea=2
+	my.zanzi=1
+	for k,v in my() do print(k,v) end
+	return
+end
 local addon=ns.addon --#addon
 local L=ns.L
 local D=ns.D
