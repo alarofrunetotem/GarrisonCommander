@@ -198,7 +198,6 @@ function addon:WorkUpdate(event,success,shipments_running,shipmentCapacity,plotI
 			else
 				local endQueue=select(6,G.GetPendingShipmentInfo(numPending))
 				self.db.realm.orders[ns.me][name]=time()+endQueue
-				table.sort(self.db.realm.orders[ns.me])
 			end
 		end
 	end
@@ -348,13 +347,13 @@ function farmobj:Update()
 end
 function farmobj:OnTooltipShow()
 	self:AddDoubleLine(L["Time to next reset"],SecondsToTime(GetQuestResetTime()))
-	for k,v in pairs(addon.db.realm.farms) do
+	for k,v in kpairs(addon.db.realm.farms) do
 		if (k==ns.me) then
 			self:AddLine(k,C.Green())
 		else
 			self:AddLine(k,C.Orange())
 		end
-		for s,d in pairs(v) do
+		for s,d in kpairs(v) do
 			self:AddDoubleLine(s,(d and d==today) and DONE or NEED)
 		end
 	end
@@ -424,13 +423,13 @@ function workobj:Update()
 end
 function workobj:OnTooltipShow()
 	self:AddLine(CAPACITANCE_WORK_ORDERS)
-	for k,v in pairs(addon.db.realm.orders) do
+	for k,v in kpairs(addon.db.realm.orders) do
 		if (k==ns.me) then
 			self:AddLine(k,C.Green())
 		else
 			self:AddLine(k,C.Orange())
 		end
-		for s,d in pairs(v) do
+		for s,d in kpairs(v) do
 			local delta=d-time()
 			if (delta >0) then
 				local hours=delta/(3600*48)
