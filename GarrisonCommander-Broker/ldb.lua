@@ -53,9 +53,12 @@ local GARRISON_SHIPMENT_READY=GARRISON_SHIPMENT_READY -- "Work Order Ready";
 local QUEUED_STATUS_WAITING=QUEUED_STATUS_WAITING -- "Waiting"
 local CAPACITANCE_ALL_COMPLETE=format(CAPACITANCE_ALL_COMPLETE,'') -- "All work orders will be completed in: %s";
 local  GARRISON_NUM_COMPLETED_MISSIONS=format(GARRISON_NUM_COMPLETED_MISSIONS,'999'):gsub('999','') -- "%d Completed |4Mission:Missions;";
-
+local KEY_BUTTON1="Shift " .. KEY_BUTTON1
+local KEY_BUTTON2="Shift " .. KEY_BUTTON2
 local EMPTY=EMPTY -- "Empty"
 local dbversion=1
+local frequency=5
+local ldbtimer=nil
 
 local spellids={
 	[158754]='herb',
@@ -277,6 +280,15 @@ function addon:OnInitialized()
 	self:AddLabel(GARRISON_NUM_COMPLETED_MISSIONS)
 	self:AddToggle("OLDINT",false,L["Use old interface"],L["Uses the old, more intrusive interface"])
 	self:AddToggle("SHOWNEXT",false,L["Show next toon"],L["Show the next toon whicg will complete a mission"])
+	self:AddSlider("FREQUENCY",5,1,60,L["Update frequency"])
+	frequency=self:GetNumber("FREQUENCY",5)
+end
+function addon:ApplyFREQUENCY(value)
+	frequency=value
+	if (ldbtimer) then
+		self:CancelTimer(ldbtimer)
+	end
+	ldbtimer=self:ScheduleRepeatingTimer("ldbUpdate",frequency)
 end
 function addon:SHIPMENT_CRAFTER_INFO(...)
 	self:WorkUpdate(...)
@@ -286,9 +298,10 @@ function addon:DelayedInit()
 	self:CheckDateReset()
 	self:WorkUpdate()
 	self:ZONE_CHANGED_NEW_AREA()
-	self:ScheduleRepeatingTimer("ldbUpdate",1)
+	ldbtimer=self:ScheduleRepeatingTimer("ldbUpdate",frequency)
 	farmobj:Update()
 	workobj:Update()
+	dataobj:Update()
 end
 function addon:OnEnabled()
 	self:ScheduleTimer("DelayedInit",5)
@@ -445,16 +458,21 @@ end
 farmobj.OnLeave=dataobj.OnLeave
 workobj.OnLeave=dataobj.OnLeave
 function farmobj:OnClick(button)
-	for k,v in pairs(addon.db.realm.farms) do
-		if (k==ns.me) then
-			for s,d in pairs(v) do
-				if (button=="LeftButton") then
-					v[s]=today;
-				else
-					v[s]=today-1;
+	if (IsShiftKeyDown()) then
+		for k,v in pairs(addon.db.realm.farms) do
+			if (k==ns.me) then
+				for s,d in pairs(v) do
+					if (button=="LeftButton") then
+						v[s]=today;
+					else
+						v[s]=today-1;
+					end
 				end
 			end
 		end
+		farmobj:Update()
+	else
+		dataobj:OnClick(button)
 	end
 	farmobj:Update()
 
@@ -463,8 +481,11 @@ end
 function dataobj:OnClick(button)
 	if (button=="LeftButton") then
 		GarrisonLandingPage_Toggle()
+	else
+		addon:Gui()
 	end
 end
+workobj.OnClick=dataobj.OnClick
 function dataobj:Update()
 	if addon:GetBoolean("OLDINT") then return self:OldUpdate() end
 	local now=time()
@@ -516,5 +537,16 @@ function dataobj:OldUpdate()
 end
 
 --@debug@
+local function highdebug(tb)
+	for k,v in pairs(tb) do
+		if type(v) == "function" then
+			tb[k]=function(...) print(date(),k) return v(...) end
+		end
+	end
+end
+--highdebug(addon)
+--highdebug(dataobj)
+--highdebug(farmobj)
+--highdebug(workobj)
 _G.GACB=addon
 --@end-debug@

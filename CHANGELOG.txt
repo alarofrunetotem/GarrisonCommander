@@ -1,4 +1,7 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
 * 2.4.7
-Fix: People upgrading from a abeta still had issues. Should be fixed
-Feature: Broker now reports how long work queues are loaded with materials
+Fix: Sometimes daily reset was not fired at dure time
+Feature: Redone all buttomns to be more consistent. Old behaviour configurable via options
+Feature: Update frequency is now configurable.
+Feature: Right clicking on any button open menu
+Feature: To manually register ah harvest as done or undone you need now to keep shift pressed
