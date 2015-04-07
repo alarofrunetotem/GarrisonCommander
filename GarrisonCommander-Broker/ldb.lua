@@ -506,11 +506,15 @@ function dataobj:Update()
 			n=n+1
 		end
 	end
-	local c=addon:ColorToString(addon:Gradient(n/t))
-	if (prox and addon:GetBoolean("SHOWNEXT")) then
-		self.text=format("|cff%s%d|r/|cff%s%d|r (%s)",c,n,C.Green.c,t,prox)
+	if t>0 then
+		local c=addon:ColorToString(addon:Gradient(n/t))
+		if (prox and addon:GetBoolean("SHOWNEXT")) then
+			self.text=format("|cff%s%d|r/|cff%s%d|r (%s)",c,n,C.Green.c,t,prox)
+		else
+			self.text=format("|cff%s%d|r/|cff%s%d|r",c,n,C.Green.c,t)
+		end
 	else
-		self.text=format("|cff%s%d|r/|cff%s%d|r",c,n,C.Green.c,t)
+		self.text=NONE
 	end
 end
 function dataobj:OldUpdate()
