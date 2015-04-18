@@ -17,6 +17,7 @@ local C=addon:GetColorTable()
 local dataobj --#Missions
 local farmobj --#Farms
 local workobj --#Works
+local cacheobj --#Cache
 local SecondsToTime=SecondsToTime
 local type=type
 local strsplit=strsplit
@@ -56,6 +57,8 @@ local  GARRISON_NUM_COMPLETED_MISSIONS=format(GARRISON_NUM_COMPLETED_MISSIONS,'9
 local KEY_BUTTON1="Shift " .. KEY_BUTTON1
 local KEY_BUTTON2="Shift " .. KEY_BUTTON2
 local EMPTY=EMPTY -- "Empty"
+local GARRISON_CACHE=GARRISON_CACHE
+
 local dbversion=1
 local frequency=5
 local ldbtimer=nil
@@ -93,6 +96,7 @@ function addon:ldbCleanup()
 end
 function addon:ldbUpdate()
 	dataobj:Update()
+	cacheobj:Update()
 end
 function addon:GARRISON_MISSION_STARTED(event,missionID)
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
@@ -175,6 +179,21 @@ function addon:CountMissing()
 	end
 	return missing,tot
 end
+function addon:CountCaches()
+	local tot=0
+	local missing=0
+	local now=time()
+	local expired=400*600 -- 1 risorsa ogni 10 minuti, per fullare servono 500 * 600 secondi
+	for p,j in pairs(self.db.realm.caches) do
+		if j>0 then
+			tot=tot+1
+			if j+expired < now then
+				missing=missing+1
+			end
+		end
+	end
+	return missing,tot
+end
 function addon:CountEmpty()
 	local tot=0
 	local missing=0
@@ -247,6 +266,7 @@ function addon:SetDbDefaults(default)
 		orders={["*"]={
 				["*"]=false
 			}},
+		caches={["*"]=0},
 		dbversion=1
 	}
 end
@@ -276,6 +296,7 @@ function addon:OnInitialized()
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("SHIPMENT_CRAFTER_INFO")
+	self:RegisterEvent("SHOW_LOOT_TOAST")
 	--self:RegisterEvent("SHIPMENT_CRAFTER_REAGENT_UPDATE",print)
 	self:AddLabel(GARRISON_NUM_COMPLETED_MISSIONS)
 	self:AddToggle("OLDINT",false,L["Use old interface"],L["Uses the old, more intrusive interface"])
@@ -293,6 +314,12 @@ end
 function addon:SHIPMENT_CRAFTER_INFO(...)
 	self:WorkUpdate(...)
 
+end
+function addon:SHOW_LOOT_TOAST(event,typeIdentifier, itemLink, quantity, specID, sex, isPersonal, lootSource)
+	if (isPersonal and lootSource==10) then -- GARRISON_CACHE
+		self.db.realm.caches[ns.me]=time()
+		cacheobj:Update()
+	end
 end
 function addon:DelayedInit()
 	self:CheckDateReset()
@@ -349,6 +376,13 @@ workobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-WorkOrders", {
 	category = "Interface",
 	icon = "Interface\\Icons\\Trade_Engineering"
 })
+cacheobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Cache", {
+	type = "data source",
+	label = "GC " .. GARRISON_CACHE,
+	text=QUEUED_STATUS_WAITING,
+	category = "Interface",
+	icon = "Interface\\Icons\\Trade_Engineering"
+})
 function farmobj:Update()
 	local n,t=addon:CountMissing()
 	if (t>0) then
@@ -356,6 +390,15 @@ function farmobj:Update()
 		farmobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
 	else
 		farmobj.text=NONE
+	end
+end
+function cacheobj:Update()
+	local n,t=addon:CountCaches()
+	if (t>0) then
+		local c=addon:ColorToString(addon:Gradient((t-n)/t))
+		cacheobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
+	else
+		cacheobj.text=NONE
 	end
 end
 function farmobj:OnTooltipShow()
@@ -373,6 +416,14 @@ function farmobj:OnTooltipShow()
 	self:AddLine("Manually mark my tasks:",C:Cyan())
 	self:AddDoubleLine(KEY_BUTTON1,DONE)
 	self:AddDoubleLine(KEY_BUTTON2,NEED)
+	self:AddLine(me,C.Silver())
+end
+function cacheobj:OnTooltipShow()
+	self:AddLine(GARRISON_CACHE)
+	for k,v in kpairs(addon.db.realm.caches) do
+		local resources=math.floor((time()-v)*(1/600))
+		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),resources,nil,nil,nil,addon:Gradient(resources/500))
+	end
 	self:AddLine(me,C.Silver())
 end
 
@@ -457,6 +508,7 @@ end
 
 farmobj.OnLeave=dataobj.OnLeave
 workobj.OnLeave=dataobj.OnLeave
+cacheobj.OnLeave=dataobj.OnLeave
 function farmobj:OnClick(button)
 	if (IsShiftKeyDown()) then
 		for k,v in pairs(addon.db.realm.farms) do
@@ -486,6 +538,7 @@ function dataobj:OnClick(button)
 	end
 end
 workobj.OnClick=dataobj.OnClick
+cacheobj.OnClick=dataobj.OnClick
 function dataobj:Update()
 	if addon:GetBoolean("OLDINT") then return self:OldUpdate() end
 	local now=time()
@@ -538,7 +591,7 @@ function dataobj:OldUpdate()
 		completed=completed+1
 	end
 	self.text=format("%s: %s (Tot: |cff00ff00%d|r) %s: %s",READY,ready,completed,NEXT,prox)
-end
+end-- Resources rate: 144 a day
 
 --@debug@
 local function highdebug(tb)

@@ -60,9 +60,12 @@ local ID,maxFollowers,members,ignored,threats=0,1,{},{},{}
 function party:Open(missionID,followers)
 	maxFollowers=followers
 	ID=missionID
-	for enemy,menaces in pairs(G.GetMissionUncounteredMechanics(ID)) do
-		for i=1,#menaces do
-			tinsert(threats,format("%d:%d",enemy,menaces[i]))
+	local mechanics=G.GetMissionUncounteredMechanics(ID)
+	if (type(mechanics)=="table") then
+		for enemy,menaces in pairs(mechanics) do
+			for i=1,#menaces do
+				tinsert(threats,format("%d:%d",enemy,menaces[i]))
+			end
 		end
 	end
 	holdEvents()

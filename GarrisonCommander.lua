@@ -2082,6 +2082,7 @@ do
 	{ text=L["Ignore for this mission"],checked=false, func=func, arg1=0, arg2="none"},
 --	{ text=L["Ignore for all missions"],checked=false, func=func, arg1=0, arg2="none"},
 	{ text=L["Consider again"], notClickable=true,notCheckable=true,isTitle=true },
+	{ text=CLOSE, notClickable=true,notCheckable=true,isTitle=true },
 	}
 	function addon:OnClick_PartyMember(frame,button,down,...)
 		local followerID=frame.info and frame.info.followerID or nil
@@ -2108,6 +2109,10 @@ do
 					v.func=func2
 					v.arg1=missionID
 					v.arg2=k
+					v.notCheckable=nil
+					v.notClickable=nil
+					v.checked=false
+					v.isTitle=nil
 					menu[i]=v
 				else
 					dbcache.ignored[missionID][k]=nil
@@ -2116,6 +2121,15 @@ do
 			if (i>3) then
 				i=i+1
 				menu[i]={text=ALL,func=func2,arg1=missionID,arg2='all'}
+			end
+			i=i+1
+			if not menu[i] then
+				menu[i]={ text=CLOSE,func=function() end, notCheckable=true }
+			else
+				menu[i].text=CLOSE
+				menu[i].notCheckable=true
+				menu[i].notClickable=nil
+				menu[i].func=function() end
 			end
 			for x=#menu,i+1,-1 do tremove(menu) end
 			EasyMenu(menu,menuFrame,"cursor",0,0,"MENU",5)
