@@ -421,8 +421,9 @@ end
 function cacheobj:OnTooltipShow()
 	self:AddLine(GARRISON_CACHE)
 	for k,v in kpairs(addon.db.realm.caches) do
-		local resources=math.floor((time()-v)*(1/600))
-		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),resources,nil,nil,nil,addon:Gradient(resources/500))
+		local resources=math.min(500,math.floor((time()-v)*(1/600)))
+		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),resources,nil,nil,nil,
+		addon:ColorGradient(resources/500,0,1,0,1,1,0,1,0,0))
 	end
 	self:AddLine(me,C.Silver())
 end
