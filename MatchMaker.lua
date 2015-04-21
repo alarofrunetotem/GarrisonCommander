@@ -28,7 +28,7 @@ local xprint=function(...) if dbg then ns.xprint(...) end end
 local xdump=function(...) if dbg then ns.xdump(...) end end
 function addon:MissionScore(mission)
 	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
-	local r=math.min(mission.class=='resource' and materialMultiplier or xpBonus/100,999)
+	local r=math.min(mission.class=='resource' and materialMultiplier or (tonumber(xpBonus)or 0)/100,999)
 	local t=isMissionTimeImproved and 1 or 0
 	return format("%03d%03d%01d",successChance,r,t)
 end
