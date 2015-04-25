@@ -52,6 +52,7 @@ local function addPartyMissionInfo(desttable,missionID)
 		desttable.xpBonus,
 		desttable.materialMultiplier,
 		desttable.goldMultiplier = G.GetPartyMissionInfo(missionID)
+		desttable.materialMultiplier=1
 	end
 end
 ns.party={}

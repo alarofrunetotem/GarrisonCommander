@@ -212,7 +212,7 @@ function addon:GMC_OnClick_Start(this,button)
 		GMC.ml.widget:SetTitleColor(C.Orange())
 		return
 	end
-	if ( G.IsAboveFollowerSoftCap() ) then
+	if ( G.IsAboveFollowerSoftCap(1) ) then
 		GMC.ml.widget:SetTitle(GARRISON_MAX_FOLLOWERS_MISSION_TOOLTIP)
 		GMC.ml.widget:SetTitleColor(C.Red())
 		return

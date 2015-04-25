@@ -160,8 +160,16 @@ local GARRISON_DURATION_MINUTES=GARRISON_DURATION_MINUTES -- "%d min";
 local GARRISON_DURATION_SECONDS=GARRISON_DURATION_SECONDS -- "%d sec";
 local AGE_HOURS="Expires in " .. GARRISON_DURATION_HOURS_MINUTES
 local AGE_DAYS="Expires in " .. GARRISON_DURATION_DAYS_HOURS
-
-
+-- Temporary fix waiting to be able to export 6.2 interface
+if ns.toc == 60200 then
+function _G.GarrisonMissionFrame_SelectTab(index)
+	if index==1 then
+		GarrisonMissionFrameTab1:Click()
+	elseif index==2 then
+		GarrisonMissionFrameTab2:Click()
+	end
+end
+end
 -- Panel sizes
 local BIGSIZEW=1220
 local BIGSIZEH=662
@@ -609,8 +617,8 @@ function addon:AddFollowersToTooltip(missionID)
 		for d,r in pairs(dbcache.history[missionID]) do
 			tot,success=tot+1,success + (r.success and 1 or 0)
 		end
-		local ratio=floor(success/tot*100)
 		if (tot > 0) then
+			local ratio=floor(success/tot*100)
 			GameTooltip:AddDoubleLine(format(L["You performed this mission %d times with a win ratio of"],tot),ratio..'%',0,1,0,self:GetDifficultyColors(ratio))
 			return
 		end
@@ -932,6 +940,7 @@ do
 		return s[status] or 0
 	end
 end
+
 function addon:ShowMissionControl()
 	if (not GMC:IsShown()) then
 		GarrisonMissionFrame_SelectTab(999)
@@ -1255,9 +1264,7 @@ function addon:HookedGarrisonMissionFrame_SelectTab(id)
 	self:RefreshFollowerStatus()
 end
 ---
-function addon:HookedGarrisonMissionFrame_HideCompleteMissions()
-	xprint("Complete missions closed")
-end
+
 
 
 function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
@@ -1611,6 +1618,9 @@ end
 -- This method is called every time garrison mission panel is open because
 -- when it closes, I remove most of used hooks
 function addon:StartUp(...)
+--@debug@
+	print("Starting up")
+--@end-debug@
 	self:GrowPanel()
 	self:Unhook(GMF,"OnShow")
 	if (self:GetBoolean("PIN")) then
@@ -1623,12 +1633,18 @@ function addon:StartUp(...)
 	--self:SafeSecureHook("GarrisonMissionButton_AddThreatsToTooltip")
 	self:SafeSecureHook("GarrisonFollowerListButton_OnClick") -- used both to update follower mission list and itemlevel display
 	if (ns.bigscreen) then
-		self:SafeSecureHook("GarrisonFollowerPage_ShowFollower")--,function(...) ns.xprint("GarrisonFollowerPage_ShowFollower",...) end)
 		self:SafeSecureHook("GarrisonFollowerTooltipTemplate_SetGarrisonFollower")
 	end
-	self:SafeSecureHook("GarrisonMissionFrame_HideCompleteMissions")	-- Mission reward completed
-	self:SafeSecureHook("GarrisonMissionPage_ShowMission")
-	self:SafeSecureHook("GarrisonMissionFrame_SelectTab")
+	if ns.toc < 60200 then
+		self:SafeSecureHook("GarrisonMissionFrame_SelectTab")
+	else
+		for i =1,9 do
+			local hook="GarrisonMissionFrameTab" ..i
+			if (_G[hook]) then
+				self:SafeHookScript(hook,"OnClick","HookedGarrisonMissionFrame_SelectTab")
+			end
+		end
+	end
 	-- GarrisonMissionList_SetTab is overrided
 
 	self:SafeHookScript(GMFMissions,"OnShow")--,"GrowPanel")

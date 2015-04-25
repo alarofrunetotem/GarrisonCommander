@@ -80,7 +80,9 @@ function module:MissionsCleanup()
 	GarrisonMissionList_UpdateMissions()
 	-- Re-enable "view" button
 	GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
-	GarrisonMissionFrame_SelectTab(1)
+	if ns.toc < 60200 then
+		GarrisonMissionFrame_SelectTab(1)
+	end
 	GarrisonMissionFrame_CheckCompleteMissions()
 end
 function module:Events(on)
