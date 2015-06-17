@@ -238,7 +238,122 @@ function addon:HasSalvageYard()
 		if building.texPrefix=="GarrBuilding_SalvageYard_1_A" then return true end
 	end
 end
+local tItems = {
+	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
+	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
+	{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'scroll'},
+	{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
+	{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
+	{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'},
+	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'generic'}
+}
+if (ns.toc >=60200) then
+	tinsert(tItems,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},3)
+end
+local tOrder={1,2,3,4,5,6,7}
 local chestTexture
+local function drawItemButtons()
+	local scale=1.1
+	local h=37 -- itemButtonTemplate standard size
+	local gap=5
+	local single=GMC.settings.useOneChance
+	for j = 1, #tItems do
+		local i=tOrder[j]
+		local frame = GMC.ignoreFrames[j] or CreateFrame('BUTTON', "Priority" .. j, GMC.aif, 'ItemButtonTemplate')
+		GMC.ignoreFrames[j] = frame
+		frame:SetID(i)
+		frame:ClearAllPoints()
+		frame:SetScale(scale)
+		frame:SetPoint('TOPLEFT', 0,(j) * (-h -gap) * scale)
+		frame.icon:SetTexture(tItems[i].i)
+		frame.key=tItems[i].key
+		frame.tooltip=tItems[i].t
+		frame.allowed=GMC.settings.allowedRewards[frame.key]
+		frame.chance=GMC.settings.rewardChance[frame.key]
+		frame.icon:SetDesaturated(not frame.allowed)
+		-- Need to resave them asap in order to populate the array for future scans
+		GMC.settings.allowedRewards[frame.key]=frame.allowed
+		GMC.settings.rewardChance[frame.key]=frame.chance
+		frame.slider=frame.slider or factory:Slider(frame,0,100,frame.chance or 100,frame.chance or 100)
+		frame.slider:SetWidth(128)
+		frame.slider:SetPoint('BOTTOMLEFT',60,0)
+		frame.slider.Text:SetFontObject('NumberFont_Outline_Med')
+		if (single) then
+			frame.slider.Text:SetTextColor(C.Silver())
+		else
+			frame.slider.Text:SetTextColor(C.Green())
+		end
+		frame.slider.isPercent=true
+		frame.slider:SetScript("OnValueChanged",function(this,value)
+			GMC.settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
+			end
+		)
+		frame.slider:OnValueChanged(GMC.settings.rewardChance[frame.key])
+		--frame.slider:SetText(GMC.settings.rewardChance[frame.key])
+		frame.chest = frame.chest or frame:CreateTexture(nil, 'BACKGROUND')
+		frame.chest:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
+		frame.chest:SetAtlas(chestTexture)
+		frame.chest:SetSize((209-(209*0.25))*0.30, (155-(155*0.25)) * 0.30)
+		frame.chest:SetPoint('CENTER',frame.slider, 0, 25)
+		if (single) then
+			frame.chest:SetDesaturated(true)
+		else
+			frame.chest:SetDesaturated(false)
+		end
+		frame.chest:Show()
+		frame:SetScript('OnClick', function(this)
+			GMC.settings.allowedRewards[this.key] = not GMC.settings.allowedRewards[this.key]
+			drawItemButtons()
+		end)
+		frame:SetScript('OnEnter', function(this)
+			GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
+			GameTooltip:AddLine(this.tooltip);
+			GameTooltip:Show()
+		end)
+		frame:RegisterForDrag("LeftButton")
+		frame:SetMovable(true)
+		frame:SetScript("OnDragStart",function(this,button)
+			print("Start",this:GetID())
+			this:StartMoving()
+		end)
+		frame:SetScript("OnDragStop",function(this,button) this:StopMovingOrSizing() print("Stopped",this:GetID()) end)
+		frame:SetScript("OnReceiveDrag",function(this)
+				local x,y=this:GetCenter()
+				local id=this:GetID()
+				for i=1,#tItems do
+					local f=GMC.ignoreFrames[i]
+					if f:GetID() ~= id then
+						print(y,f:GetBottom(),f:GetTop())
+						if y>=f:GetBottom() and y<=f:GetTop() then
+							this:SetID(f:GetID())
+							f:SetID(id)
+							for j=1,#tItems do
+								tOrder[j]=GMC.ignoreFrames[j]:GetID()
+							end
+							break
+						end
+					end
+				end
+				drawItemButtons()
+		end)
+		frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
+		frame:Show()
+		frame.top=frame:GetTop()
+		frame.bottom=frame:GetBottom()
+	end
+	if not GMC.rewardinfo then
+		GMC.rewardinfo = GMC.aif:CreateFontString()
+		local info=GMC.rewardinfo
+		info:SetFontObject('GameFontHighlight')
+		info:SetText('Click to enable/disable a reward.')
+		info:SetTextColor(1, 1, 1)
+		info:SetPoint("TOP",GMC.ignoreFrames[#tItems],"BOTTOM",256/2,-15)
+	end
+	GMC.aif:SetSize(256, (scale*h+gap) * #tItems)
+	return GMC.ignoreFrames[#tItems]
+
+end
+
 function addon:GMCBuildPanel(bigscreen)
 	db=self.db.global
 	dbcache=self.privatedb.profile
@@ -253,13 +368,11 @@ function addon:GMCBuildPanel(bigscreen)
 	local chance=self:GMCBuildChance()
 	local duration=self:GMCBuildDuration()
 	local rewards=self:GMCBuildRewards()
-	local priorities=self:GMCBuildPriorities()
 	local list=self:GMCBuildMissionList()
 	duration:SetPoint("TOPLEFT",0,-50)
-	chance:SetPoint("TOPLEFT",duration,"TOPRIGHT",bigscreen and 50 or 10,0)
-	priorities:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",25,-50)
-	rewards:SetPoint("TOPLEFT",priorities,"TOPRIGHT",bigscreen and 50 or 15,30)
-	list:SetPoint("TOPLEFT",chance,"TOPRIGHT",10,-30)
+	chance:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",0,-80)
+	rewards:SetPoint("TOPLEFT",duration,"TOPRIGHT",bigscreen and 50 or 10,0)
+	list:SetPoint("TOPLEFT",rewards,"TOPRIGHT",10,-30)
 	list:SetPoint("BOTTOMRIGHT",GMF,"BOTTOMRIGHT",-25,25)
 	GMC.startButton = CreateFrame('BUTTON',nil,  list.frame, 'GameMenuButtonTemplate')
 	GMC.startButton:SetText('Calculate')
@@ -287,7 +400,7 @@ function addon:GMCBuildPanel(bigscreen)
 	GMC.logoutButton:SetScript("OnClick",function() GMF:Hide() Logout() end )
 	GMC.logoutButton:SetPoint('TOP',0,25)
 	GMC.skipRare=factory:Checkbox(GMC,GMC.settings.skipRare,L["Ignore rare missions"])
-	GMC.skipRare:SetPoint("TOPLEFT",priorities,"BOTTOMLEFT",0,-10)
+	GMC.skipRare:SetPoint("TOPLEFT",chance,"BOTTOMLEFT",40,-50)
 	GMC.skipRare:SetScript("OnClick",function(this)
 		GMC.settings.skipRare=this:GetChecked()
 		addon:GMC_OnClick_Start(GMC.startButton,"LeftUp")
@@ -312,35 +425,6 @@ function addon:GMCBuildPanel(bigscreen)
 	GMC.Credits:SetJustifyH("LEFT")
 	GMC.Credits:SetPoint("BOTTOMLEFT",25,25)
 	return GMC
-end
-function addon:GMCRewardRefresh()
-	local single=GMC.settings.useOneChance
-	local ref
-	for i=1,#GMC.ignoreFrames do
-		local frame=GMC.ignoreFrames[i]
-		local allowed=GMC.settings.allowedRewards[frame.key]
-		frame.icon:SetDesaturated(not allowed)
-		local a1,o,a2,x,y=frame:GetPoint(1)
-		if (not single) then
-			frame.chest:Show()
-			frame.slider:Show()
-			frame:SetPoint(a1,o,a2,0,y)
-		else
-			frame.chest:Hide()
-			frame.slider:Hide()
-			frame:SetPoint(a1,o,a2,100,y)
-		end
-		ref=frame
-	end
-	if (single) then
-		GMC.itf2:SetPoint('TOPLEFT',ref,'BOTTOMLEFT', -110, -15)
-		GMC.cp:SetDesaturated(false)
-		GMC.ct:SetTextColor(C.Green())
-	else
-		GMC.itf2:SetPoint('TOPLEFT',ref,'BOTTOMLEFT', 10, -15)
-		GMC.cp:SetDesaturated(true)
-		GMC.ct:SetTextColor(C.Silver())
-	end
 end
 function addon:GMCBuildChance()
 	_G['GMC']=GMC
@@ -376,10 +460,17 @@ function addon:GMCBuildChance()
 	GMC.cs:SetValue(GMC.settings.minimumChance)
 	GMC.ck=factory:Checkbox(GMC.cs,GMC.settings.useOneChance,"Use this percentage for all missions")
 	GMC.ck.tooltip="Unchecking this will allow you to set specific success chance for each reward type"
-	GMC.ck:SetPoint("TOPLEFT",GMC.cs,"BOTTOMLEFT",-60,-10)
+	GMC.ck:SetPoint("TOPLEFT",GMC.cs,"BOTTOMLEFT",-25,-10)
 	GMC.ck:SetScript("OnClick",function(this)
 		GMC.settings.useOneChance=this:GetChecked()
-		addon:GMCRewardRefresh()
+		if (GMC.settings.useOneChance) then
+			GMC.cp:SetDesaturated(false)
+			GMC.ct:SetTextColor(C.Green())
+		else
+			GMC.cp:SetDesaturated(true)
+			GMC.ct:SetTextColor(C.Silver())
+		end
+		drawItemButtons()
 	end)
 	return GMC.cf
 end
@@ -448,28 +539,7 @@ function addon:GMCBuildRewards()
 	GMC.itf:SetText('Allowed Rewards')
 	GMC.itf:SetPoint('TOP', 0, -10)
 	GMC.itf:SetTextColor(1, 1, 1)
-
-	GMC.itf2 = GMC.aif:CreateFontString()
-	GMC.itf2:SetFontObject('GameFontHighlight')
-	GMC.itf2:SetText('Click to enable/disable a reward.')
-	GMC.itf2:SetTextColor(1, 1, 1)
-
-
-	local t = {
-		{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
-		{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
-		{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},
-		{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'scroll'},
-		{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
-		{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
-		{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'},
-		{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'generic'}
-	}
-	local scale=1.1
 	GMC.ignoreFrames = {}
-	local ref
-	local h=37 -- itemButtonTemplate standard size
-	local gap=5
 	-- converting from old data
 	local ar=GMC.settings.allowedRewards
 	local rc=GMC.settings.rewardChance
@@ -485,52 +555,7 @@ function addon:GMCBuildRewards()
 	rc.followerUpgrade=nil
 	if rc.itemLevel then rc.equip=rc.itemLevel or 100 end
 	rc.itemLevel=nil
-
-	for i = 1, #t do
-			local frame = CreateFrame('BUTTON', nil, GMC.aif, 'ItemButtonTemplate')
-			frame:SetScale(scale)
-			frame:SetPoint('TOPLEFT', 0,(i) * (-h -gap) * scale)
-			frame.icon:SetTexture(t[i].i)
-			frame.key=t[i].key
-			frame.tooltip=t[i].t
-			local allowed=GMC.settings.allowedRewards[frame.key]
-			local chance=GMC.settings.rewardChance[frame.key]
-			-- Need to resave them asap in order to populate the array for future scans
-			GMC.settings.allowedRewards[frame.key]=allowed
-			GMC.settings.rewardChance[frame.key]=chance
-			frame.slider=factory:Slider(frame,0,100,chance or 100,chance or 100)
-			frame.slider:SetWidth(128)
-			frame.slider:SetPoint('BOTTOMLEFT',60,0)
-			frame.slider.Text:SetFontObject('NumberFont_Outline_Med')
-			frame.slider.Text:SetTextColor(C.Green())
-			frame.slider.isPercent=true
-			frame.slider:SetScript("OnValueChanged",function(this,value)
-				GMC.settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
-				end
-			)
-			frame.chest = frame:CreateTexture(nil, 'BACKGROUND')
-			frame.chest:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
-			frame.chest:SetAtlas(chestTexture)
-			frame.chest:SetSize((209-(209*0.25))*0.30, (155-(155*0.25)) * 0.30)
-			frame.chest:SetPoint('CENTER',frame.slider, 0, 25)
-			frame:SetScript('OnClick', function(this)
-				local allowed=  this.icon:IsDesaturated() -- ID it was desaturated, I want it allowed, now
-				GMC.settings.allowedRewards[this.key] = allowed
-				addon:GMCRewardRefresh()
-			end)
-			frame:SetScript('OnEnter', function(this)
-				GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
-				GameTooltip:AddLine(this.tooltip);
-				GameTooltip:Show()
-			end)
-
-			frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
-			GMC.ignoreFrames[i] = frame
-			ref=frame
-	end
-	self:GMCRewardRefresh()
-	GMC.aif:SetSize(256, (scale*h+gap) * #t)
-	GMC.itf2:SetPoint('TOPLEFT',ref,'BOTTOMLEFT', 5, -15)
+	local ref=drawItemButtons()
 	return GMC.aif
 end
 
@@ -588,73 +613,6 @@ do
 		prioRefresh()
 	end
 
-end
-_G.XPRIO=prioRefresh
-function addon:GMCBuildPriorities()
-	--Prio
-	GMC.pf = CreateFrame('FRAME', nil, GMC)
-	GMC.pf:SetSize(256, prioVoices *32 +60)
-
-	GMC.pft = GMC.pf:CreateFontString()
-	GMC.pft:SetFontObject('GameFontNormalHuge')
-	GMC.pft:SetText('Item Priority')
-	GMC.pft:SetPoint('TOP', 0, -10)
-	GMC.pft:SetTextColor(1, 1, 1)
-
-	GMC.pft2 = GMC.pf:CreateFontString()
-	GMC.pft2:SetFontObject('GameFontNormal')
-	GMC.pft2:SetText('Prioritize missions with certain a reward.')
-	GMC.pft2:SetPoint('BOTTOM', 0, 0)
-	GMC.pft2:SetTextColor(1, 1, 1)
-	GMC.pmf = CreateFrame("FRAME", "GMC_PRIO_MENU", GMC.pf, "UIDropDownMenuTemplate")
-
-
-	GMC.prioFrames = {}
-	GMC.prioFrames.selected = 0
-	for i = 1, prioVoices do
-		GMC.prioFrames[i] = {}
-		local this = GMC.prioFrames[i]
-		this.f = CreateFrame('FRAME', nil, GMC.pf)
-		this.f:SetSize(255, 32)
-		this.f:SetPoint('TOP', 0, -38-((i-1)*32))
-
-		this.nr = this.f:CreateFontString()
-		this.nr:SetFontObject('GameFontNormalHuge')
-		this.nr:SetText(i..'.')
-		this.nr:SetPoint('LEFT', 8, 0)
-		this.nr:SetTextColor(1, 1, 1)
-
-		this.text = this.f:CreateFontString()
-		this.text:SetFontObject('GameFontNormalLarge')
-		this.text:SetText('Def')
-		this.text:SetPoint('LEFT', 32, 0)
-		--this.text:SetTextColor(1, 1, 0)
-		this.text:SetJustifyH('LEFT')
-		this.text:Hide()
-
-		this.xbutton = CreateFrame('BUTTON', nil, this.f, 'GameMenuButtonTemplate')
-		this.xbutton:SetPoint('RIGHT', 0, 0)
-		this.xbutton:SetText('X')
-		this.xbutton:SetWidth(28)
-		this.xbutton:SetScript('OnClick', function() removePriorityRule(i)  end)
-		this.xbutton:Hide()
-	end
-
-	GMC.abutton = CreateFrame('BUTTON', nil, GMC.pmf, 'GameMenuButtonTemplate')
-	GMC.abutton:SetText(L['Add priority rule'])
-	GMC.abutton:SetWidth(128)
-	GMC.abutton:Hide()
-	GMC.abutton:SetScript('OnClick', function()
-		wipe(prioMenu)
-		tinsert(prioMenu,{text = L["Select an item to add as priority."], isTitle = true, isNotRadio=true,disabled=true, notCheckable=true,notClickable=true})
-		for k,v in pairs(prioTitles) do
-			tinsert(prioMenu,{text = v, func = addPriorityRule, notCheckable=true, isNotRadio=true, arg1 = k , disabled=tContains(GMC.settings.itemPrio,k)})
-		end
-		EasyMenu(prioMenu, GMC.pmf, "cursor", 0 , 0, "MENU")
-		end
-	)
-	prioRefresh()
-	return GMC.pf
 end
 function addon:GMCBuildMissionList()
 		-- Mission list on follower panels
