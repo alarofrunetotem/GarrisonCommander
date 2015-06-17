@@ -6,14 +6,18 @@ local C=ns.C
 local AceGUI=ns.AceGUI
 local _G=_G
 --@debug@
---if LibDebug() then LibDebug() end
+if LibDebug then LibDebug() end
 --@end-debug@
-local xprint=ns.xprint
+--[===[@non-debug@
+setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
+--@end-non-debug@]===]
+
 local new, del, copy =ns.new,ns.del,ns.copy
 local GMF=GarrisonMissionFrame
 local GMFMissions=GarrisonMissionFrameMissions
 local G=C_Garrison
 local GARRISON_CURRENCY=GARRISON_CURRENCY
+local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY or 0
 local pairs=pairs
 local format=format
 local strsplit=strsplit
@@ -66,7 +70,7 @@ local function startTimer(delay,event,...)
 	stopTimer()
 	timer=module:ScheduleRepeatingTimer("MissionAutoComplete",delay,event,...)
 	--@alpha@
-	addon:Dprint("Timer rearmed for",event,delay)
+	print("Timer rearmed for",event,delay)
 	--@end-alpha@
 end
 function module:MissionsCleanup()
@@ -80,10 +84,10 @@ function module:MissionsCleanup()
 	GarrisonMissionList_UpdateMissions()
 	-- Re-enable "view" button
 	GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
+	addon:OpenLastTab()
 	if ns.toc < 60200 then
-		GarrisonMissionFrame_SelectTab(1)
+		GarrisonMissionFrame_CheckCompleteMissions()
 	end
-	GarrisonMissionFrame_CheckCompleteMissions()
 end
 function module:Events(on)
 	if (on) then
@@ -119,6 +123,8 @@ function module:MissionComplete(this,button)
 
 			local _
 			_,_,m.isMissionTimeImproved,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
+			if type(m.resourceMultiplier)=='table' then m.resourceMultiplier=m.resourceMultiplier[824] or 1 end
+
 		end
 --@debug@
 		self:Dump("Completed missions",missions)
@@ -146,7 +152,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
 --@alpha@
-	self:Dprint("evt",event,ID,arg1 or'',arg2 or '',arg3 or '')
+	print("evt",event,ID,arg1 or'',arg2 or '',arg3 or '')
 --@end-alpha@
 	if event=="LOOT" then
 		return self:MissionsPrintResults()
@@ -203,13 +209,13 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 			end
 			if (step==0) then
 				--@alpha@
-				self:Dprint("Fired mission complete for",currentMission.missionID)
+				print("Fired mission complete for",currentMission.missionID)
 				--@end-alpha@
 				G.MarkMissionComplete(currentMission.missionID)
 				startTimer(2)
 			elseif (step==1) then
 				--@alpha@
-				self:Dprint("Fired bonus roll complete for",currentMission.missionID)
+				print("Fired bonus roll complete for",currentMission.missionID)
 				--@end-alpha@
 				G.MissionBonusRoll(currentMission.missionID)
 				startTimer(2)

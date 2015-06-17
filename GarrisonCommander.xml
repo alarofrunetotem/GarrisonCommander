@@ -406,4 +406,28 @@
 			<OnLeave function="GameTooltip_Hide"/>
 		</Scripts>
 	</Frame>
+	<Button name="GarrisonTraitCounterTemplate" inherits="GarrisonThreatCounterTemplate" virtual="true" enableMouse="true">
+		<Scripts>
+			<OnEnter function="GarrisonTraitCounter_OnEnter"/>
+			<OnLeave function="GameTooltip_Hide"/>
+		</Scripts>
+	</Button>
+	<Frame name="GarrisonTraitCountersFrame" hidden="true">
+		<Size x="10" y="10"/>
+		<Frames>
+			<Button parentArray="TraitsList" inherits="GarrisonTraitCounterTemplate">
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="0" y="7"/>
+				</Anchors>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnLoad function="GarrisonTraitCountersFrame_OnLoad"/>
+			<OnEvent function="GarrisonTraitCountersFrame_OnEvent"/>
+			<OnShow function="GarrisonTraitCountersFrame_Update"/>
+		</Scripts>
+	</Frame>
+<!-- In 6.2.0 we can inherits
+	<Frame name="GarrisonThreatCountersFrame" inherits="GarrisonThreatCountersFrameTemplate" hidden="true"/>
+-->
 </Ui>

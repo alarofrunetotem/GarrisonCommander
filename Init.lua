@@ -1,6 +1,5 @@
 local me, ns = ...
 local _G=_G
-local pp=print
 local setmetatable=setmetatable
 local next=next
 local pairs=pairs
@@ -11,10 +10,15 @@ local GetTime=GetTime
 local strjoin=strjoin
 local strspilit=strsplit
 local tostringall=tostringall
+local tostring=tostring
+local tonumber=tonumber
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
 if LibDebug then LibDebug() end
 --@end-debug@
+--[===[@non-debug@
+setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
+--@end-non.debug@]===]
 ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
 local chatframe=ns.addon:GetChatFrame("aDebug")
 local function pd(...)
@@ -28,18 +32,7 @@ ns.D=LibStub("LibDeformat-3.0")
 ns.C=ns.addon:GetColorTable()
 ns.L=ns.addon:GetLocale()
 ns.G=C_Garrison
-ns.print=ns.addon:Wrap("Print")
-ns.dprint=ns.print
-ns.trace=ns.addon:Wrap("Trace")
-ns.xprint=function() end
-ns.xdump=function() end
-ns.xtrace=function() end
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
---@debug@
-	ns.xprint=print
-	ns.xdump=function(d,t) pp("|cffff9900DMP|r",t) DevTools_Dump(d) end
-	ns.xtrace=print
---@end-debug@
 do
 	--@debug@
 	local newcount, delcount,createdcount,cached = 0,0,0
@@ -83,10 +76,10 @@ do
 		return n
 	end
 	function ns.addon:CacheStats()
-		ns.print("Created:",createdcount)
-		ns.print("Aquired:",newcount)
-		ns.print("Released:",delcount)
-		ns.print("Cached:",cached())
+		print("Created:",createdcount)
+		print("Aquired:",newcount)
+		print("Released:",delcount)
+		print("Cached:",cached())
 	end
 	--@end-debug@
 end
@@ -325,6 +318,7 @@ function addon:GetScroller(title,type,h,w)
 	w=w or 400
 	type=type or "Frame"
 	local scrollerWindow=AceGUI:Create("Frame")
+	--scrollerWindow.frame:SetAlpha(1)
 	scrollerWindow:SetTitle(title)
 	scrollerWindow:SetLayout("Fill")
 	--local scrollcontainer = AceGUI:Create("SimpleGroup") -- "InlineGroup" is also good
@@ -358,14 +352,22 @@ function addon:AddRow(obj,text,...)
 		obj:AddChild(l)
 	end
 end
+local function safesort(a,b)
+	if (tonumber(a) and tonumber(b)) then
+		return a < b
+	else
+		return tostring(a) < tostring(b)
+	end
+end
 function addon:cutePrint(scroll,level,k,v)
 	if (type(level)=="table") then
-		for k,v in pairs(level) do
+		for k,v in kpairs(level,safesort) do
 			self:cutePrint(scroll,"",k,v)
 		end
 		return
 	end
 	if (type(v)=="table") then
+		if (level:len()>6) then return end
 		self:AddRow(scroll,level..C(k,"Azure")..":" ..C("Table","Orange"))
 		for kk,vv in pairs(v) do
 			self:cutePrint(scroll,level .. "  ",kk,vv)
@@ -408,11 +410,11 @@ function addon:DumpIgnored()
 end
 function addon:DumpMission(missionID)
 	local scroll=self:GetScroller("MissionCache " .. self:GetMissionData(missionID,'name'))
-	self:cutePrint(scroll,cache.missions[missionID])
+	self:cutePrint(scroll,self:GetMissionData(missionID))
 end
 function addon:DumpMissions()
 	local scroll=self:GetScroller("MissionCache")
-	for id,data in pairs(cache.missions) do
+	for id,data in pairs(self:GetMissionData(missionID)) do
 		self:cutePrint(scroll,id .. '.'..data.name)
 	end
 end
@@ -428,7 +430,15 @@ function addon:DumpCounters(missionID)
 	self:cutePrint(scroll,counterThreatIndex[missionID])
 end
 function addon:Dump(title,data)
+	if type(data)=="string" then
+		data=_G[data]
+	end
+	if type(data) ~= "table" then
+		print(data,"is not a table")
+		return
+	end
 	local scroll=self:GetScroller(title)
+	print("Dumping",title)
 	self:cutePrint(scroll,data)
 	return scroll
 end
@@ -481,3 +491,4 @@ PlaySound("UI_Garrison_CommandTable_Open");
 
 --]]
 --@end-do-not-package@
+

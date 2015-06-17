@@ -23,7 +23,6 @@ local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
-local xprint=ns.xprint
 local coroutine=coroutine
 local GetItemInfo=GetItemInfo
 local GarrisonMissionFrame_SetItemRewardDetails=GarrisonMissionFrame_SetItemRewardDetails
@@ -213,5 +212,3 @@ function addon:FollowerPageStartUp()
 	self:RegisterEvent("GARRISON_FOLLOWER_UPGRADED","DelayedRefresh")
 	self:RegisterEvent("CHAT_MSG_LOOT","DelayedRefresh")
 end
-
-

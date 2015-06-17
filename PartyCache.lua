@@ -52,7 +52,6 @@ local function addPartyMissionInfo(desttable,missionID)
 		desttable.xpBonus,
 		desttable.materialMultiplier,
 		desttable.goldMultiplier = G.GetPartyMissionInfo(missionID)
-		desttable.materialMultiplier=1
 	end
 end
 ns.party={}
@@ -95,11 +94,11 @@ function party:IsEmpty()
 end
 
 function party:Dump()
-	ns.xprint("Dumping party for mission",ID)
+	print("Dumping party for mission",ID)
 	for i=1,#members do
-		ns.xprint(addon:GetFollowerData(members[i],'fullname'),G.GetFollowerStatus(members[i] or 1))
+		print(addon:GetFollowerData(members[i],'fullname'),G.GetFollowerStatus(members[i] or 1))
 	end
-	ns.xprint(G.GetPartyMissionInfo(ID))
+	print(G.GetPartyMissionInfo(ID))
 end
 
 function party:AddFollower(followerID)
@@ -115,8 +114,8 @@ function party:AddFollower(followerID)
 			return true
 --@debug@
 		else
-			ns.xprint("Unable to add",followerID, G.GetFollowerName(followerID),"to",ID,code,self:IsIn(followerID),G.GetFollowerStatus(followerID))
-			ns.xprint(members[1],members[2],members[3])
+			print("Unable to add",followerID, G.GetFollowerName(followerID),"to",ID,code,self:IsIn(followerID),G.GetFollowerStatus(followerID))
+			print(members[1],members[2],members[3])
 			print(debugstack(1,6,0))
 --@end-debug@
 		end
@@ -165,9 +164,6 @@ function party:Close(desttable)
 	end
 	if (desttable) then
 		addPartyMissionInfo(desttable,ID)
-		if (ns.toc < 60100) then
-			desttable.goldMultiplier = 1
-		end
 		desttable.full=self:FreeSlots()==0
 		desttable.threats=desttable.threats or {}
 		wipe(desttable.threats)

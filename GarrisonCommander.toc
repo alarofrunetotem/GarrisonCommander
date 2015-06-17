@@ -37,4 +37,5 @@ FollowerPage.lua
 MatchMaker.lua
 FollowerRecruiting.lua
 BuildingPage.lua
+ShipYard.lua
 RelNotes.lua

@@ -11,8 +11,10 @@ local select=select
 local pairs=pairs
 local tonumber=tonumber
 local tinsert=tinsert
+local tcontains=tContains
 local wipe=wipe
 local GARRISON_CURRENCY=GARRISON_CURRENCY
+local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL
 local Mbase = GMFMissions
 -- self=Mbase
@@ -21,6 +23,8 @@ local Mbase = GMFMissions
 local Index={}
 local sorted={}
 local AddExtraData
+local ItemRewards={122484,118529,128391}
+local rushOrders="interface\\icons\\inv_scroll_12.blp"
 local function keyToIndex(key)
 	local idx=Index[key]
 	if (idx and idx <= #Mbase.availableMissions) then
@@ -55,8 +59,14 @@ function addon:GetMissionData(missionID,key,default)
 	if not mission then
 		mission=self:GetModule("MissionCompletion"):GetMission(missionID)
 		if mission then
+			if type(mission.improvedDurationSeconds)~='number' then
+				mission.improvedDurationSeconds=mission.durationSeconds
+			end
 			mission.improvedDurationSeconds=mission.isMissionTimeImproved and mission.improvedDurationSeconds/2 or mission.improvedDurationSeconds
 		end
+	end
+	if not mission then
+		mission=G.GetMissionInfo(missionID)
 	end
 --@debug@
 	if not mission then
@@ -96,25 +106,33 @@ function AddExtraData(mission)
 	_,mission.xp,mission.type,mission.typeDesc,mission.typeIcon,mission.locPrefix,_,mission.enemies=G.GetMissionInfo(mission.missionID)
 	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 	mission.resources=0
+	mission.oil=0
 	mission.gold=0
 	mission.followerUpgrade=0
 	mission.itemLevel=0
 	mission.xpBonus=0
 	mission.others=0
 	mission.xp=mission.xp or 0
+	mission.rush=0
+	mission.chanceCap=100
 	local numrewards=0
 	for k,v in pairs(mission.rewards) do
 		numrewards=numrewards+1
-		if (k==615 and v.followerXP) then mission.xpBonus=mission.xpBonus+v.followerXP end
-		if (v.currencyID and v.currencyID==GARRISON_CURRENCY) then mission.resources=v.quantity end
-		if (v.currencyID and v.currencyID==0) then mission.gold =mission.gold+v.quantity/10000 end
-		if (v.icon=="Interface\\Icons\\XPBonus_Icon" and v.followerXP) then
+		if k==615 and v.followerXP then mission.xpBonus=mission.xpBonus+v.followerXP end
+		if v.currencyID and v.currencyID==GARRISON_CURRENCY then mission.resources=v.quantity end
+		if v.currencyID and v.currencyID==GARRISON_SHIP_OIL_CURRENCY then mission.oil=v.quantity end
+		if v.currencyID and v.currencyID==0 then mission.gold =mission.gold+v.quantity/10000 end
+		if v.icon=="Interface\\Icons\\XPBonus_Icon" and v.followerXP then
 			mission.xpBonus=mission.xpBonus+v.followerXP
 		elseif (v.itemID) then
-			if (v.itemID~=120205) then -- xp item
+			if tcontains(ItemRewards,v.itemID) then
+				mission.itemLevel=655
+			elseif v.itemID~=120205 then -- xp item
 				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
-				if (itemName and (not v.quantity or v.quantity==1) and not v.followerXP ) then
-					if (itemLevel > 1 and itemMinLevel >=90 ) then
+				if itemTexture:lower()==rushOrders then
+					mission.rush=1
+				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
+					if itemLevel > 1 and itemMinLevel >=90 then
 						mission.itemLevel=itemLevel
 					else
 						mission.followerUpgrade=itemRarity
@@ -125,24 +143,32 @@ function AddExtraData(mission)
 			end
 		end
 	end
-	if (mission.resources==0 and mission.gold==0 and mission.itemLevel==0 and mission.followerUpgrade==0 and mission.others==0 and numrewards <2) then
-		mission.xpOnly=true
-		mission.class="xp"
+	mission.xpOnly=false
+	if mission.resources > 0 then
+		mission.class='resources'
+		mission.chanceCap=addon:GetNumber('MAXRESCHANCE',80)
+		mission.mat=true
+	elseif mission.oil > 0 then
+		mission.class='oil'
+		mission.chanceCap=addon:GetNumber('MAXRESCHANCE',80)
+		mission.mat=true
+	elseif mission.gold >0 then
+		mission.class='gold'
+		mission.chanceCap=addon:GetNumber('MAXRESCHANCE',80)
+		mission.mat=true
+	elseif mission.itemLevel >0 then
+		mission.class='equip'
+	elseif mission.followerUpgrade>0 then
+		mission.class='followerEquip'
+	elseif mission.itemLevel>=645 then
+		mission.class='epic'
+	elseif mission.rush>=0 then
+		mission.class='rush'
+	elseif numrewards > 1 then
+		mission.class='generic'
 	else
-		mission.xpOnly=false
-		if mission.resources > 0 then
-			mission.class='resources'
-		elseif mission.gold >0 then
-			mission.class='gold'
-		elseif mission.itemLevel >0 then
-			mission.class='equip'
-		elseif mission.followerUpgrade>0 then
-			mission.class='followerEquip'
-		elseif mission.itemLevel>=645 then
-			mission.class='epic'
-		else
-			mission.class='generic'
-		end
+		mission.class='xp'
+		mission.xpOnly=true
 	end
 	mission.globalXp=(mission.xp+mission.xpBonus+(addon:GetParty(mission.missionID)['xpBonus'] or 0) )*mission.numFollowers
 
@@ -173,3 +199,5 @@ function addon:GetMissionIterator(func)
 		end
 	end,sorted,0
 end
+local GSF=GarrisonShipyardFrame
+

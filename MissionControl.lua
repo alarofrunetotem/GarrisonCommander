@@ -23,7 +23,6 @@ local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
-local xprint=ns.xprint
 --@debug@
 _G.GAC=addon
 if LibDebug then LibDebug() end
@@ -40,20 +39,20 @@ function addon:GMCCreateMissionList(workList)
 	for _,missionID in self:GetMissionIterator() do
 		local discarded=false
 		repeat
-			xprint("|cffff0000",'Examing',self:GetMissionData(missionID,"name"),self:GetMissionData(missionID,"class"),"|r")
+			print("|cffff0000",'Examing',self:GetMissionData(missionID,"name"),self:GetMissionData(missionID,"class"),"|r")
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
-				xprint(missionID,"discarded due to len",durationSeconds /3600)
+				print(missionID,"discarded due to len",durationSeconds /3600)
 				break
 			end -- Mission too long, out of here
 			if (self:GetMissionData(missionID,'isRare') and settings.skipRare) then
-				xprint(missionID,"discarded due to rarity")
+				print(missionID,"discarded due to rarity")
 				break
 			end
 			for k,v in pairs(ar) do
 				if (not v) then
 					if (self:GetMissionData(missionID,"class")==k) then -- we have a forbidden reward
-						xprint(missionID,"discarded due to class == ", k)
+						print(missionID,"discarded due to class == ", k)
 						discarded=true
 						break
 					end
@@ -86,7 +85,7 @@ end
 --@param #integer missionID Optional, to run a single mission
 --@param #bool start Optional, tells that follower already are on mission and that we need just to start it
 function addon:GMCRunMission(missionID,start)
-	xprint("Asked to start mission",missionID)
+	print("Asked to start mission",missionID)
 	if (start) then
 		G.StartMission(missionID)
 		PlaySound("UI_Garrison_CommandTable_MissionStart")
@@ -94,7 +93,7 @@ function addon:GMCRunMission(missionID,start)
 	end
 	for i=1,#GMC.ml.Parties do
 		local party=GMC.ml.Parties[i]
-		xprint("Checking",party.missionID)
+		print("Checking",party.missionID)
 		if (missionID and party.missionID==missionID or not missionID) then
 			GMC.ml.widget:RemoveChild(party.missionID)
 			GMC.ml.widget:DoLayout()
@@ -151,7 +150,7 @@ do
 				local checkprio=class
 				if checkprio=="itemLevel" then class="equip" end
 				if checkprio=="followerUpgrade" then class= "followerEquip" end
-				xprint(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
+				print(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
 				local minimumChance=0
 				if (GMC.settings.useOneChance) then
 					minimumChance=tonumber(GMC.settings.minimumChance) or 100
@@ -160,9 +159,9 @@ do
 				end
 				local party={members={},perc=0}
 				self:MCMatchMaker(missionID,party,GMC.settings.skipEpic)
-				xprint ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full)
+				print ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full)
 				if ( party.full and party.perc >= minimumChance) then
-					xprint("                           Mission accepted")
+					print("                           Mission accepted")
 					local mb=AceGUI:Create("GMCMissionButton")
 					for i=1,#party.members do
 						GMCUsedFollowers[party.members[i]]=true
@@ -205,7 +204,7 @@ function addon:GMC_OnClick_Run(this,button)
 	end
 end
 function addon:GMC_OnClick_Start(this,button)
-	xprint(C("-------------------------------------------------","Yellow"))
+	print(C("-------------------------------------------------","Yellow"))
 	GMC.ml.widget:ClearChildren()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
 		GMC.ml.widget:SetTitle("All followers are busy")
@@ -458,7 +457,9 @@ function addon:GMCBuildRewards()
 
 	local t = {
 		{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
-		{t = 'Enable/Disable other currency awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
+		{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
+		{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},
+		{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'scroll'},
 		{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
 		{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
 		{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'},
@@ -542,6 +543,7 @@ do
 		xp=L["Xp gain"],
 		gold=L["Gold Reward"],
 		resources=L["Resource Rewards"],
+		oil=L["Oil"],
 		generic=L["Other Rewards"]
 	}
 	prioVoices=0

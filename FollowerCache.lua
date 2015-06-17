@@ -111,7 +111,8 @@ function addon:GetFollowerData(followerID,key,default)
 	local follower=Mbase.followers[idx]
 	if (not follower) then
 --@debug@
-		ns.xprint("Not found",followerID,key,"at",idx,"len",#Mbase.followers)
+		print("Not found",followerID,key,"at",idx,"len",#Mbase.followers)
+		DevTools_Dump(G.GetFollowerInfo(followerID))
 		print(debugstack())
 --@end-debug@
 		return default
