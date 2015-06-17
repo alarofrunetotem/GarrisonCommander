@@ -33,19 +33,18 @@ setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
 local dbg
 local function formatScore(c,r,x,t,maxres,cap)
 	if (not maxres) then cap=100 end
-	return format("%03d%03d%03d%03d%01d",max(c,cap),r,c,x,t)
+	return format("%03d %03d %03d %03d %01d",min(c,cap),r,c,x,t),c
 end
-function addon:MissionScore(mission)
+function addon:MissionScore(mission,voidcap)
 	if ns.toc >=60200 then return self:xMissionScore(mission) end
 	if not mission then
 		return formatScore(0,1,0,0,false,0)
 	end
 	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
-	if type(materialMultiplier)=='table' then materialMultiplier=materialMultiplier[824] or 1 end
-	local r=math.min(mission.class=='resource' and materialMultiplier or (tonumber(xpBonus)or 0)/100,999)
+	local r=mission.class=="gold" and goldMultiplier or materialMultiplier
 	local t=isMissionTimeImproved and 1 or 0
 	local x=mission.xp and xpBonus/mission.xp*100 or 0
-	return formatScore(successChance,r,x,t,self:GetBoolean("MAXRES"),self:GetBoolean("MASRESPERC"))
+	return formatScore(successChance,r,x,t,mission.maxable and self:GetBoolean("MAXRES"),self:GetNumber("MAXRESCHANCHE"))
 end
 function addon:xMissionScore(mission)
 	if (mission) then
@@ -64,7 +63,7 @@ function addon:xMissionScore(mission)
 			end
 		end
 		local t=isMissionTimeImproved and 1 or 0
-		return formatScore(successChance,r,x,t,self:GetBoolean("MAXRES"),self:GetBoolean("MASRESPERC"))
+		return formatScore(successChance,r,x,t,mission.maxable and self:GetBoolean("MAXRES"),self:GetNUmber("MAXRESCHANCE"))
 	else
 		return formatScore(0,1,0,0,false,0)
 	end
@@ -197,11 +196,12 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		buffeds=buffeds+1
 	end
 	--]]
+	local minchance=floor(self:GetNumber('MAXRESCHANCE')/mission.numFollowers)-mission.numFollowers*mission.numFollowers
 	for _,followerID in self:GetFollowerIterator() do
-		--if (not buffed[followerID]) then
+
 		if P:AddFollower(followerID) then
 			local score,chance=self:FollowerScore(mission,followerID)
-			if (score~=self:FollowerScore(nil,followerID) and chance >10) then
+			if (score~=self:FollowerScore(nil,followerID) and chance >minchance) then
 				tinsert(scores,format("%s@%s",score,followerID))
 			else
 				tinsert(fillers,format("%s@%s",score,followerID))
@@ -210,10 +210,14 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		end
 		--end
 	end
+	if dbg then
+		scroller=self:GetScroller("Score for " .. mission.name .. " Class " .. mission.class)
+	end
 	if #scores > 0 then
 		local firstmember
 		table.sort(scores)
 		if (dbg) then
+			scroller:addRow("Cap Res Cha Xp T Vra Ran")
 			for i=1,#scores do
 				local score,followerID=strsplit('@',scores[i])
 				local t=score .. " " .. addon:GetFollowerData(followerID,'fullname') .. " " .. tostring(G.GetFollowerStatus(followerID))
@@ -292,7 +296,6 @@ function addon:MatchMaker(missionID,party,includeBusy)
 end
 function addon:TestMission(missionID,includeBusy)
 	dbg=true
-	scroller=self:GetScroller("Score for " .. missionID)
 	local party=new()
 	party.members=new()
 	self:MatchMaker(missionID,party,includeBusy)

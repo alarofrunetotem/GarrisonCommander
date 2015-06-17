@@ -146,15 +146,15 @@ function AddExtraData(mission)
 	mission.xpOnly=false
 	if mission.resources > 0 then
 		mission.class='resources'
-		mission.chanceCap=addon:GetNumber('MAXRESCHANCE',80)
+		mission.maxable=true
 		mission.mat=true
 	elseif mission.oil > 0 then
 		mission.class='oil'
-		mission.chanceCap=addon:GetNumber('MAXRESCHANCE',80)
+		mission.maxable=true
 		mission.mat=true
 	elseif mission.gold >0 then
 		mission.class='gold'
-		mission.chanceCap=addon:GetNumber('MAXRESCHANCE',80)
+		mission.maxable=true
 		mission.mat=true
 	elseif mission.itemLevel >0 then
 		mission.class='equip'

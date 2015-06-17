@@ -389,7 +389,7 @@ function addon:OnInitialized()
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
-	self:AddSlider("MIAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when maximise result is enabled. Default is 80%"])
+	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when maximise result is enabled. Default is 80%"])
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
 	self:AddLabel("Followers Panel")
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
