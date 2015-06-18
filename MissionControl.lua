@@ -248,7 +248,7 @@ local tItems = {
 	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'generic'}
 }
 if (ns.toc >=60200) then
-	tinsert(tItems,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},3)
+	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'})
 end
 local tOrder={1,2,3,4,5,6,7}
 local chestTexture

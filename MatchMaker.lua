@@ -63,7 +63,7 @@ function addon:xMissionScore(mission)
 			end
 		end
 		local t=isMissionTimeImproved and 1 or 0
-		return formatScore(successChance,r,x,t,mission.maxable and self:GetBoolean("MAXRES"),self:GetNUmber("MAXRESCHANCE"))
+		return formatScore(successChance,r,x,t,mission.maxable and self:GetBoolean("MAXRES"),self:GetNumber("MAXRESCHANCE"))
 	else
 		return formatScore(0,1,0,0,false,0)
 	end

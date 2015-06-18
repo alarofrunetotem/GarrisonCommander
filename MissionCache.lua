@@ -73,7 +73,9 @@ function addon:GetMissionData(missionID,key,default)
 		self:Print("Could not find info for mission",missionID,G.GetMissionName(missionID))
 	end
 --@end-debug@
-
+	if (mission.class=="retry" or not mission.globalXp) then
+		AddExtraData(mission)
+	end
 	if (key==nil) then
 		return mission
 	end
@@ -97,7 +99,7 @@ function addon:GetMissionData(missionID,key,default)
 		mission.basePerc=select(4,G.GetPartyMissionInfo(missionID))
 		return mission.basePerc
 	else
-		AddExtraData(mission)
+		--AddExtraData(mission)
 		return mission[key] or default
 	end
 end
@@ -129,6 +131,10 @@ function AddExtraData(mission)
 				mission.itemLevel=655
 			elseif v.itemID~=120205 then -- xp item
 				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
+				if (not itemName) then
+					mission.class="retry"
+					return
+				end
 				if itemTexture:lower()==rushOrders then
 					mission.rush=1
 				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
