@@ -201,6 +201,70 @@ function addon:GetType(itemID)
 	if (followerItems[itemID]) then return "followerEquip" end
 	return "generic"
 end
+--Data
+
+ns.traitTable= {
+		{
+			[9] = "Wastelander",
+		[7] = "Mountaineer",
+		[45] = "Cave Dweller",
+		[46] = "Guerilla Fighter",
+		[44] = "Naturalist",
+		[48] = "Marshwalker",
+		[49] = "Plainsrunner",
+		[8] = "Cold-Blooded",
+	}, -- [1]
+	{
+		[79] = "Scavenger",
+		[80] = "Extra Training",
+		[29] = "Fast Learner",
+		[256] = "Treasure Hunter",
+	}, -- [2]
+	{
+		[76] = "High Stamina",
+		[221] = "Epic Mount",
+		[77] = "Burst of Power",
+	}, -- [3]
+	[5] = {
+		[61] = "Tailoring",
+		[52] = "Mining",
+		[54] = "Alchemy",
+		[56] = "Enchanting",
+		[58] = "Inscription",
+		[60] = "Leatherworking",
+		[62] = "Skinning",
+		[53] = "Herbalism",
+		[55] = "Blacksmithing",
+		[57] = "Engineering",
+		[59] = "Jewelcrafting",
+	},
+	[6] = {
+		[73] = "Voodoo Zealot",
+		[63] = "Gnome-Lover",
+		[66] = "Child of the Moon",
+		[70] = "Child of Draenor",
+		[74] = "Elvenkind",
+		[67] = "Ally of Argus",
+		[71] = "Death Fascination",
+		[75] = "Economist",
+		[64] = "Humanist",
+		[68] = "Canine Companion",
+		[72] = "Totemist",
+		[65] = "Dwarvenborn",
+		[69] = "Brew Aficionado",
+	},
+	[7] = {
+		[37] = "Beastslayer",
+		[39] = "Primalslayer",
+		[4] = "Orcslayer",
+		[43] = "Talonslayer",
+		[36] = "Demonslayer",
+		[38] = "Ogreslayer",
+		[40] = "Gronnslayer",
+		[42] = "Voidslayer",
+		[41] = "Furyslayer",
+	},
+}
 
 
 -------------------- to be estracted to CountersCache
@@ -211,11 +275,32 @@ end
 --})
 --
 --
+--
+
+--[[ TtraitTable generator
+local TT=C_Garrison.GetRecruiterAbilityList(true)
+local map={}
+local  keys={}
+for i,v in pairs(C_Garrison.GetRecruiterAbilityCategories()) do
+	keys[v]=i
+end
+for  _,trait in  pairs(TT) do
+	local key=keys[trait.category]
+	if type(map[key])~="table"  then
+			map[key]={}
+	end
+	map[key][trait.id]=trait.name
+end
+ATEINFO['abilities']=map
+--]]
+
+--
 
 --[===[@non-debug@
 if true then return end
 --@end-non-debug@]===]
 --@do-not-package@
+
 local me, ns = ...
 local addon=ns.addon --#addon
 local L=ns.L

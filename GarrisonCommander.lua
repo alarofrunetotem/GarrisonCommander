@@ -428,7 +428,35 @@ function addon:showdata(fullargs,action,missionid)
 		end
 	end
 end
----@function [parent=#GarrisonCommander] GarrisonTraitCountersFrame_OnLoad
+local function fillCounters(self,category)
+	local i=0
+	for id,name in pairs(ns.traitTable[category]) do
+		i=i+1
+		local frame = self.TraitsList[i];
+		local offset=(ns.bigscreen and 22 or 17)
+
+		if ( not frame ) then
+			frame = CreateFrame("Button", nil, self, "GarrisonTraitCounterTemplate");
+			if i %  offset == 1 then
+				local a,b,c,x,y=self.TraitsList[1]:GetPoint(1)
+				frame:SetPoint(a,b,c,0,0)
+			else
+				frame:SetPoint("RIGHT", self.TraitsList[i-1], "LEFT", -14, 0);
+				frame:SetScript("OnEnter",GarrisonTraitCounter_OnEnter)
+			end
+			self.TraitsList[i] = frame;
+		end
+		frame.Icon:SetTexture(G.GetFollowerAbilityIcon(id))
+		frame.name = name;
+		frame.id = id;
+		frame:Show()
+	end
+	for j=i+1,#self.TraitsList do
+		self.TraitsList[j]:Hide()
+	end
+end
+
+---@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_OnLoad
 --@param #enum followerType dalla 6.2, il tipo follower
 --@param #string tooltipString Format per il tooltip
 function _G.GarrisonTraitCountersFrame_OnLoad(self, followerType, tooltipString)
@@ -439,38 +467,54 @@ function _G.GarrisonTraitCountersFrame_OnLoad(self, followerType, tooltipString)
 		tooltipString = GARRISON_THREAT_COUNTER_TOOLTIP .. " %d";
 	end
 	self.tooltipString = tooltipString;
-	local i=1
-	local top=0
-	for id,name in pairs(traitTable) do
-		local frame = self.TraitsList[i];
-		local offset=(ns.bigscreen and 22 or 17)
-
-		if ( not frame ) then
-			frame = CreateFrame("Button", nil, self, "GarrisonTraitCounterTemplate");
-			if i %  offset == 1 then
-				top=top-40
-				local a,b,c,x,y=self.TraitsList[1]:GetPoint(1)
-				frame:SetPoint(a,b,c,0,top)
-			else
-				frame:SetPoint("RIGHT", self.TraitsList[i-1], "LEFT", -14, 0);
-				frame:SetScript("OnEnter",GarrisonTraitCounter_OnEnter)
+	self.choice=CreateFrame('Frame',self:GetName()..tostring(GetTime()*1000),self,"UIDropDownMenuTemplate")
+	self.choice.button=_G[self.choice:GetName()..'Button']
+	self.choice:SetPoint("TOPLEFT",GMF.FollowerTab,"BOTTOMLEFT",-10,-5)
+	fillCounters(self,1)
+	do
+		local frame=self.choice
+		local list=addon:GetSortedProxy({})
+		for v,k in pairs(G.GetRecruiterAbilityCategories()) do
+			if (ns.traitTable[v]) then
+				list[k]=v
 			end
-			self.TraitsList[i] = frame;
 		end
-		frame.Icon:SetTexture(G.GetFollowerAbilityIcon(id))
-		frame.name = name;
-		frame.id = id;
-		i=i+1
+
+		local function sel(this,category,index)
+			print(category,index)
+			UIDropDownMenu_SetSelectedID(frame,index)
+			fillCounters(frame:GetParent(),category)
+		end
+		UIDropDownMenu_Initialize(frame, function(...)
+			local i=0
+			for k,v in list() do
+				i=i+1
+				local info=UIDropDownMenu_CreateInfo()
+				info.text=v
+				info.value=v
+				info.func=sel
+				info.arg1=v
+				info.arg2=i
+				UIDropDownMenu_AddButton(info,1)
+			end
+		end)
+		UIDropDownMenu_SetWidth(frame, 100);
+		UIDropDownMenu_SetButtonWidth(frame, 124)
+		UIDropDownMenu_SetSelectedID(frame, 1)
+		UIDropDownMenu_JustifyText(frame, "LEFT")
+		--EasyMenu(list,frame,frame,0,0,nil,5)
 	end
 	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE");
 end
--- Trait show
+
+---@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_OnEvent
 function _G.GarrisonTraitCountersFrame_OnEvent(self, event, ...)
 	if ( self:IsVisible() ) then
 		GarrisonTraitCountersFrame_Update(self);
 	end
 end
 
+---@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_Update
 function _G.GarrisonTraitCountersFrame_Update(self)
 
 	for i = 1, #self.TraitsList do
@@ -480,6 +524,7 @@ function _G.GarrisonTraitCountersFrame_Update(self)
 	end
 end
 
+---@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_OnEnter
 function _G.GarrisonTraitCounter_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 	local text = string.format(self:GetParent().tooltipString, self.Count:GetText(), self.name,self.id);
@@ -731,7 +776,9 @@ local function switch(flag)
 	end
 end
 function addon:RefreshMissions(missionID)
-	GarrisonMissionList_UpdateMissions()
+	if (GMF:IsShown()) then
+		GarrisonMissionList_UpdateMissions()
+	end
 end
 
 --[[

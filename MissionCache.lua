@@ -131,7 +131,7 @@ function AddExtraData(mission)
 				mission.itemLevel=655
 			elseif v.itemID~=120205 then -- xp item
 				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
-				if (not itemName) then
+				if (not itemName or not itemTexture) then
 					mission.class="retry"
 					return
 				end

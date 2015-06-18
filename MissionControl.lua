@@ -288,7 +288,7 @@ local function drawItemButtons()
 			GMC.settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
 			end
 		)
-		frame.slider:OnValueChanged(GMC.settings.rewardChance[frame.key])
+		frame.slider:OnValueChanged(GMC.settings.rewardChance[frame.key] or 100)
 		--frame.slider:SetText(GMC.settings.rewardChance[frame.key])
 		frame.chest = frame.chest or frame:CreateTexture(nil, 'BACKGROUND')
 		frame.chest:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
