@@ -25,7 +25,7 @@ local L=ns.L
 local D=ns.D
 local C=ns.C
 local new,del=ns.new,ns.del
-local module=addon:NewModule("BuildingPage",addon) --#module
+local module=addon:NewSubClass("BuildingPage") --#module
 function module:OnInitialize()
 	--module:SafeHookScript(GBFMap,"OnShow","AddFollowersToMap")
 	module:SafeSecureHook("GarrisonBuildingList_Show","AddCheckBox")

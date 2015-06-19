@@ -22,7 +22,6 @@ local Mbase = GMFMissions
 --	C_Garrison.GetAvailableMissions(self.availableMissions);
 local Index={}
 local sorted={}
-local AddExtraData
 local ItemRewards={122484,118529,128391}
 local rushOrders="interface\\icons\\inv_scroll_12.blp"
 local function keyToIndex(key)
@@ -68,15 +67,17 @@ function addon:GetMissionData(missionID,key,default)
 	if not mission then
 		mission=G.GetMissionInfo(missionID)
 	end
---@debug@
 	if not mission then
+--@debug@
 		self:Print("Could not find info for mission",missionID,G.GetMissionName(missionID))
-	end
 --@end-debug@
-	if (mission.class=="retry" or not mission.globalXp) then
-		AddExtraData(mission)
+		return default
 	end
 	if (key==nil) then
+		if (mission.class=="retry" or not mission.globalXp or key=="globalXp") then
+			print(key)
+			self:AddExtraData(mission)
+		end
 		return mission
 	end
 	if not mission then
@@ -103,12 +104,13 @@ function addon:GetMissionData(missionID,key,default)
 		return mission[key] or default
 	end
 end
-function AddExtraData(mission)
+function addon:AddExtraData(mission)
 	local _
 	_,mission.xp,mission.type,mission.typeDesc,mission.typeIcon,mission.locPrefix,_,mission.enemies=G.GetMissionInfo(mission.missionID)
 	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 	mission.resources=0
 	mission.oil=0
+	mission.apexis=0
 	mission.gold=0
 	mission.followerUpgrade=0
 	mission.itemLevel=0
@@ -123,6 +125,7 @@ function AddExtraData(mission)
 		if k==615 and v.followerXP then mission.xpBonus=mission.xpBonus+v.followerXP end
 		if v.currencyID and v.currencyID==GARRISON_CURRENCY then mission.resources=v.quantity end
 		if v.currencyID and v.currencyID==GARRISON_SHIP_OIL_CURRENCY then mission.oil=v.quantity end
+		if v.currencyID and v.currencyID==823 then mission.apexis =mission.apexis+v.quantity end
 		if v.currencyID and v.currencyID==0 then mission.gold =mission.gold+v.quantity/10000 end
 		if v.icon=="Interface\\Icons\\XPBonus_Icon" and v.followerXP then
 			mission.xpBonus=mission.xpBonus+v.followerXP
@@ -158,14 +161,18 @@ function AddExtraData(mission)
 		mission.class='oil'
 		mission.maxable=true
 		mission.mat=true
+	elseif mission.apexis > 0 then
+		mission.class='apexis'
+		mission.maxable=true
+		mission.mat=true
 	elseif mission.gold >0 then
 		mission.class='gold'
 		mission.maxable=true
 		mission.mat=true
 	elseif mission.itemLevel >0 then
-		mission.class='equip'
+		mission.class='itemLevel'
 	elseif mission.followerUpgrade>0 then
-		mission.class='followerEquip'
+		mission.class='followerUpgrade'
 	elseif mission.itemLevel>=645 then
 		mission.class='epic'
 	elseif mission.rush>=0 then

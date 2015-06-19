@@ -87,11 +87,11 @@ end
 function filters.ignored(followerID,missionID)
 	return addon:IsIgnored(followerID,missionID)
 end
-function filters.generic(followerID,missionID)
+function filters.other(followerID,missionID)
 	return filters.busy(followerID,missionID) or filters.ignored(followerID,missionID)
 end
 function filters.xp(followerID,missionID)
-	return filters.maxed(followerID,missionID) or filters.generic(followerID,missionID)
+	return filters.maxed(followerID,missionID) or filters.other(followerID,missionID)
 end
 --alias
 --filters.resources=filters.generic
@@ -129,7 +129,7 @@ local filterTypes = setmetatable({}, {__index=function(self, missionClass)
 end})
 local function AddMoreFollowers(self,mission,scores,justdo)
 	local missionID=mission.missionID
-	local filterOut=filters[mission.class] or filters.generic
+	local filterOut=filters[mission.class] or filters.other
 	local missionScore=self:MissionScore(mission)
 
 	for p=1,P:FreeSlots() do
@@ -171,7 +171,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	local mission=self:GetMissionData(missionID)
 	local class=self:GetMissionData(missionID,'class')
 	print(C(format("MATCHMAKER %s (%d) class: %s",mission.name,missionID,class),'Orange'),includeBusy and "Busy" or "Ready")
-	local filterOut=filters[class] or filters.generic
+	local filterOut=filters[class] or filters.other
 	filters.skipMaxed=self:GetBoolean("IGP")
 	if (includeBusy==nil) then
 		filters.skipBusy=self:GetBoolean("IGM")
@@ -239,6 +239,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 			end
 			if mission.numFollowers > 1 then
 				AddMoreFollowers(self,mission,scores)
+				AddMoreFollowers(self,mission,fillers)
 			end
 		end
 	end
@@ -271,6 +272,10 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		party.xpBonus=mission.xpBonus
 		party.gold=mission.gold
 		party.resources=mission.resources
+		party.oil=mission.oil
+		party.apexis=mission.apexis
+		party.epic=mission.epic
+		party.other=mission.other
 	end
 	P:StoreFollowers(party.members)
 	P:Close(party)

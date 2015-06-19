@@ -13,7 +13,7 @@ local D=ns.D
 local C=ns.C
 local new,del=ns.new,ns.del
 local GRF=GarrisonRecruiterFrame.Pick
-local module=addon:NewModule("RecruitingPage",addon) --#module
+local module=addon:NewSubClass("RecruitingPage") --#module
 function module:OnInitialize()
 end
 local origGarrisonRecruiterFrame_AddEntryToDropdown=GarrisonRecruiterFrame_AddEntryToDropdown

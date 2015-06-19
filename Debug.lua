@@ -1,4 +1,3 @@
-if true then return end
 --@do-not-package@
 local me, ns = ...
 if (me=="doc") then
@@ -56,6 +55,7 @@ end
 	for k,v in my() do print(k,v) end
 	return
 end
+local me, ns = ...
 local addon=ns.addon --#addon
 local L=ns.L
 local D=ns.D
@@ -119,11 +119,45 @@ function addon:DumpSinks()
 	self:cutePrint(scroll,sorted)
 end
 end
+local m={}
+function m:AddRow(text,...)
+	local l=AceGUI:Create("Label")
+	l:SetText(text)
+	l:SetColor(...)
+	l:SetFullWidth(true)
+	self:AddChild(l)
+	return l
+end
+function m:AddIconText(icon,text,qt)
+	local l=AceGUI:Create("InteractiveLabel")
+	l:SetFontObject(GameFontNormalSmall)
+	if (qt) then
+		l:SetText(format("%s x %s",text,qt))
+	else
+		l:SetText(text)
+	end
+	l:SetImage(icon)
+	l:SetImageSize(24,24)
+	l:SetFullWidth(true)
+	l.frame:EnableMouse(true)
+	l.frame:SetFrameLevel(999)
+	self:AddChild(l)
+	return l
+end
+function m:AddItem(itemID,qt)
+	local _,itemlink,itemquality,_,_,_,_,_,_,itemtexture=GetItemInfo(itemID)
+	if not itemlink then
+		return self:AddIconText(itemtexture,itemID)
+	else
+		return self:AddIconText(itemtexture,itemlink)
+	end
+end
 function addon:GetScroller(title,type,h,w)
 	h=h or 800
 	w=w or 400
 	type=type or "Frame"
 	local scrollerWindow=AceGUI:Create("Frame")
+	--scrollerWindow.frame:SetAlpha(1)
 	scrollerWindow:SetTitle(title)
 	scrollerWindow:SetLayout("Fill")
 	--local scrollcontainer = AceGUI:Create("SimpleGroup") -- "InlineGroup" is also good
@@ -141,7 +175,8 @@ function addon:GetScroller(title,type,h,w)
 	scrollerWindow:SetWidth(w)
 	scrollerWindow:SetPoint("CENTER")
 	scrollerWindow:Show()
-	scroll.AddRow=function (self,...) return addon:AddRow(self,...) end
+	for k,v in pairs(m) do scroll[k]=v end
+	scroll.addRow=scroll.AddRow
 	return scroll
 end
 function addon:AddRow(obj,text,...)
@@ -156,14 +191,22 @@ function addon:AddRow(obj,text,...)
 		obj:AddChild(l)
 	end
 end
+local function safesort(a,b)
+	if (tonumber(a) and tonumber(b)) then
+		return a < b
+	else
+		return tostring(a) < tostring(b)
+	end
+end
 function addon:cutePrint(scroll,level,k,v)
 	if (type(level)=="table") then
-		for k,v in pairs(level) do
+		for k,v in kpairs(level,safesort) do
 			self:cutePrint(scroll,"",k,v)
 		end
 		return
 	end
 	if (type(v)=="table") then
+		if (level:len()>6) then return end
 		self:AddRow(scroll,level..C(k,"Azure")..":" ..C("Table","Orange"))
 		for kk,vv in pairs(v) do
 			self:cutePrint(scroll,level .. "  ",kk,vv)
@@ -206,11 +249,11 @@ function addon:DumpIgnored()
 end
 function addon:DumpMission(missionID)
 	local scroll=self:GetScroller("MissionCache " .. self:GetMissionData(missionID,'name'))
-	self:cutePrint(scroll,cache.missions[missionID])
+	self:cutePrint(scroll,self:GetMissionData(missionID))
 end
 function addon:DumpMissions()
 	local scroll=self:GetScroller("MissionCache")
-	for id,data in pairs(cache.missions) do
+	for id,data in pairs(self:GetMissionData(missionID)) do
 		self:cutePrint(scroll,id .. '.'..data.name)
 	end
 end
@@ -226,7 +269,15 @@ function addon:DumpCounters(missionID)
 	self:cutePrint(scroll,counterThreatIndex[missionID])
 end
 function addon:Dump(title,data)
+	if type(data)=="string" then
+		data=_G[data]
+	end
+	if type(data) ~= "table" then
+		print(data,"is not a table")
+		return
+	end
 	local scroll=self:GetScroller(title)
+	print("Dumping",title)
 	self:cutePrint(scroll,data)
 	return scroll
 end
@@ -239,16 +290,14 @@ function addon:DumpParty(missionID)
 	self:cutePrint(scroll,parties[missionID])
 end
 function addon:DumpAgeDb()
-	local t=new()
+	local t=ns.new()
 	for i,v in pairs(dbcache.seen) do
 		tinsert(t,format("%80s %s %d",self:GetMissionData(i,'name'),date("%d/%m/%y %H:%M:%S",v),ns.wowhead[i]))
 	end
 	local scroll=self:GetScroller("Expire db")
 	self:cutePrint(scroll,t)
-	del(t)
+	ns.del(t)
 end
-_G.GCF=GCF
-_G.MW=173
 --[[
 PlaySound("UI_Garrison_CommandTable_Open");
 	PlaySound("UI_Garrison_CommandTable_Close");

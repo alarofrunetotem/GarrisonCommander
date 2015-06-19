@@ -13,7 +13,12 @@ local pcall=pcall
 local type=type
 local pairs=pairs
 local format=format
-
+--@debug@
+if LibDebug then LibDebug() end
+--@end-debug@
+--[===[@non-debug@
+setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
+--@end-non-debug@]===]
 --
 -- Temporary party management
 local parties=setmetatable({},{

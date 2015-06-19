@@ -175,7 +175,6 @@ local FLSIZE=400
 local BIGBUTTON=BIGSIZEW-GCSIZE
 local SMALLBUTTON=BIGSIZEW-GCSIZE
 local GCF
-local GMC
 local GCFMissions
 local GCFBusyStatus
 local GameTooltip=GameTooltip
@@ -408,11 +407,6 @@ function addon:OnInitialized()
 	self:Trigger("MSORT")
 	self:AddOpenCmd("show","showdata","Prints a mission score")
 	LoadAddOn("GarrisonCommander-Broker")
-	if false and self.db.global.traits[ns.toc] then
-		return true
-	else
-		self.db.global.traits[ns.toc]=traitTable
-	end
 	return true
 end
 function addon:showdata(fullargs,action,missionid)
@@ -473,24 +467,17 @@ function _G.GarrisonTraitCountersFrame_OnLoad(self, followerType, tooltipString)
 	fillCounters(self,1)
 	do
 		local frame=self.choice
-		local list=addon:GetSortedProxy({})
-		for v,k in pairs(G.GetRecruiterAbilityCategories()) do
-			if (ns.traitTable[v]) then
-				list[k]=v
-			end
-		end
-
+		local list=G.GetRecruiterAbilityCategories()
 		local function sel(this,category,index)
-			print(category,index)
 			UIDropDownMenu_SetSelectedID(frame,index)
 			fillCounters(frame:GetParent(),category)
 		end
 		UIDropDownMenu_Initialize(frame, function(...)
 			local i=0
-			for k,v in list() do
+			for v,k in pairs(list) do
 				i=i+1
 				local info=UIDropDownMenu_CreateInfo()
-				info.text=v
+				info.text=k
 				info.value=v
 				info.func=sel
 				info.arg1=v
@@ -677,7 +664,7 @@ function addon:SetThreatColor(obj,threat)
 end
 
 function addon:HookedGarrisonMissionButton_AddThreatsToTooltip(missionID)
-	if (GMC:IsShown()) then return end
+	if (ns.ns.GMC:IsShown()) then return end
 	return self:RenderTooltip(missionID)
 end
 function addon:AddIconsToFollower(missionID,useful,followers,members,followerTypeID)
@@ -836,17 +823,25 @@ function addon:CreatePrivateDb()
 						gold=true,
 						equip=true,
 						resources=true,
-						xp=true
+						xp=true,
+						scroll=true,
+						apexis=true,
+						oil=true,
+						other=true
 					},
 					rewardChance={
 						followerEquip=100,
 						gold=100,
 						equip=100,
 						resources=100,
-						xp=100
+						xp=100,
+						scroll=100,
+						apexis=100,
+						oil=100,
+						other=100
 					},
+					rewardOrder={1,2,3,4,5,6,7,8,9},
 					useOneChance=true,
-					itemPrio = {},
 					minimumChance = 100,
 					minDuration = 0,
 					maxDuration = 24,
@@ -873,6 +868,13 @@ function addon:CreatePrivateDb()
 end
 function addon:SetClean()
 	dirty=false
+end
+function addon:HasSalvageYard()
+	local buildings=G.GetBuildings()
+	for i =1,#buildings do
+		local building=buildings[i]
+		if building.texPrefix=="GarrBuilding_SalvageYard_1_A" then return true end
+	end
 end
 
 function addon:WipeMission(missionID)
@@ -1673,7 +1675,7 @@ function addon:SetUp(...)
 	self:CheckMP()
 	self:CheckGMM()
 	self:Options()
-	GMC=self:GMCBuildPanel(ns.bigscreen)
+	--GMC=self:GMCBuildPanel(ns.bigscreen)
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabMC=tabMC
 	tabMC.tooltip="Open Garrison Commander Mission Control"
@@ -2345,8 +2347,8 @@ end
 function addon:OpenLastTab()
 	lastTab=lastTab or PanelTemplates_GetSelectedTab(GMF)
 	if lastTab then
-		if GMC:IsShown() then
-			GMC:Hide()
+		if ns.GMC:IsShown() then
+			ns.GMC:Hide()
 			GMF.tabMC:SetChecked(false)
 			if lastTab==2 then
 				GMF.FollowerTab:Show()
@@ -2374,14 +2376,14 @@ function addon:OpenMissionsTab()
 	return self:OpenLastTab()
 end
 function addon:OpenMissionControlTab()
-	if (not GMC:IsShown()) then
+	if (not ns.GMC:IsShown()) then
 		lastTab=PanelTemplates_GetSelectedTab(GMF)
 		GMF.FollowerTab:Hide()
 		GMF.FollowerList:Hide()
 		GMF.MissionTab:Hide()
 		GMF.TitleText:SetText(L["Garrison Commander Mission Control"])
-		GMC:Show()
-		GMC.startButton:Click()
+		ns.GMC:Show()
+		ns.GMC.startButton:Click()
 		GMF.tabMC:SetChecked(true)
 	else
 		GMF.tabMC:SetChecked(false)
@@ -3047,6 +3049,7 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 end
 -- Switchs between active and availabla missions depending on tab object
 function over.GarrisonMissionList_SetTab(...)
+	print("Click su",...)
 	-- I dont actually care wich page we are shoing, I know I must redraw missions
 	orig.GarrisonMissionList_SetTab(...)
 	addon:RefreshFollowerStatus()
@@ -3054,6 +3057,18 @@ function over.GarrisonMissionList_SetTab(...)
 		GMFMissionListButtons.lastMissionID=nil
 	end
 	if (HD) then addon:ResetSinks() end
+end
+function over.GarrisonMissionController_OnClickTab(self,tab,...)
+	print("Click su",...)
+	-- I dont actually care wich page we are shoing, I know I must redraw missions
+	orig.GarrisonMissionController_OnClickTab(self,tab,...)
+	addon:RefreshFollowerStatus()
+	for i=1,#GMFMissionListButtons do
+		GMFMissionListButtons.lastMissionID=nil
+	end
+	lastTab=tab:GetID()
+	if (HD) then addon:ResetSinks() end
+	addon:OpenLastTab();
 end
 function over.GarrisonMissionButton_OnClick(f,b)
 	print(f,f:GetName())
@@ -3068,6 +3083,7 @@ override("GarrisonMissionButton_OnEnter")
 override("GarrisonMissionPageFollowerFrame_OnEnter")
 override("GarrisonMissionList_SetTab")
 override("GarrisonMissionButton_OnClick")
+override("GarrisonMissionController_OnClickTab")
 
 GMF.MissionTab.MissionPage.CloseButton:SetScript("OnClick",over.GarrisonMissionPage_Close)
 for i=1,#GMFMissionListButtons do

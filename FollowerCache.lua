@@ -22,10 +22,18 @@ local names={}
 local sorted={}
 local threats={}
 local traits={}
+--@debug@
+if LibDebug then LibDebug() end
+--@end-debug@
+--[===[@non-debug@
+setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
+--@end-non-debug@]===]
+local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local function keyToIndex(key)
 	if (not Mbase.followers or not next(Mbase.followers)) then
 		Mbase.dirtyList=false
-		Mbase.followers = G.GetFollowers();
+		Mbase.followers = G.GetFollowers(LE_FOLLOWER_TYPE_GARRISON_6_0);
 	end
 	local idx=key and index[key] or nil
 	if (idx and idx <= #Mbase.followers) then
@@ -82,7 +90,7 @@ local function AddExtraData(follower,refreshrank)
 	follower.abilities=G.GetFollowerAbilities(follower.followerID)
 end
 function addon:FollowerCacheInit()
-	pcall(GarrisonFollowerList_UpdateFollowers,Mbase)
+	pcall(GarrisonFollowerList_UpdateFollowers,Mbase,1)
 end
 function addon:CanCounter(followerID,id)
 	local abilities=self:GetFollowerData(followerID,'abilities')
@@ -110,11 +118,6 @@ function addon:GetFollowerData(followerID,key,default)
 	local idx=keyToIndex(followerID)
 	local follower=Mbase.followers[idx]
 	if (not follower) then
---@debug@
-		print("Not found",followerID,key,"at",idx,"len",#Mbase.followers)
-		DevTools_Dump(G.GetFollowerInfo(followerID))
-		print(debugstack())
---@end-debug@
 		return default
 	end
 	if (key==nil) then
@@ -139,9 +142,9 @@ end
 -- Iterator function
 -- @param func type of sorting (can be mitted if we dont care)
 --
-function addon:GetFollowerIterator(func)
+function addon:GetFollowerIterator(func,followerTypeID)
 	keyToIndex()
-	if (func) then
+	if type(func)=="function" then
 		table.sort(sorted,sorters[func])
 	end
 	local f=Mbase.followers

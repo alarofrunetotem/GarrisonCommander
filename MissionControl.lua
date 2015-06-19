@@ -28,18 +28,36 @@ _G.GAC=addon
 if LibDebug then LibDebug() end
 --@end-debug@
 local dbg
-function addon:GMCBusy(followerID)
+local tItems = {
+	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
+	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
+	{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'rush'},
+	{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
+	{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
+	{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'},
+	{t = 'Enable/Disable apexis.', i = "Interface\\Icons\\inv_apexis_draenor", key = 'apexis'},
+	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'other'}
+}
+local tOrder
+local settings
+if (ns.toc >=60200) then
+	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'})
+end
+local module=addon:NewSubClass("MissionControl") --#module
+function module:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
 end
-function addon:GMCCreateMissionList(workList)
+addon.GMCBusy=module.GMCBusy
+function module:GMCCreateMissionList(workList)
 	--First get rid of unwanted rewards and missions that are too long
 	local settings=self.privatedb.profile.missionControl
 	local ar=settings.allowedRewards
 	wipe(workList)
 	for _,missionID in self:GetMissionIterator() do
 		local discarded=false
+		local class=self:GetMissionData(missionID,"class")
 		repeat
-			print("|cffff0000",'Examing',self:GetMissionData(missionID,"name"),self:GetMissionData(missionID,"class"),"|r")
+			print("|cffff0000",'Examing',missionID,self:GetMissionData(missionID,"name"),class,"|r")
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
 				print(missionID,"discarded due to len",durationSeconds /3600)
@@ -49,14 +67,10 @@ function addon:GMCCreateMissionList(workList)
 				print(missionID,"discarded due to rarity")
 				break
 			end
-			for k,v in pairs(ar) do
-				if (not v) then
-					if (self:GetMissionData(missionID,"class")==k) then -- we have a forbidden reward
-						print(missionID,"discarded due to class == ", k)
-						discarded=true
-						break
-					end
-				end
+			if (not ar[class]) then
+				print(missionID,"discarded due to class == ", class)
+				discarded=true
+				break
 			end
 			if (not discarded) then
 				tinsert(workList,missionID)
@@ -65,18 +79,9 @@ function addon:GMCCreateMissionList(workList)
 	end
 	local parties=self:GetParty()
 	local function msort(i1,i2)
-		for i=1,#GMC.settings.itemPrio do
-			local criterium=GMC.settings.itemPrio[i]
-			if (criterium) then
-				if addon:GetMissionData(i1,criterium) ~= addon:GetMissionData(i2,criterium) then
-					return addon:GetMissionData(i1,criterium) > addon:GetMissionData(i2,criterium)
-				end
-			end
-		end
-		if (parties[i1].perc and parties[i2].perc) then
-			return parties[i1].perc > parties[i2].perc
-		end
-		return addon:GetMissionData(i1,'level') > addon:GetMissionData(i2,'level')
+		local c1=addon:GetMissionData(i1,'class','other')
+		local c2=addon:GetMissionData(i2,'class','other')
+		return addon:GetMissionData(i1,c1,0) > addon:GetMissionData(i2,c2,0)
 	end
 	table.sort(workList,msort)
 end
@@ -84,7 +89,7 @@ end
 -- In standard version, delay between group building and submitting is done via a self schedule
 --@param #integer missionID Optional, to run a single mission
 --@param #bool start Optional, tells that follower already are on mission and that we need just to start it
-function addon:GMCRunMission(missionID,start)
+function module:GMCRunMission(missionID,start)
 	print("Asked to start mission",missionID)
 	if (start) then
 		G.StartMission(missionID)
@@ -117,7 +122,7 @@ do
 	local timeElapsed=0
 	local currentMission=0
 	local x=0
-	function addon:GMCCalculateMissions(this,elapsed)
+	function module:GMCCalculateMissions(this,elapsed)
 		db.news.MissionControl=true
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
@@ -172,7 +177,7 @@ do
 					mb:SetFullWidth(true)
 					mb:SetMission(self:GetMissionData(missionID),party)
 					mb:SetCallback("OnClick",function(...)
-						addon:GMCRunMission(missionID)
+						module:GMCRunMission(missionID)
 						GMC.ml.widget:RemoveChild(missionID)
 					end
 					)
@@ -183,7 +188,7 @@ do
 	end
 end
 
-function addon:GMC_OnClick_Run(this,button)
+function module:GMC_OnClick_Run(this,button)
 	this:Disable()
 	GMC.logoutButton:Disable()
 	do
@@ -203,7 +208,7 @@ function addon:GMC_OnClick_Run(this,button)
 	)
 	end
 end
-function addon:GMC_OnClick_Start(this,button)
+function module:GMC_OnClick_Start(this,button)
 	print(C("-------------------------------------------------","Yellow"))
 	GMC.ml.widget:ClearChildren()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
@@ -218,7 +223,7 @@ function addon:GMC_OnClick_Start(this,button)
 	end
 	this:Disable()
 	GMC.ml.widget:SetTitleColor(C.Green())
-	addon:GMCCreateMissionList(aMissions)
+	module:GMCCreateMissionList(aMissions)
 	wipe(GMCUsedFollowers)
 	wipe(GMC.ml.Parties)
 	self:RefreshFollowerStatus()
@@ -231,26 +236,6 @@ function addon:GMC_OnClick_Start(this,button)
 	self:RawHookScript(GMC.startButton,'OnUpdate',"GMCCalculateMissions")
 
 end
-function addon:HasSalvageYard()
-	local buildings=G.GetBuildings()
-	for i =1,#buildings do
-		local building=buildings[i]
-		if building.texPrefix=="GarrBuilding_SalvageYard_1_A" then return true end
-	end
-end
-local tItems = {
-	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
-	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
-	{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'scroll'},
-	{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
-	{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
-	{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'},
-	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'generic'}
-}
-if (ns.toc >=60200) then
-	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i='Interface\\Icons\\garrison_oil', key = 'oil'})
-end
-local tOrder={1,2,3,4,5,6,7,8}
 local chestTexture
 local function drawItemButtons()
 	local scale=1.1
@@ -259,7 +244,6 @@ local function drawItemButtons()
 	local single=GMC.settings.useOneChance
 	for j = 1, #tItems do
 		local i=tOrder[j]
-		print(j,i)
 		local frame = GMC.ignoreFrames[j] or CreateFrame('BUTTON', "Priority" .. j, GMC.aif, 'ItemButtonTemplate')
 		GMC.ignoreFrames[j] = frame
 		frame:SetID(i)
@@ -305,6 +289,7 @@ local function drawItemButtons()
 		frame:SetScript('OnClick', function(this)
 			GMC.settings.allowedRewards[this.key] = not GMC.settings.allowedRewards[this.key]
 			drawItemButtons()
+			GMC.startButton:Click()
 		end)
 		frame:SetScript('OnEnter', function(this)
 			GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
@@ -316,8 +301,15 @@ local function drawItemButtons()
 		frame:SetScript("OnDragStart",function(this,button)
 			print("Start",this:GetID())
 			this:StartMoving()
+			this.oldframestrata=this:GetFrameStrata()
+			this:SetFrameStrata("FULLSCREEN_DIALOG")
 		end)
-		frame:SetScript("OnDragStop",function(this,button) this:StopMovingOrSizing() print("Stopped",this:GetID()) end)
+		frame:SetScript("OnDragStop",function(this,button)
+			this:StopMovingOrSizing()
+			print("Stopped",this:GetID())
+			this:SetFrameStrata(this.oldframestrata)
+
+		end)
 		frame:SetScript("OnReceiveDrag",function(this)
 				local x,y=this:GetCenter()
 				local id=this:GetID()
@@ -336,6 +328,7 @@ local function drawItemButtons()
 					end
 				end
 				drawItemButtons()
+				GMC.startButton:Click()
 		end)
 		frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
 		frame:Show()
@@ -346,7 +339,7 @@ local function drawItemButtons()
 		GMC.rewardinfo = GMC.aif:CreateFontString()
 		local info=GMC.rewardinfo
 		info:SetFontObject('GameFontHighlight')
-		info:SetText('Click to enable/disable a reward.')
+		info:SetText("Click to enable/disable a reward.\nDrag to reorder")
 		info:SetTextColor(1, 1, 1)
 		info:SetPoint("TOP",GMC.ignoreFrames[#tItems],"BOTTOM",256/2,-15)
 	end
@@ -355,13 +348,28 @@ local function drawItemButtons()
 
 end
 
-function addon:GMCBuildPanel(bigscreen)
-	db=self.db.global
-	dbcache=self.privatedb.profile
-	cache=self.private.profile
+function module:OnInitialized()
+	local bigscreen=ns.bigscreen
+	db=addon.db.global
+	dbcache=addon.privatedb.profile
+	cache=addon.private.profile
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
 	GMC = CreateFrame('FRAME', 'GMCOptions', GMF)
+	ns.GMC=GMC
 	GMC.settings=dbcache.missionControl
+	settings=dbcache.missionControl
+	if type(settings.allowedRewards['equip'])~='nil' then
+		settings.allowedRewards['itemLevel']=settings.allowedRewards['equip']
+		settings.allowedRewards['equip']=nil
+	end
+	if type(settings.allowedRewards['followerEquip'])~='nil' then
+		settings.allowedRewards['followerUpgrade']=settings.allowedRewards['followerUpgrade']
+		settings.allowedRewards['followerEquip']=nil
+	end
+	tOrder=GMC.settings.rewardOrder
+	if GMC.settings.itemPrio then
+		GMC.settings.itemPrio=nil
+	end
 	GMC:SetAllPoints()
 	--GMC:SetPoint('LEFT')
 	--GMC:SetSize(GMF:GetWidth(), GMF:GetHeight())
@@ -404,7 +412,7 @@ function addon:GMCBuildPanel(bigscreen)
 	GMC.skipRare:SetPoint("TOPLEFT",chance,"BOTTOMLEFT",40,-50)
 	GMC.skipRare:SetScript("OnClick",function(this)
 		GMC.settings.skipRare=this:GetChecked()
-		addon:GMC_OnClick_Start(GMC.startButton,"LeftUp")
+		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
 	end)
 	local warning=GMC:CreateFontString(nil,"ARTWORK","CombatTextFont")
 	warning:SetText(L["Epic followers are NOT sent alone on xp only missions"])
@@ -418,7 +426,7 @@ function addon:GMCBuildPanel(bigscreen)
 	GMC.skipEpic:SetScript("OnClick",function(this)
 		GMC.settings.skipEpic=this:GetChecked()
 		if (GMC.settings.skipEpic) then warning:Show() else warning:Hide() end
-		addon:GMC_OnClick_Start(GMC.startButton,"LeftUp")
+		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
 	end)
 	GMC.Credits=GMC:CreateFontString(nil,"ARTWORK","QuestFont_Shadow_Small")
 	GMC.Credits:SetWidth(0)
@@ -427,7 +435,7 @@ function addon:GMCBuildPanel(bigscreen)
 	GMC.Credits:SetPoint("BOTTOMLEFT",25,25)
 	return GMC
 end
-function addon:GMCBuildChance()
+function module:GMCBuildChance()
 	_G['GMC']=GMC
 	--Chance
 	GMC.cf = CreateFrame('FRAME', nil, GMC)
@@ -489,7 +497,7 @@ local function timeslidechange(this,value)
 	GMC.mt:SetTextColor(1, c, c)
 	GMC.mt:SetFormattedText("%d-%dh",GMC.settings.minDuration,GMC.settings.maxDuration)
 end
-function addon:GMCBuildDuration()
+function module:GMCBuildDuration()
 	-- Duration
 	GMC.tf = CreateFrame('FRAME', nil, GMC)
 	GMC.tf:SetSize(256, 180)
@@ -532,7 +540,7 @@ function addon:GMCBuildDuration()
 	timeslidechange(GMC.ms2,GMC.settings.maxDuration)
 	return GMC.tf
 end
-function addon:GMCBuildRewards()
+function module:GMCBuildRewards()
 	--Allowed rewards
 	GMC.aif = CreateFrame('FRAME', nil, GMC)
 	GMC.itf = GMC.aif:CreateFontString()
@@ -560,7 +568,7 @@ function addon:GMCBuildRewards()
 	return GMC.aif
 end
 
-function addon:GMCBuildMissionList()
+function module:GMCBuildMissionList()
 		-- Mission list on follower panels
 --		local ml=CreateFrame("Frame",nil,GMC)
 --		addBackdrop(ml)
