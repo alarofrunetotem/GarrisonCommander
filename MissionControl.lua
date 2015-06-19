@@ -248,9 +248,9 @@ local tItems = {
 	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'generic'}
 }
 if (ns.toc >=60200) then
-	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'})
+	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i='Interface\\Icons\\garrison_oil', key = 'oil'})
 end
-local tOrder={1,2,3,4,5,6,7}
+local tOrder={1,2,3,4,5,6,7,8}
 local chestTexture
 local function drawItemButtons()
 	local scale=1.1
@@ -259,6 +259,7 @@ local function drawItemButtons()
 	local single=GMC.settings.useOneChance
 	for j = 1, #tItems do
 		local i=tOrder[j]
+		print(j,i)
 		local frame = GMC.ignoreFrames[j] or CreateFrame('BUTTON', "Priority" .. j, GMC.aif, 'ItemButtonTemplate')
 		GMC.ignoreFrames[j] = frame
 		frame:SetID(i)
