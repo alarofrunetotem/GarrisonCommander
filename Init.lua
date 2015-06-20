@@ -14,17 +14,25 @@ local tostring=tostring
 local tonumber=tonumber
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
-if LibDebug then LibDebug() end
+if LibDebug then LibDebug() else ns.print=function() end end
 --@end-debug@
 --[===[@non-debug@
-setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
+ns.print=function() end
 --@end-non.debug@]===]
 ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
-local chatframe=ns.addon:GetChatFrame("aDebug")
-local function pd(...)
-	--if (chatframe) then chatframe:AddMessage(format("GC:%6.3f %s",GetTime(),strjoin(' ',tostringall(...)))) end
-	pp(format("|cff808080GC:%6.3f|r %s",GetTime(),strjoin(' ',tostringall(...))))
+local ENV=setmetatable({
+	print=ns.print
+},
+{__index=_G}
+)
+function ns.Configure()
+		local old_env = getfenv(2)
+		if old_env ~= _G and old_env ~= ENV then
+			error("The calling function has a modified environment, I won't replace it.", 2)
+		end
+		setfenv(2, ENV)
 end
+
 local addon=ns.addon --#addon
 ns.toc=select(4,GetBuildInfo())
 ns.AceGUI=LibStub("AceGUI-3.0")
@@ -265,8 +273,9 @@ ns.traitTable= {
 		[41] = "Furyslayer",
 	},
 }
-
-
+ns.traitTable={
+[1]={  [9]="Wastelander",  [7]="Mountaineer",  [45]="Cave Dweller",  [46]="Guerilla Fighter",  [44]="Naturalist",  [48]="Marshwalker",  [49]="Plainsrunner",  [8]="Cold-Blooded"},[2]={  [80]="Extra Training",  [314]="Greasemonkey",  [79]="Scavenger",  [256]="Treasure Hunter",  [29]="Fast Learner"},[3]={  [76]="High Stamina",  [221]="Epic Mount",  [77]="Burst of Power"},[6]={  [61]="Tailoring",  [52]="Mining",  [54]="Alchemy",  [56]="Enchanting",  [58]="Inscription",  [60]="Leatherworking",  [62]="Skinning",  [53]="Herbalism",  [55]="Blacksmithing",  [57]="Engineering",  [59]="Jewelcrafting"},[7]={  [64]="Humanist",  [66]="Child of the Moon",  [68]="Canine Companion",  [65]="Dwarvenborn",  [67]="Ally of Argus",  [69]="Brew Aficionado",  [63]="Gnome-Lover"},[8]={  [37]="Beastslayer",  [39]="Primalslayer",  [4]="Orcslayer",  [43]="Talonslayer",  [36]="Demonslayer",  [38]="Ogreslayer",  [40]="Gronnslayer",  [42]="Voidslayer",  [41]="Furyslayer"}
+}
 -------------------- to be estracted to CountersCache
 --
 --local G=C_Garrison

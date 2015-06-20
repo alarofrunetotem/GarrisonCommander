@@ -33,8 +33,8 @@ local tItems = {
 	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
 	{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'rush'},
 	{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
-	{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerEquip'},
-	{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'equip'},
+	{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerUpgrade'},
+	{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'itemLevel'},
 	{t = 'Enable/Disable apexis.', i = "Interface\\Icons\\inv_apexis_draenor", key = 'apexis'},
 	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'other'}
 }
@@ -81,7 +81,11 @@ function module:GMCCreateMissionList(workList)
 	local function msort(i1,i2)
 		local c1=addon:GetMissionData(i1,'class','other')
 		local c2=addon:GetMissionData(i2,'class','other')
-		return addon:GetMissionData(i1,c1,0) > addon:GetMissionData(i2,c2,0)
+		if (c1==c2) then
+			return addon:GetMissionData(i1,c1,0) > addon:GetMissionData(i2,c2,0)
+		else
+			return tOrder[c1]<tOrder[c2]
+		end
 	end
 	table.sort(workList,msort)
 end
@@ -242,8 +246,9 @@ local function drawItemButtons()
 	local h=37 -- itemButtonTemplate standard size
 	local gap=5
 	local single=GMC.settings.useOneChance
-	for j = 1, #tItems do
-		local i=tOrder[j]
+	--for j = 1, #tItems do
+		--local i=tOrder[j]
+	for j,i in ipairs(tOrder) do
 		local frame = GMC.ignoreFrames[j] or CreateFrame('BUTTON', "Priority" .. j, GMC.aif, 'ItemButtonTemplate')
 		GMC.ignoreFrames[j] = frame
 		frame:SetID(i)
@@ -252,6 +257,7 @@ local function drawItemButtons()
 		frame:SetPoint('TOPLEFT', 0,(j) * (-h -gap) * scale)
 		frame.icon:SetTexture(tItems[i].i)
 		frame.key=tItems[i].key
+		tOrder[frame.key]=j
 		frame.tooltip=tItems[i].t
 		frame.allowed=GMC.settings.allowedRewards[frame.key]
 		frame.chance=GMC.settings.rewardChance[frame.key]
@@ -322,6 +328,7 @@ local function drawItemButtons()
 							f:SetID(id)
 							for j=1,#tItems do
 								tOrder[j]=GMC.ignoreFrames[j]:GetID()
+								tOrder[GMC.ignoreFrames[j].key]=j
 							end
 							break
 						end

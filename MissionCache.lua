@@ -1,4 +1,5 @@
 local me,ns=...
+ns.Configure()
 local addon=ns.addon --#addon
 local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
 local xdump=ns.xdump
@@ -75,7 +76,6 @@ function addon:GetMissionData(missionID,key,default)
 	end
 	if (key==nil) then
 		if (mission.class=="retry" or not mission.globalXp or key=="globalXp") then
-			print(key)
 			self:AddExtraData(mission)
 		end
 		return mission
@@ -139,7 +139,7 @@ function addon:AddExtraData(mission)
 					return
 				end
 				if itemTexture:lower()==rushOrders then
-					mission.rush=1
+					mission.rush=mission.rush+v.quantity
 				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
 					if itemLevel > 1 and itemMinLevel >=90 then
 						mission.itemLevel=itemLevel
@@ -175,10 +175,10 @@ function addon:AddExtraData(mission)
 		mission.class='followerUpgrade'
 	elseif mission.itemLevel>=645 then
 		mission.class='epic'
-	elseif mission.rush>=0 then
+	elseif mission.rush>0 then
 		mission.class='rush'
 	elseif numrewards > 1 then
-		mission.class='generic'
+		mission.class='other'
 	else
 		mission.class='xp'
 		mission.xpOnly=true

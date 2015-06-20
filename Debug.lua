@@ -1,4 +1,5 @@
 --@do-not-package@
+local _G=_G
 LoadAddOn("Blizzard_DebugTools")
 local me, ns = ...
 if (me=="doc") then
@@ -275,6 +276,25 @@ local function traitGen()
 		map[key][trait.id]=trait.name
 	end
 	DevTools_Dump(map)
+	do
+		local f=ns.AceGUI:Create("Frame")
+		local editbox=ns.AceGUI:Create("EditBox")
+		f:AddChild(editbox)
+		editbox:SetFullHeight(true)
+		f:SetLayout("Fill")
+		f:DoLayout()
+		local accumulator=""
+		local context = {
+				depth = 0,
+				key = nil,
+		};
+		context.GetTableName = function() return nil end
+		context.GetFunctionName = context.GetTableName
+		context.GetUserdataName = context.GetTableName
+		context.Write=function(this,msg) accumulator=accumulator..msg end
+		DevTools_RunDump(map,context)
+		editbox:SetText(accumulator)
+	end
 end
 local trackedEvents={}
 local function eventTrace ( self, event, ... )

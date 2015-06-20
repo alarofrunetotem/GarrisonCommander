@@ -170,7 +170,6 @@ end
 local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	local mission=self:GetMissionData(missionID)
 	local class=self:GetMissionData(missionID,'class')
-	print(C(format("MATCHMAKER %s (%d) class: %s",mission.name,missionID,class),'Orange'),includeBusy and "Busy" or "Ready")
 	local filterOut=filters[class] or filters.other
 	filters.skipMaxed=self:GetBoolean("IGP")
 	if (includeBusy==nil) then
@@ -246,25 +245,21 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	if P:FreeSlots() > 0 then
 		if not onlyBest then
 			filters.skipMaxed=false
-			print("           AddMore 1 with skipmaxed false",filters.skipMaxed)
 			AddMoreFollowers(self,mission,scores)
 		end
 	end
 	if P:FreeSlots() > 0 then
 		filters.skipMaxed=false
-		print("           AddMore 1 with just do true")
 		AddMoreFollowers(self,mission,scores,true)
 	end
 	if P:FreeSlots() > 0 then
 		filters.skipMaxed=false
-		print("           AddMore 1 with just do true")
 		AddMoreFollowers(self,mission,fillers,true)
 	end
 	if dbg then
 		P:Dump()
 		scroller:AddRow("Final score: " .. self:MissionScore(mission))
 	end
-	print("Final score",self:MissionScore(mission))
 	if not party.class then
 		party.class=class
 		party.itemLevel=mission.itemLevel

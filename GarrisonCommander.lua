@@ -302,6 +302,16 @@ sorters.Age=function (mission1, mission2)
 		return p1 < p2
 	end
 end
+sorters.Class=function(mission1,mission2)
+	if type(mission1)~="table" or type(mission2) ~="table" then return end
+	local p1=addon:GetMissionData(mission1.missionID,'class','other')
+	local p2=addon:GetMissionData(mission2.missionID,'class','other')
+	if (p1==p2) then
+		return strcmputf8i(mission1.name, mission2.name) < 0
+	else
+		return p1 < p2
+	end
+end
 sorters.Followers=function(mission1, mission2)
 	if type(mission1)~="table" or type(mission2) ~="table" then return end
 	local p1=addon:GetMissionData(mission1.missionID,'numFollowers',1)
@@ -347,6 +357,10 @@ function addon.Garrison_SortMissions_Original(missionsList)
 	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
 	origGarrison_SortMissions(missionsList)
 end
+function addon.Garrison_SortMissions_Class(missionsList)
+	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	table.sort(missionsList, sorters.Class);
+end
 local t={}
 for i=1,256 do
 	local rc,good=pcall(G.GetFollowerAbilityIsTrait,i)
@@ -385,6 +399,7 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Age=L["Expiration Time"],
 		Garrison_SortMissions_Xp=L["Global approx. xp reward"],
 		Garrison_SortMissions_Duration=L["Duration Time"],
+		Garrison_SortMissions_Class=L["Reward type"],
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
@@ -431,13 +446,8 @@ local function fillCounters(self,category)
 
 		if ( not frame ) then
 			frame = CreateFrame("Button", nil, self, "GarrisonTraitCounterTemplate");
-			if i %  offset == 1 then
-				local a,b,c,x,y=self.TraitsList[1]:GetPoint(1)
-				frame:SetPoint(a,b,c,0,0)
-			else
-				frame:SetPoint("RIGHT", self.TraitsList[i-1], "LEFT", -14, 0);
-				frame:SetScript("OnEnter",GarrisonTraitCounter_OnEnter)
-			end
+			frame:SetPoint("LEFT", self.TraitsList[i-1], "RIGHT", 14, 0);
+			frame:SetScript("OnEnter",GarrisonTraitCounter_OnEnter)
 			self.TraitsList[i] = frame;
 		end
 		frame.Icon:SetTexture(G.GetFollowerAbilityIcon(id))
@@ -463,7 +473,7 @@ function _G.GarrisonTraitCountersFrame_OnLoad(self, followerType, tooltipString)
 	self.tooltipString = tooltipString;
 	self.choice=CreateFrame('Frame',self:GetName()..tostring(GetTime()*1000),self,"UIDropDownMenuTemplate")
 	self.choice.button=_G[self.choice:GetName()..'Button']
-	self.choice:SetPoint("TOPLEFT",GMF.FollowerTab,"BOTTOMLEFT",-10,-5)
+	self.choice:SetPoint("TOPLEFT")
 	fillCounters(self,1)
 	do
 		local frame=self.choice
@@ -475,18 +485,20 @@ function _G.GarrisonTraitCountersFrame_OnLoad(self, followerType, tooltipString)
 		UIDropDownMenu_Initialize(frame, function(...)
 			local i=0
 			for v,k in pairs(list) do
-				i=i+1
-				local info=UIDropDownMenu_CreateInfo()
-				info.text=k
-				info.value=v
-				info.func=sel
-				info.arg1=v
-				info.arg2=i
-				UIDropDownMenu_AddButton(info,1)
+				if ns.traitTable[v] then
+					i=i+1
+					local info=UIDropDownMenu_CreateInfo()
+					info.text=k
+					info.value=v
+					info.func=sel
+					info.arg1=v
+					info.arg2=i
+					UIDropDownMenu_AddButton(info,1)
+				end
 			end
 		end)
-		UIDropDownMenu_SetWidth(frame, 100);
-		UIDropDownMenu_SetButtonWidth(frame, 124)
+		UIDropDownMenu_SetWidth(frame, 150);
+		UIDropDownMenu_SetButtonWidth(frame, 174)
 		UIDropDownMenu_SetSelectedID(frame, 1)
 		UIDropDownMenu_JustifyText(frame, "LEFT")
 		--EasyMenu(list,frame,frame,0,0,nil,5)
@@ -1712,7 +1724,7 @@ function addon:SetUp(...)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
 	GarrisonTraitCountersFrame:ClearAllPoints()
 	GarrisonTraitCountersFrame:SetParent(GarrisonThreatCountersFrame:GetParent())
-	GarrisonTraitCountersFrame:SetPoint("BOTTOMRIGHT",0,-25)
+	GarrisonTraitCountersFrame:SetPoint("BOTTOMLEFT",200,0)
 	GarrisonTraitCountersFrame:Show()
 
 	return self:StartUp()
@@ -1846,12 +1858,12 @@ end
 function addon:checkMethod(method,hook)
 	if (type(self[method])=="function") then
 --@debug@
-		print("Hooking ",hook,"to self:" .. method)
+		--print("Hooking ",hook,"to self:" .. method)
 --@end-debug@
 		return true
 --@debug@
 	else
-		print("Hooking ",hook,"to print")
+		--print("Hooking ",hook,"to print")
 --@end-debug@
 	end
 end
@@ -1890,7 +1902,8 @@ function addon:SafeHookScript(frame,hook,method,postHook)
 		end
 	end
 	if (frame) then
-		if (self:IsHooked(frame,hook)) then return end
+		--This allow to change a hook, for example to substitute an one time init with the standard routine
+		if (self:IsHooked(frame,hook)) then self:Unhook(frame,hook)	end
 		if (method) then
 			if (postHook) then
 				self:SecureHookScript(frame,hook,method)
@@ -2282,7 +2295,11 @@ do
 			self:OpenFollowersTab()
 			GMF.selectedFollower=followerID
 			if (GMF.FollowerTab) then
-				GarrisonFollowerPage_ShowFollower(GMF.FollowerTab,followerID)
+				if (ns.toc <60200) then
+					GarrisonFollowerPage_ShowFollower(GMF.FollowerTab,followerID)
+				else
+					GMFFollowers:ShowFollower(followerID)
+				end
 			end
 		else
 			menu[1].text=frame.info.name
@@ -2437,14 +2454,16 @@ addon.SetUp=addon.ExperimentalSetUp
 
 
 -- Blizzard functions override
-local function override(blizfunc)
-	if not orig[blizfunc] then
-		orig[blizfunc]=_G[blizfunc]
-		_G[blizfunc]=over[blizfunc]
+local function override(blizfunc,...)
+	local overrider=blizfunc
+	if select('#',...) > 0 then
+		blizfunc=strjoin('.',blizfunc,...)
+		overrider=strjoin('_',overrider,...)
 	end
---@debug@
-	print("Overriding ",blizfunc)
---@end-debug@
+	assert(type(over[overrider])=="function",overrider)
+	if (orig[overrider]) then return end
+	local code="local orig,over,overrider=... orig[overrider]=_G."..blizfunc.." _G."..blizfunc.."=over[overrider]"
+	assert(loadstring(code, "Executing " ..code))(orig,over,overrider)
 end
 function over.StolenGarrisonMissionPageFollowerFrame_OnEnter(self)
 	if not self.info then
@@ -2633,7 +2652,7 @@ do
 		local missions;
 		if (self.showInProgress) then
 			-- Ten times in a second is enough...
-			local tick=math.floor(GetTime()*10)
+			local tick=math.floor(GetTime())
 			if (tick == lastcall) then
 			else
 				collectgarbage("step",500)
@@ -3058,17 +3077,19 @@ function over.GarrisonMissionList_SetTab(...)
 	end
 	if (HD) then addon:ResetSinks() end
 end
-function over.GarrisonMissionController_OnClickTab(self,tab,...)
-	print("Click su",...)
+function over.GarrisonMissionFrame_SelectTab(self,tab,...)
 	-- I dont actually care wich page we are shoing, I know I must redraw missions
-	orig.GarrisonMissionController_OnClickTab(self,tab,...)
+	orig.GarrisonMissionFrame_SelectTab(self,tab,...)
 	addon:RefreshFollowerStatus()
 	for i=1,#GMFMissionListButtons do
 		GMFMissionListButtons.lastMissionID=nil
 	end
-	lastTab=tab:GetID()
+	lastTab=tab
 	if (HD) then addon:ResetSinks() end
-	addon:OpenLastTab();
+	if GMF.tabMC then
+		GMF.tabMC:SetChecked(false)
+		ns.GMC:Hide()
+	end
 end
 function over.GarrisonMissionButton_OnClick(f,b)
 	print(f,f:GetName())
@@ -3076,14 +3097,13 @@ function over.GarrisonMissionButton_OnClick(f,b)
 end
 
 --hooksecurefunc("GarrisonMissionList_Update",function(...)print("Original GarrisonMissionList_Update",...)end)
-override("GarrisonMissionPage_Close")
 override("GarrisonMissionList_Update")
 override("GarrisonMissionButton_SetRewards")
 override("GarrisonMissionButton_OnEnter")
 override("GarrisonMissionPageFollowerFrame_OnEnter")
 override("GarrisonMissionList_SetTab")
 override("GarrisonMissionButton_OnClick")
-override("GarrisonMissionController_OnClickTab")
+override("GarrisonMissionFrame","SelectTab")
 
 GMF.MissionTab.MissionPage.CloseButton:SetScript("OnClick",over.GarrisonMissionPage_Close)
 for i=1,#GMFMissionListButtons do

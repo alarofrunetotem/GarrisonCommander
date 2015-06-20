@@ -417,7 +417,7 @@
 		<Frames>
 			<Button parentArray="TraitsList" inherits="GarrisonTraitCounterTemplate">
 				<Anchors>
-					<Anchor point="TOPRIGHT" x="0" y="7"/>
+					<Anchor point="TOPLEFT" x="0" y="0"/>
 				</Anchors>
 			</Button>
 		</Frames>
