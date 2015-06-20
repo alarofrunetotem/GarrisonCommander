@@ -19,3 +19,4 @@ manual-changelog:
 ignore:
 - .buildpath
 - .project
+- Debug.lua
