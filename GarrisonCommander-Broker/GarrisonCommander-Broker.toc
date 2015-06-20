@@ -9,7 +9,7 @@
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
-## OptionalDeps: Titan, Bazooka, ChocolateBar , FuBar , LibDataBroker-1.1
+## OptionalDeps: Titan, Bazooka, ChocolateBar , FuBar , LibDataBroker-1.1, LibDebug
 ## DefaultState: Enabled
 ## SavedVariables: dbGACB
 ## X-ID: GACB

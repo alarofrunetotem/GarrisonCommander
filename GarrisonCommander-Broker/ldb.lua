@@ -6,10 +6,14 @@ if (not LibStub:GetLibrary("LibDataBroker-1.1",true)) then
 	return
 end
 local pp=print
-if (LibDebug) then LibDebug() end
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
+if LibDebug then LibDebug() end
 --@end-debug@
+--[===[@non-debug@
+setfenv(1,setmetatable({print=function(...) end},{__index=_G}))
+--@end-non-debug@]===]
+print("Garrison-Broker")
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
 --local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
 local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0","AceHook-3.0") --#addon
@@ -160,7 +164,7 @@ function addon:CheckDateReset()
 	end
 	self:ScheduleTimer("CheckDateReset",60)
 --@debug@
-	if (today~=oldToday) then
+	if (false and today~=oldToday) then
 		self:Popup(format("o:%s y:%s t:%s r:%s [w:%s m:%s d:%s y:%s] ",oldToday,yesterday,today,reset,CalendarGetDate()))
 		dataobj:Update()
 		farmobj:Update()
