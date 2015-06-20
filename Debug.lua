@@ -60,7 +60,7 @@ if (me=="doc") then
 	return
 end
 local pp=print
-ns.Configure()
+if ns.Configure then ns.Configure() end
 local addon=ns.addon --#addon
 local L=ns.L
 local D=ns.D
