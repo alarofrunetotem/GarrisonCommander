@@ -1,4 +1,5 @@
 --@do-not-package@
+LoadAddOn("Blizzard_DebugTools")
 local me, ns = ...
 if (me=="doc") then
 	local mt={
@@ -46,79 +47,29 @@ if (me=="doc") then
 				if k then return k,self[k] end
 			end,self,0
 		end
-end
+	end
 	local my=setmetatable({},mt)
 	my.pippo=3
 	my.pluto=4
 	my.andrea=2
 	my.zanzi=1
+	print("Sorted")
 	for k,v in my() do print(k,v) end
+	print("Unsorted")
+	for k,v in pairs(my) do print(k,v) end
 	return
 end
-local me, ns = ...
+local pp=print
+ns.Configure()
 local addon=ns.addon --#addon
 local L=ns.L
 local D=ns.D
 local C=ns.C
 local AceGUI=ns.AceGUI
 local _G=_G
-local pp=print
 _G.GAC=addon
 
---- Enable a trace for every function call. It's a VERY heavy debug
---
-if ns.HD then
-local memorysinks={}
-local callstack={}
-local lib=LibStub("LibInit")
-for k,v in pairs(addon) do
-	if (type(v))=="function" and not lib[k] then
-		local wrapped
-		do
-			local original=addon[k]
-			wrapped=function(...)
-				pp(k)
-				tinsert(callstack,k)
-				local membefore=GetAddOnMemoryUsage("GarrisonCommander")
-				local a1,a2,a3,a4,a5,a6,a7,a8,a9=original(...)
-				local memafter=GetAddOnMemoryUsage("GarrisonCommander")
-				tremove(callstack)
-				memorysinks[k].mem=memorysinks[k].mem+memafter-membefore
-				memorysinks[k].calls=memorysinks[k].calls+1
-				if (#callstack) then
-					memorysinks[k].callers=strjoin("->",unpack(callstack))
-				else
-					memorysinks[k].callers="main"
-				end
-				if (memafter-membefore > 20) then
-					pp(C(k,'Red'),'used ',memafter-membefore)
-				end
-				return a1,a2,a3,a4,a5,a6,a7,a8,a9
-			end
-		end
-		addon[k]=wrapped
-		memorysinks[k]={mem=0,calls=0,callers=""}
-	end
-end
-function addon:ResetSinks()
-	for k,v in pairs(memorysinks) do
-		memorysinks[k].mem=0
-		memorysinks[k].calls=0
-	end
-end
-local sorted={}
-function addon:DumpSinks()
-	local scroll=self:GetScroller("Sinks",nil,400,1000)
-	wipe(sorted)
-	for k,v in pairs(memorysinks) do
-		if v.mem then
-			tinsert(sorted,format("Mem %06d (calls: %03d) Mem per call:%03.2f  Callstack:%s(%s)",v.mem,v.calls,v.mem/v.calls,C(k,"Orange"),v.callers))
-		end
-	end
-	table.sort(sorted,function(a,b) return a>b end)
-	self:cutePrint(scroll,sorted)
-end
-end
+
 local m={}
 function m:AddRow(text,...)
 	local l=AceGUI:Create("Label")
@@ -297,6 +248,122 @@ function addon:DumpAgeDb()
 	local scroll=self:GetScroller("Expire db")
 	self:cutePrint(scroll,t)
 	ns.del(t)
+end
+do
+local appo
+appo=addon.OnInitialized
+function addon:OnInitialized()
+	appo(self)
+	self:AddLabel("Developers options")
+	self:AddToggle("DBG",false, "Enable Debug")
+	self:AddToggle("TRC",false, "Enable Trace")
+	self:AddOpenCmd("show","showdata","Prints a mission score")
+end
+end
+local function traitGen()
+	local TT=C_Garrison.GetRecruiterAbilityList(true)
+	local map={}
+	local  keys={}
+	for i,v in pairs(C_Garrison.GetRecruiterAbilityCategories()) do
+		keys[v]=i
+	end
+	for  _,trait in  pairs(TT) do
+		local key=keys[trait.category]
+		if type(map[key])~="table"  then
+				map[key]={}
+		end
+		map[key][trait.id]=trait.name
+	end
+	DevTools_Dump(map)
+end
+local trackedEvents={}
+local function eventTrace ( self, event, ... )
+	if (event:find("GARRISON",1,true)) then
+		local signature="("..event
+		for i=1,select('#',...) do
+			signature=','..signature..type(select(i,...))
+		end
+		signature=signature..")"
+		trackedEvents[event]=signature
+	end
+end
+function addon:showdata(fullargs,action,missionid)
+	self:Print(fullargs,",",missionid)
+	missionid=tonumber(missionid)
+	if missionid then
+		if action=="score" then
+			self:Print(self:GetMissionData(missionid,'name'),self:MissionScore(self:GetMissionData(missionid)))
+		elseif action=="mission" then
+			self:DumpMission(missionid)
+		elseif action=="match" then
+			self:TestMission(missionid)
+		end
+	else
+		if action=="traits" then
+			traitGen()
+		elseif action=="events" then
+			self:Dump("EventList",trackedEvents)
+		end
+	end
+end
+
+local f=CreateFrame("Frame")
+f:SetScript("OnEvent",eventTrace)
+f:RegisterAllEvents()
+
+--]]
+--- Enable a trace for every function call. It's a VERY heavy debug
+--
+if not ns.HD then return end
+local memorysinks={}
+local callstack={}
+local lib=LibStub("LibInit")
+for k,v in pairs(addon) do
+	if (type(v))=="function" and not lib[k] then
+		local wrapped
+		do
+			local original=addon[k]
+			wrapped=function(...)
+				pp(k)
+				tinsert(callstack,k)
+				local membefore=GetAddOnMemoryUsage("GarrisonCommander")
+				local a1,a2,a3,a4,a5,a6,a7,a8,a9=original(...)
+				local memafter=GetAddOnMemoryUsage("GarrisonCommander")
+				tremove(callstack)
+				memorysinks[k].mem=memorysinks[k].mem+memafter-membefore
+				memorysinks[k].calls=memorysinks[k].calls+1
+				if (#callstack) then
+					memorysinks[k].callers=strjoin("->",unpack(callstack))
+				else
+					memorysinks[k].callers="main"
+				end
+				if (memafter-membefore > 20) then
+					pp(C(k,'Red'),'used ',memafter-membefore)
+				end
+				return a1,a2,a3,a4,a5,a6,a7,a8,a9
+			end
+		end
+		addon[k]=wrapped
+		memorysinks[k]={mem=0,calls=0,callers=""}
+	end
+end
+function addon:ResetSinks()
+	for k,v in pairs(memorysinks) do
+		memorysinks[k].mem=0
+		memorysinks[k].calls=0
+	end
+end
+local sorted={}
+function addon:DumpSinks()
+	local scroll=self:GetScroller("Sinks",nil,400,1000)
+	wipe(sorted)
+	for k,v in pairs(memorysinks) do
+		if v.mem then
+			tinsert(sorted,format("Mem %06d (calls: %03d) Mem per call:%03.2f  Callstack:%s(%s)",v.mem,v.calls,v.mem/v.calls,C(k,"Orange"),v.callers))
+		end
+	end
+	table.sort(sorted,function(a,b) return a>b end)
+	self:cutePrint(scroll,sorted)
 end
 --[[
 PlaySound("UI_Garrison_CommandTable_Open");
