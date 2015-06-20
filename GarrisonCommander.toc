@@ -39,3 +39,6 @@ FollowerRecruiting.lua
 BuildingPage.lua
 ShipYard.lua
 RelNotes.lua
+#@do-not-package@
+Debug.lua
+#@end-do-not-package@
