@@ -20,3 +20,4 @@ ignore:
 - .buildpath
 - .project
 - Debug.lua
+- info.txt

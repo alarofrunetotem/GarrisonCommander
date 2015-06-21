@@ -312,7 +312,6 @@ local function drawItemButtons()
 		end)
 		frame:SetScript("OnReceiveDrag",function(this)
 				print("Receive",this:GetID(),this.key)
-				DevTools_Dump(tOrder)
 				local from=this:GetID()
 				local to
 				local x,y=this:GetCenter()
