@@ -1,12 +1,7 @@
 local me,ns=...
 ns.Configure()
-local addon=ns.addon --#addon
-local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
-local xdump=ns.xdump
---upvalue
-local G=C_Garrison
-local GMF=GarrisonMissionFrame
-local GMFMissions=GarrisonMissionFrameMissions
+local addon=addon --#addon
+--local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
 local type=type
 local select=select
 local pairs=pairs

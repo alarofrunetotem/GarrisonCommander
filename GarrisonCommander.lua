@@ -1,11 +1,6 @@
 local me, ns = ...
-local addon=ns.addon --#addon
-local L=ns.L
-local D=ns.D
-local C=ns.C
+ns.Configure()
 local _G=_G
-local P=ns.party
-local AceGUI=ns.AceGUI
 local HD=false
 local tremove=tremove
 local setmetatable=setmetatable
@@ -26,12 +21,7 @@ local trc=false
 local pin=false
 local baseHeight
 local minHeight
---@debug@
-if LibDebug then LibDebug() end
---@end-debug@
---[===[@non-debug@
-setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
---@end-non-debug@]===]
+local addon=addon --#addon
 ns.bigscreen=true
 -- Blizzard functions override support
 local orig={} --#originals
@@ -436,98 +426,6 @@ function addon:showdata(fullargs,action,missionid)
 			self:TestMission(missionid)
 		end
 	end
-end
-local function fillCounters(self,category)
-	local i=0
-	for id,name in pairs(ns.traitTable[category]) do
-		i=i+1
-		local frame = self.TraitsList[i];
-		local offset=(ns.bigscreen and 22 or 17)
-
-		if ( not frame ) then
-			frame = CreateFrame("Button", nil, self, "GarrisonTraitCounterTemplate");
-			frame:SetPoint("LEFT", self.TraitsList[i-1], "RIGHT", 14, 0);
-			frame:SetScript("OnEnter",GarrisonTraitCounter_OnEnter)
-			self.TraitsList[i] = frame;
-		end
-		frame.Icon:SetTexture(G.GetFollowerAbilityIcon(id))
-		frame.name = name;
-		frame.id = id;
-		frame:Show()
-	end
-	for j=i+1,#self.TraitsList do
-		self.TraitsList[j]:Hide()
-	end
-end
-
----@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_OnLoad
---@param #enum followerType dalla 6.2, il tipo follower
---@param #string tooltipString Format per il tooltip
-function _G.GarrisonTraitCountersFrame_OnLoad(self, followerType, tooltipString)
-	if (followerType == nil) then
-		followerType = LE_FOLLOWER_TYPE_GARRISON_6_0;
-	end
-	if (tooltipString == nil) then
-		tooltipString = GARRISON_THREAT_COUNTER_TOOLTIP .. " %d";
-	end
-	self.tooltipString = tooltipString;
-	self.choice=CreateFrame('Frame',self:GetName()..tostring(GetTime()*1000),self,"UIDropDownMenuTemplate")
-	self.choice.button=_G[self.choice:GetName()..'Button']
-	self.choice:SetPoint("TOPLEFT")
-	fillCounters(self,1)
-	do
-		local frame=self.choice
-		local list=G.GetRecruiterAbilityCategories()
-		local function sel(this,category,index)
-			UIDropDownMenu_SetSelectedID(frame,index)
-			fillCounters(frame:GetParent(),category)
-		end
-		UIDropDownMenu_Initialize(frame, function(...)
-			local i=0
-			for v,k in pairs(list) do
-				if ns.traitTable[v] then
-					i=i+1
-					local info=UIDropDownMenu_CreateInfo()
-					info.text=k
-					info.value=v
-					info.func=sel
-					info.arg1=v
-					info.arg2=i
-					UIDropDownMenu_AddButton(info,1)
-				end
-			end
-		end)
-		UIDropDownMenu_SetWidth(frame, 150);
-		UIDropDownMenu_SetButtonWidth(frame, 174)
-		UIDropDownMenu_SetSelectedID(frame, 1)
-		UIDropDownMenu_JustifyText(frame, "LEFT")
-		--EasyMenu(list,frame,frame,0,0,nil,5)
-	end
-	self:RegisterEvent("GARRISON_FOLLOWER_LIST_UPDATE");
-end
-
----@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_OnEvent
-function _G.GarrisonTraitCountersFrame_OnEvent(self, event, ...)
-	if ( self:IsVisible() ) then
-		GarrisonTraitCountersFrame_Update(self);
-	end
-end
-
----@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_Update
-function _G.GarrisonTraitCountersFrame_Update(self)
-
-	for i = 1, #self.TraitsList do
-		local t=addon:GetFollowersWithTrait(self.TraitsList[i].id)
-		local n=t and #t or 0
-		self.TraitsList[i].Count:SetText(n);
-	end
-end
-
----@function [parent=#GarrisonTraitCountersFrame] GarrisonTraitCountersFrame_OnEnter
-function _G.GarrisonTraitCounter_OnEnter(self)
-	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-	local text = string.format(self:GetParent().tooltipString, self.Count:GetText(), self.name,self.id);
-	GameTooltip:SetText(text, nil, nil, nil, nil, true);
 end
 
 function addon:CheckMP()
@@ -1080,7 +978,7 @@ do
 	function addon:RefreshFollowerStatus()
 
 		wipe(s)
-		for _,followerID in self:GetFollowerIterator() do
+		for _,followerID in self:GetFollowersIterator() do
 			local status=self:GetFollowerStatus(followerID)
 			s[status]=s[status]+1
 		end
@@ -1663,7 +1561,7 @@ do
 			local missionID=partyIndex[i]
 			local party=parties[missionID]
 			local mission=self:GetMissionData(missionID)
-			if (mission) then
+			if mission and party and #party.members >= G.GetMissionMaxFollowers(missionID) then
 				local mb=AceGUI:Create("GMCMissionButton")
 				mb:SetScale(0.6)
 				ml:PushChild(mb,missionID)
@@ -1679,7 +1577,6 @@ end
 --Initial one time setup
 function addon:SetUp(...)
 	ns.CompletedMissions={}
-	self:FollowerCacheInit()
 --@alpha@
 	if (not db.alfa.v220) then
 		self:Popup(L["You are using an Alpha version of Garrison Commander. Please post bugs on Curse if you find them"],10)
@@ -1726,10 +1623,7 @@ function addon:SetUp(...)
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
-	GarrisonTraitCountersFrame:ClearAllPoints()
-	GarrisonTraitCountersFrame:SetParent(GarrisonThreatCountersFrame:GetParent())
-	GarrisonTraitCountersFrame:SetPoint("BOTTOMLEFT",200,0)
-	GarrisonTraitCountersFrame:Show()
+
 
 	return self:StartUp()
 	--collectgarbage("step",10)
@@ -1938,6 +1832,9 @@ function addon:GetFollowerTexture(followerID)
 end
 
 function addon:CleanUp()
+--@debug@
+	print("Cleaning up")
+--@end-debug@
 	wipe(ns.CompletedMissions)
 	self:UnhookAll()
 	self:CancelAllTimers()
@@ -2035,7 +1932,7 @@ if not stage.missionid then
 --@debug@
 	print("UpdateMissionPage for",missionID,missionInfo.name,missionInfo.numFollowers)
 --@end-debug@
-	self:holdEvents()
+	holdEvents()
 	if ns.toc < 60200 then
 		GarrisonMissionPage_ClearParty()
 	else
@@ -2062,7 +1959,7 @@ if not stage.missionid then
 		--self:Dump(GMF.MissionTab.MissionPage.Followers,"Selected followers")
 		--GarrisonMissionPage_UpdateEmptyString()
 	end
-	self:releaseEvents()
+	releaseEvents()
 end
 local firstcall=true
 

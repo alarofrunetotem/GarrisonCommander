@@ -5,7 +5,7 @@
 ## Notes-frFR: Vous aide au moment de choisir le droit utilisateur pour la bonne mission
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ @project-abbreviated-hash@
-## X-Version: 2.4.8
+## X-Version: 2.5.0
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
@@ -24,7 +24,7 @@
 ## X-Embeds:
 embeds.xml
 localization.lua
-wowhead.lua
+##wowhead.lua
 Init.lua
 Widgets.lua
 GarrisonCommander.xml

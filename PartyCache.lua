@@ -1,8 +1,7 @@
 local me,ns=...
-local addon=ns.addon --#addon
-local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
+ns.Configure()
+local addon=addon --#addon
 --upvalue
-local G=C_Garrison
 local setmetatable=setmetatable
 local rawset=rawset
 local tContains=tContains
@@ -13,13 +12,6 @@ local pcall=pcall
 local type=type
 local pairs=pairs
 local format=format
---@debug@
-if LibDebug then LibDebug() end
---@end-debug@
---[===[@non-debug@
-setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
---@end-non-debug@]===]
---
 -- Temporary party management
 local parties=setmetatable({},{
 	__index=function(t,k)  rawset(t,k,
@@ -96,6 +88,9 @@ function party:CurrentSlot()
 end
 function party:IsEmpty()
 	return maxFollowers>0 and #members==0
+end
+function party:IsFull()
+	return maxFollowers and #members>=maxFollowers
 end
 
 function party:Dump()

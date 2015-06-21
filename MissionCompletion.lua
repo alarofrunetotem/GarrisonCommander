@@ -1,21 +1,9 @@
 local me, ns = ...
-local addon=ns.addon --#addon
-local L=ns.L
-local D=ns.D
-local C=ns.C
-local AceGUI=ns.AceGUI
+ns.Configure()
+local addon=addon --#addon
 local _G=_G
---@debug@
-if LibDebug then LibDebug() end
---@end-debug@
---[===[@non-debug@
-setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
---@end-non-debug@]===]
-
-local new, del, copy =ns.new,ns.del,ns.copy
 local GMF=GarrisonMissionFrame
 local GMFMissions=GarrisonMissionFrameMissions
-local G=C_Garrison
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY or 0
 local pairs=pairs
@@ -265,7 +253,6 @@ function module:GetMissionResults(success,currentMission)
 end
 function module:MissionsPrintResults(success)
 	stopTimer()
-	self:FollowerCacheInit()
 --@debug@
 	--self:Dump("Ended Mission",rewards)
 --@end-debug@

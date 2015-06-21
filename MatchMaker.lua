@@ -1,12 +1,11 @@
 local me,ns=...
-local addon=ns.addon --#addon
-local C=ns.C
-local P=ns.party
+ns.Configure()
+local addon=addon --#addon
 local _G=_G
-local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
-local new, del, copy =ns.new,ns.del,ns.copy
+local P=ns.party
+--local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
+--local new, del, copy =ns.new,ns.del,ns.copy
 --upvalue
-local G=C_Garrison
 local GMFRewardSplash=GarrisonMissionFrameMissions.CompleteDialog
 local pairs=pairs
 local format=format
@@ -24,12 +23,6 @@ local hearthStoneProTrait=236 -- all followers +36
 local scavengerTrait=79 -- More resources
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
---@debug@
-if LibDebug then LibDebug() end
---@end-debug@
---[===[@non-debug@
-setfenv(1,setmetatable({print=function(...) print("x",...) end},{__index=_G}))
---@end-non-debug@]===]
 local dbg
 local function formatScore(c,r,x,t,maxres,cap)
 	if (not maxres) then cap=100 end
@@ -196,7 +189,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	end
 	--]]
 	local minchance=floor(self:GetNumber('MAXRESCHANCE')/mission.numFollowers)-mission.numFollowers*mission.numFollowers
-	for _,followerID in self:GetFollowerIterator() do
+	for _,followerID in self:GetFollowersIterator() do
 
 		if P:AddFollower(followerID) then
 			local score,chance=self:FollowerScore(mission,followerID)

@@ -14,25 +14,12 @@ local tostring=tostring
 local tonumber=tonumber
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
-if LibDebug then LibDebug() else ns.print=function() end end
+if LibDebug then LibDebug() ns.print=print else ns.print=function() end end
 --@end-debug@
 --[===[@non-debug@
 ns.print=function() end
 --@end-non.debug@]===]
 ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
-local ENV=setmetatable({
-	print=ns.print
-},
-{__index=_G}
-)
-function ns.Configure()
-		local old_env = getfenv(2)
-		if old_env ~= _G and old_env ~= ENV then
-			error("The calling function has a modified environment, I won't replace it.", 2)
-		end
-		setfenv(2, ENV)
-end
-
 local addon=ns.addon --#addon
 ns.toc=select(4,GetBuildInfo())
 ns.AceGUI=LibStub("AceGUI-3.0")
@@ -40,6 +27,9 @@ ns.D=LibStub("LibDeformat-3.0")
 ns.C=ns.addon:GetColorTable()
 ns.L=ns.addon:GetLocale()
 ns.G=C_Garrison
+ns.GMF=_G.GarrisonMissionFrame
+ns.GMFMissions=_G.GarrisonMissionFrameMissions
+ns.GSF=_G.GarrisonShipFrame
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 do
 	--@debug@
@@ -94,7 +84,7 @@ end
 
 local stacklevel=0
 local frames
-function addon:holdEvents()
+function ns.holdEvents()
 	if stacklevel==0 then
 		frames={GetFramesRegisteredForEvent('GARRISON_FOLLOWER_LIST_UPDATE')}
 		for i=1,#frames do
@@ -103,7 +93,7 @@ function addon:holdEvents()
 	end
 	stacklevel=stacklevel+1
 end
-function addon:releaseEvents()
+function ns.releaseEvents()
 	stacklevel=stacklevel-1
 	assert(stacklevel>=0)
 	if (stacklevel==0) then
@@ -113,7 +103,6 @@ function addon:releaseEvents()
 		frames=nil
 	end
 end
-local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
 ns.OnLeave=function() GameTooltip:Hide() end
 local upgrades={
 	"wt:120302:1",
@@ -210,7 +199,7 @@ function addon:GetType(itemID)
 	return "generic"
 end
 --Data
-
+if ns.toc < 60200 then
 ns.traitTable= {
 		{
 			[9] = "Wastelander",
@@ -273,9 +262,36 @@ ns.traitTable= {
 		[41] = "Furyslayer",
 	},
 }
+else
 ns.traitTable={
 [1]={  [9]="Wastelander",  [7]="Mountaineer",  [45]="Cave Dweller",  [46]="Guerilla Fighter",  [44]="Naturalist",  [48]="Marshwalker",  [49]="Plainsrunner",  [8]="Cold-Blooded"},[2]={  [80]="Extra Training",  [314]="Greasemonkey",  [79]="Scavenger",  [256]="Treasure Hunter",  [29]="Fast Learner"},[3]={  [76]="High Stamina",  [221]="Epic Mount",  [77]="Burst of Power"},[6]={  [61]="Tailoring",  [52]="Mining",  [54]="Alchemy",  [56]="Enchanting",  [58]="Inscription",  [60]="Leatherworking",  [62]="Skinning",  [53]="Herbalism",  [55]="Blacksmithing",  [57]="Engineering",  [59]="Jewelcrafting"},[7]={  [64]="Humanist",  [66]="Child of the Moon",  [68]="Canine Companion",  [65]="Dwarvenborn",  [67]="Ally of Argus",  [69]="Brew Aficionado",  [63]="Gnome-Lover"},[8]={  [37]="Beastslayer",  [39]="Primalslayer",  [4]="Orcslayer",  [43]="Talonslayer",  [36]="Demonslayer",  [38]="Ogreslayer",  [40]="Gronnslayer",  [42]="Voidslayer",  [41]="Furyslayer"}
 }
+end
+-- Pseudo Global Support.
+-- Calling ns.Configure() will give to the calling function a preloaded env
+
+local ENV={}
+
+for k,v in pairs(ns) do
+	ENV[k]=v
+end
+setmetatable(ENV,
+{__index=_G,
+__newindex=function(t,k,v)
+	assert(type(_G[k]) == 'nil',"Attempting to override global " ..k)
+	return rawset(t,k,v)
+end
+}
+)
+
+---@function [parent=#ns] Configure
+function ns.Configure()
+		local old_env = getfenv(2)
+		if old_env ~= _G and old_env ~= ENV then
+			error("The calling function has a modified environment, I won't replace it.", 2)
+		end
+		setfenv(2, ENV)
+end
 -------------------- to be estracted to CountersCache
 --
 --local G=C_Garrison

@@ -298,10 +298,12 @@ local function traitGen()
 end
 local trackedEvents={}
 local function eventTrace ( self, event, ... )
-	if (event:find("GARRISON",1,true)) then
+	if (event=="VARIABLES_LOADED") then
+		trackedEvents=ATEINFO.trackedEvents or {}
+	elseif (event:find("GARRISON",1,true)) then
 		local signature="("..event
 		for i=1,select('#',...) do
-			signature=','..signature..type(select(i,...))
+			signature=','..signature.." ".. tostring(select(i,...))
 		end
 		signature=signature..")"
 		trackedEvents[event]=signature
@@ -385,6 +387,7 @@ function addon:DumpSinks()
 	table.sort(sorted,function(a,b) return a>b end)
 	self:cutePrint(scroll,sorted)
 end
+_G.GAC=addon
 --[[
 PlaySound("UI_Garrison_CommandTable_Open");
 	PlaySound("UI_Garrison_CommandTable_Close");

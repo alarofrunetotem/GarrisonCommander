@@ -421,11 +421,6 @@
 				</Anchors>
 			</Button>
 		</Frames>
-		<Scripts>
-			<OnLoad function="GarrisonTraitCountersFrame_OnLoad"/>
-			<OnEvent function="GarrisonTraitCountersFrame_OnEvent"/>
-			<OnShow function="GarrisonTraitCountersFrame_Update"/>
-		</Scripts>
 	</Frame>
 <!-- In 6.2.0 we can inherits
 	<Frame name="GarrisonThreatCountersFrame" inherits="GarrisonThreatCountersFrameTemplate" hidden="true"/>

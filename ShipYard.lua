@@ -1,14 +1,7 @@
 local me, ns = ...
-local addon=ns.addon --#addon
-local L=ns.L
-local D=ns.D
-local C=ns.C
-local AceGUI=ns.AceGUI
+ns.Configure()
+local addon=addon --#addon
 local _G=_G
---@debug@
---if LibDebug() then LibDebug() end
---@end-debug@
-local new, del, copy =ns.new,ns.del,ns.copy
 local GSF=GarrisonShipyardFrame
 local G=C_Garrison
 local pairs=pairs
@@ -17,7 +10,7 @@ local strsplit=strsplit
 local generated
 local module=addon:NewSubClass('ShipYard') --#Module
 function module:OnInitialize()
-	self:Print("ShipYard Loaded")
+	print("ShipYard Loaded")
 end
 function module:Setup()
 	print("Doing one time initialization")

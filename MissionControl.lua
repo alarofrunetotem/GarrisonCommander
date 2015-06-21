@@ -1,11 +1,7 @@
 local me, ns = ...
-local addon=ns.addon --#addon
-local L=ns.L
-local D=ns.D
-local C=ns.C
-local AceGUI=ns.AceGUI
+ns.Configure()
+local addon=addon --#addon
 local _G=_G
-local new, del, copy =ns.new,ns.del,ns.copy
 -- Courtesy of Motig
 -- Concept and interface reused with permission
 -- Mission building rewritten from scratch
@@ -18,15 +14,11 @@ local cache
 local db
 local GMC
 local GMF=GarrisonMissionFrame
-local G=C_Garrison
 local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
---@debug@
-_G.GAC=addon
-if LibDebug then LibDebug() end
---@end-debug@
+local tremove=tremove
 local dbg
 local tItems = {
 	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
@@ -39,6 +31,7 @@ local tItems = {
 	{t = 'Enable/Disable other rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'other'}
 }
 local tOrder
+local tSort={}
 local settings
 if (ns.toc >=60200) then
 	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'})
@@ -84,7 +77,7 @@ function module:GMCCreateMissionList(workList)
 		if (c1==c2) then
 			return addon:GetMissionData(i1,c1,0) > addon:GetMissionData(i2,c2,0)
 		else
-			return tOrder[c1]<tOrder[c2]
+			return (tSort[c1] or i1)<(tSort[c2] or i2)
 		end
 	end
 	table.sort(workList,msort)
@@ -251,13 +244,13 @@ local function drawItemButtons()
 	for j,i in ipairs(tOrder) do
 		local frame = GMC.ignoreFrames[j] or CreateFrame('BUTTON', "Priority" .. j, GMC.aif, 'ItemButtonTemplate')
 		GMC.ignoreFrames[j] = frame
-		frame:SetID(i)
+		frame:SetID(j)
 		frame:ClearAllPoints()
 		frame:SetScale(scale)
 		frame:SetPoint('TOPLEFT', 0,(j) * (-h -gap) * scale)
 		frame.icon:SetTexture(tItems[i].i)
 		frame.key=tItems[i].key
-		tOrder[frame.key]=j
+		tSort[frame.key]=j
 		frame.tooltip=tItems[i].t
 		frame.allowed=GMC.settings.allowedRewards[frame.key]
 		frame.chance=GMC.settings.rewardChance[frame.key]
@@ -305,37 +298,39 @@ local function drawItemButtons()
 		frame:RegisterForDrag("LeftButton")
 		frame:SetMovable(true)
 		frame:SetScript("OnDragStart",function(this,button)
-			print("Start",this:GetID())
+			print("Start",this:GetID(),this.key)
 			this:StartMoving()
 			this.oldframestrata=this:GetFrameStrata()
 			this:SetFrameStrata("FULLSCREEN_DIALOG")
 		end)
 		frame:SetScript("OnDragStop",function(this,button)
 			this:StopMovingOrSizing()
-			print("Stopped",this:GetID())
+			print("Stopped",this:GetID(),this.key)
 			this:SetFrameStrata(this.oldframestrata)
 
 		end)
 		frame:SetScript("OnReceiveDrag",function(this)
+				print("Receive",this:GetID(),this.key)
+				DevTools_Dump(tOrder)
+				local from=this:GetID()
+				local to
 				local x,y=this:GetCenter()
 				local id=this:GetID()
-				for i=1,#tItems do
+				for i=1,#GMC.ignoreFrames do
 					local f=GMC.ignoreFrames[i]
 					if f:GetID() ~= id then
-						print(y,f:GetBottom(),f:GetTop())
 						if y>=f:GetBottom() and y<=f:GetTop() then
-							this:SetID(f:GetID())
-							f:SetID(id)
-							for j=1,#tItems do
-								tOrder[j]=GMC.ignoreFrames[j]:GetID()
-								tOrder[GMC.ignoreFrames[j].key]=j
-							end
-							break
+							to=f:GetID()
 						end
 					end
 				end
+				if (to) then
+					print("from:",from,"to:",to)
+					local appo=tremove(tOrder,from)
+					tinsert(tOrder,to,appo)
+				end
 				drawItemButtons()
-				GMC.startButton:Click()
+				--GMC.startButton:Click()
 		end)
 		frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
 		frame:Show()
@@ -373,7 +368,22 @@ function module:OnInitialized()
 		settings.allowedRewards['followerUpgrade']=settings.allowedRewards['followerUpgrade']
 		settings.allowedRewards['followerEquip']=nil
 	end
-	tOrder=GMC.settings.rewardOrder
+
+	if true then
+		tOrder=GMC.settings.rewardOrder
+		local aa={}
+		for k,v in pairs(tOrder) do aa[k]=v end
+		for k,v in pairs(aa) do tOrder[k]=nil end
+		wipe(tOrder)
+		for i=1,#tItems do
+			tinsert(tOrder,i)
+		end
+		_G.tOrder=tOrder
+	end
+	for i=1,#tOrder do
+		tSort[tItems[tOrder[i]].key]=i
+	end
+
 	if GMC.settings.itemPrio then
 		GMC.settings.itemPrio=nil
 	end
@@ -451,6 +461,7 @@ function module:GMCBuildChance()
 	GMC.cp = GMC.cf:CreateTexture(nil, 'BACKGROUND')
 	GMC.cp:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
 	GMC.cp:SetAtlas(chestTexture)
+	GMC.cp:SetDesaturated(not GMC.settings.useOneChance)
 	GMC.cp:SetSize((209-(209*0.25))*0.60, (155-(155*0.25))*0.60)
 	GMC.cp:SetPoint('CENTER', 0, 20)
 
@@ -458,14 +469,17 @@ function module:GMCBuildChance()
 	GMC.cc:SetFontObject('GameFontNormalHuge')
 	GMC.cc:SetText('Success Chance')
 	GMC.cc:SetPoint('TOP', 0, 0)
-	GMC.cc:SetTextColor(1, 1, 1)
+	GMC.cc:SetTextColor(C:White())
 
 	GMC.ct = GMC.cf:CreateFontString()
 	GMC.ct:SetFontObject('ZoneTextFont')
 	GMC.ct:SetFormattedText('%d%%',GMC.settings.minimumChance)
 	GMC.ct:SetPoint('TOP', 0, -40)
-	GMC.ct:SetTextColor(0, 1, 0)
-
+	if GMC.settings.useOneChance then
+		GMC.ct:SetTextColor(C:Green())
+	else
+		GMC.ct:SetTextColor(C:Silver())
+	end
 	GMC.cs = factory:Slider(GMC.cf,0,100,GMC.settings.minimumChance,'Minumum chance to start a mission')
 	GMC.cs:SetPoint('BOTTOM', 10, 0)
 	GMC.cs:SetScript('OnValueChanged', function(self, value)

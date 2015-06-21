@@ -1,11 +1,8 @@
 local me, ns = ...
+ns.Configure()
+local addon=addon
 local _G=_G
-local pp=print
-local addon=ns.addon
-local AceGUI=LibStub("AceGUI-3.0")
-local C=ns.C
-local G=ns.G
-local L=ns.L
+local wipe=wipe
 local module=addon:NewSubModule("Widgets") --#module
 --- Quick backdrop
 --
