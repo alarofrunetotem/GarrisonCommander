@@ -1,4 +1,7 @@
 ==GarrisonCommander helps you when choosing the right follower for the right mission==
+*2.5.0
+Greatly improved matchmaking
+Missino control: unified priorities and allowed itmes. Now you can just drag items around to change priority
 * 2.4.7
 Fix: Sometimes daily reset was not fired at dure time
 Feature: Redone all buttomns to be more consistent. Old behaviour configurable via options

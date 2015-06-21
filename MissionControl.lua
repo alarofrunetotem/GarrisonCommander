@@ -330,7 +330,7 @@ local function drawItemButtons()
 					tinsert(tOrder,to,appo)
 				end
 				drawItemButtons()
-				--GMC.startButton:Click()
+				GMC.startButton:Click()
 		end)
 		frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
 		frame:Show()

@@ -190,15 +190,16 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	--]]
 	local minchance=floor(self:GetNumber('MAXRESCHANCE')/mission.numFollowers)-mission.numFollowers*mission.numFollowers
 	for _,followerID in self:GetFollowersIterator() do
-
-		if P:AddFollower(followerID) then
-			local score,chance=self:FollowerScore(mission,followerID)
-			if (score~=self:FollowerScore(nil,followerID) and chance >minchance) then
-				tinsert(scores,format("%s@%s",score,followerID))
-			else
-				tinsert(fillers,format("%s@%s",score,followerID))
+		if self:IsFollowerAvailableForMission(followerID,filters.skipBusy) then
+			if P:AddFollower(followerID) then
+				local score,chance=self:FollowerScore(mission,followerID)
+				if (score~=self:FollowerScore(nil,followerID) and chance >minchance) then
+					tinsert(scores,format("%s@%s",score,followerID))
+				else
+					tinsert(fillers,format("%s@%s",score,followerID))
+				end
+				P:RemoveFollower(followerID)
 			end
-			P:RemoveFollower(followerID)
 		end
 		--end
 	end
