@@ -23,6 +23,7 @@ local dbg
 local tItems = {
 	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
 	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
+	{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},
 	{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'rush'},
 	{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
 	{t = 'Enable/Disable follower equip enhancement.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerUpgrade'},
@@ -33,9 +34,6 @@ local tItems = {
 local tOrder
 local tSort={}
 local settings
-if (ns.toc >=60200) then
-	tinsert(tItems,3,{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'})
-end
 local module=addon:NewSubClass("MissionControl") --#module
 function module:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
@@ -252,6 +250,9 @@ local function drawItemButtons()
 		frame.key=tItems[i].key
 		tSort[frame.key]=j
 		frame.tooltip=tItems[i].t
+		if ns.toc<60200 and frame.key=="oil" then
+			GMC.settings.allowedRewards[frame.key]=false
+		end
 		frame.allowed=GMC.settings.allowedRewards[frame.key]
 		frame.chance=GMC.settings.rewardChance[frame.key]
 		frame.icon:SetDesaturated(not frame.allowed)
@@ -368,9 +369,8 @@ function module:OnInitialized()
 		settings.allowedRewards['followerUpgrade']=settings.allowedRewards['followerUpgrade']
 		settings.allowedRewards['followerEquip']=nil
 	end
-
-	if true then
-		tOrder=GMC.settings.rewardOrder
+	tOrder=GMC.settings.rewardOrder
+	if false then
 		local aa={}
 		for k,v in pairs(tOrder) do aa[k]=v end
 		for k,v in pairs(aa) do tOrder[k]=nil end

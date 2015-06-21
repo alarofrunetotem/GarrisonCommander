@@ -190,7 +190,7 @@ end
 function addon:FollowerPageStartUp()
 	self:RegisterEvent("GARRISON_FOLLOWER_UPGRADED","DelayedRefresh")
 	self:RegisterEvent("CHAT_MSG_LOOT","DelayedRefresh")
-	self:GarrisonTraitCountersFrame_OnLoad(GarrisonTraitCountersFrame, GARRISON_THREAT_COUNTER_TOOLTIP .. " %d")
+	self:GarrisonTraitCountersFrame_OnLoad(GarrisonTraitCountersFrame, GARRISON_THREAT_COUNTER_TOOLTIP)
 	self:HookScript(GarrisonTraitCountersFrame,"OnEvent","GarrisonTraitCountersFrame_OnEvent")
 	self:HookScript(GarrisonTraitCountersFrame,"OnShow","GarrisonTraitCountersFrame_OnShow")
 end
@@ -264,7 +264,7 @@ end
 -- Need to be a global
 function _G.GarrisonTraitCounter_OnEnter(this)
 	GameTooltip:SetOwner(this, "ANCHOR_RIGHT");
-	GameTooltip:SetText(this:GetParent().tooltipString:format(this.Count:GetText(), this.name,this.id), nil, nil, nil, nil, true);
+	GameTooltip:SetText(this:GetParent().tooltipString:format(this.Count:GetText(), this.name), nil, nil, nil, nil, true);
 end
 function addon:FillCounters(this,category)
 	local i=0
