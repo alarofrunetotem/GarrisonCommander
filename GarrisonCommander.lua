@@ -929,6 +929,10 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 --@debug@
 	print(event,missionID,...)
 --@end-debug@
+	if (not GMF:IsShown()) then
+		-- Shipyard
+		return
+	end
 	wipe(dbcache.ignored[missionID])
 	local party=self:GetParty(missionID)
 	wipe(party.members) -- I remove preset party, so PartyCache will refill it with the ones from the actual mission
