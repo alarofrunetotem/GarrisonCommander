@@ -299,9 +299,6 @@ local function GMCMissionButton()
 	local m={} --#GMCMissionButton
 	function m:OnAcquire()
 		local frame=self.frame
---@debug@
-		print("Acquired button ",frame:GetName())
---@end-debug@
 		frame.info=nil
 		frame:SetHeight(self.type==Type1 and 80 or 80)
 		frame:SetAlpha(1)
@@ -357,9 +354,6 @@ local function GMCMissionButton()
 	local function Constructor(type)
 		unique=unique+1
 		local frame=CreateFrame("Button",type..unique,nil,"GarrisonMissionListButtonTemplate") --"GarrisonCommanderMissionListButtonTemplate")
---@debug@
-		print("Building button ",frame:GetName())
---@end-debug@
 		frame.Title:SetFontObject("QuestFont_Shadow_Small")
 		frame.Summary:SetFontObject("QuestFont_Shadow_Small")
 		frame:SetScript("OnEnter",nil)
