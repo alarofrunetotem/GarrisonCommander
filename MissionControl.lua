@@ -48,18 +48,18 @@ function module:GMCCreateMissionList(workList)
 		local discarded=false
 		local class=self:GetMissionData(missionID,"class")
 		repeat
-			print("|cffff0000",'Examing',missionID,self:GetMissionData(missionID,"name"),class,"|r")
+			--print("|cffff0000",'Examing',missionID,self:GetMissionData(missionID,"name"),class,"|r")
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
-				print(missionID,"discarded due to len",durationSeconds /3600)
+				--print(missionID,"discarded due to len",durationSeconds /3600)
 				break
 			end -- Mission too long, out of here
 			if (self:GetMissionData(missionID,'isRare') and settings.skipRare) then
-				print(missionID,"discarded due to rarity")
+				--print(missionID,"discarded due to rarity")
 				break
 			end
 			if (not ar[class]) then
-				print(missionID,"discarded due to class == ", class)
+				--print(missionID,"discarded due to class == ", class)
 				discarded=true
 				break
 			end
@@ -147,21 +147,18 @@ do
 				local missionID=aMissions[currentMission]
 				GMC.ml.widget:SetFormattedTitle("Processing mission %d of %d (%s)",currentMission,#aMissions,G.GetMissionName(missionID))
 				local class=self:GetMissionData(missionID,"class")
-				local checkprio=class
-				if checkprio=="itemLevel" then class="equip" end
-				if checkprio=="followerUpgrade" then class= "followerEquip" end
-				print(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
+				--print(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
 				local minimumChance=0
-				if (GMC.settings.useOneChance) then
-					minimumChance=tonumber(GMC.settings.minimumChance) or 100
+				if (settings.useOneChance) then
+					minimumChance=tonumber(settings.minimumChance) or 100
 				else
-					minimumChance=tonumber(GMC.settings.rewardChance[checkprio]) or 100
+					minimumChance=tonumber(settings.rewardChance[classo]) or 100
 				end
 				local party={members={},perc=0}
-				self:MCMatchMaker(missionID,party,GMC.settings.skipEpic)
-				print ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full)
+				self:MCMatchMaker(missionID,party,settings.skipEpic)
+				--print ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full)
 				if ( party.full and party.perc >= minimumChance) then
-					print("                           Mission accepted")
+					--print("                           Mission accepted")
 					local mb=AceGUI:Create("GMCMissionButton")
 					for i=1,#party.members do
 						GMCUsedFollowers[party.members[i]]=true
@@ -236,7 +233,7 @@ local function drawItemButtons()
 	local scale=1.1
 	local h=37 -- itemButtonTemplate standard size
 	local gap=5
-	local single=GMC.settings.useOneChance
+	local single=settings.useOneChance
 	--for j = 1, #tItems do
 		--local i=tOrder[j]
 	for j,i in ipairs(tOrder) do
@@ -251,14 +248,14 @@ local function drawItemButtons()
 		tSort[frame.key]=j
 		frame.tooltip=tItems[i].t
 		if ns.toc<60200 and frame.key=="oil" then
-			GMC.settings.allowedRewards[frame.key]=false
+			settings.allowedRewards[frame.key]=false
 		end
-		frame.allowed=GMC.settings.allowedRewards[frame.key]
-		frame.chance=GMC.settings.rewardChance[frame.key]
+		frame.allowed=settings.allowedRewards[frame.key]
+		frame.chance=settings.rewardChance[frame.key]
 		frame.icon:SetDesaturated(not frame.allowed)
 		-- Need to resave them asap in order to populate the array for future scans
-		GMC.settings.allowedRewards[frame.key]=frame.allowed
-		GMC.settings.rewardChance[frame.key]=frame.chance
+		settings.allowedRewards[frame.key]=frame.allowed
+		settings.rewardChance[frame.key]=frame.chance
 		frame.slider=frame.slider or factory:Slider(frame,0,100,frame.chance or 100,frame.chance or 100)
 		frame.slider:SetWidth(128)
 		frame.slider:SetPoint('BOTTOMLEFT',60,0)
@@ -270,11 +267,11 @@ local function drawItemButtons()
 		end
 		frame.slider.isPercent=true
 		frame.slider:SetScript("OnValueChanged",function(this,value)
-			GMC.settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
+			settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
 			end
 		)
-		frame.slider:OnValueChanged(GMC.settings.rewardChance[frame.key] or 100)
-		--frame.slider:SetText(GMC.settings.rewardChance[frame.key])
+		frame.slider:OnValueChanged(settings.rewardChance[frame.key] or 100)
+		--frame.slider:SetText(settings.rewardChance[frame.key])
 		frame.chest = frame.chest or frame:CreateTexture(nil, 'BACKGROUND')
 		frame.chest:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
 		frame.chest:SetAtlas(chestTexture)
@@ -287,7 +284,7 @@ local function drawItemButtons()
 		end
 		frame.chest:Show()
 		frame:SetScript('OnClick', function(this)
-			GMC.settings.allowedRewards[this.key] = not GMC.settings.allowedRewards[this.key]
+			settings.allowedRewards[this.key] = not settings.allowedRewards[this.key]
 			drawItemButtons()
 			GMC.startButton:Click()
 		end)
@@ -349,6 +346,20 @@ local function drawItemButtons()
 	return GMC.ignoreFrames[#tItems]
 
 end
+local function dbfixV1()
+	if type(settings.allowedRewards['equip'])~='nil' then
+		settings.allowedRewards['itemLevel']=settings.allowedRewards['equip']
+		settings.rewardChance['itemLevel']=settings.rewardChance['equip']
+		settings.allowedRewards['equip']=nil
+		settings.rewardChance['equip']=nil
+	end
+	if type(settings.allowedRewards['followerEquip'])~='nil' then
+		settings.allowedRewards['followerUpgrade']=settings.allowedRewards['followerEquip']
+		settings.rewardChance['followerUpgrade']=settings.rewardChance['followerEquip']
+		settings.allowedRewards['followerEquip']=nil
+		settings.rewardChance['followerEquip']=nil
+	end
+end
 
 function module:OnInitialized()
 	local bigscreen=ns.bigscreen
@@ -358,17 +369,11 @@ function module:OnInitialized()
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
 	GMC = CreateFrame('FRAME', 'GMCOptions', GMF)
 	ns.GMC=GMC
-	GMC.settings=dbcache.missionControl
 	settings=dbcache.missionControl
-	if type(settings.allowedRewards['equip'])~='nil' then
-		settings.allowedRewards['itemLevel']=settings.allowedRewards['equip']
-		settings.allowedRewards['equip']=nil
+	tOrder=settings.rewardOrder
+	if settings.version < 2 then
+		dbfixV1()
 	end
-	if type(settings.allowedRewards['followerEquip'])~='nil' then
-		settings.allowedRewards['followerUpgrade']=settings.allowedRewards['followerUpgrade']
-		settings.allowedRewards['followerEquip']=nil
-	end
-	tOrder=GMC.settings.rewardOrder
 	if false then
 		local aa={}
 		for k,v in pairs(tOrder) do aa[k]=v end
@@ -383,8 +388,8 @@ function module:OnInitialized()
 		tSort[tItems[tOrder[i]].key]=i
 	end
 
-	if GMC.settings.itemPrio then
-		GMC.settings.itemPrio=nil
+	if settings.itemPrio then
+		settings.itemPrio=nil
 	end
 	GMC:SetAllPoints()
 	--GMC:SetPoint('LEFT')
@@ -424,10 +429,10 @@ function module:OnInitialized()
 	GMC.logoutButton:SetWidth(ns.bigscreen and 148 or 90)
 	GMC.logoutButton:SetScript("OnClick",function() GMF:Hide() Logout() end )
 	GMC.logoutButton:SetPoint('TOP',0,25)
-	GMC.skipRare=factory:Checkbox(GMC,GMC.settings.skipRare,L["Ignore rare missions"])
+	GMC.skipRare=factory:Checkbox(GMC,settings.skipRare,L["Ignore rare missions"])
 	GMC.skipRare:SetPoint("TOPLEFT",chance,"BOTTOMLEFT",40,-50)
 	GMC.skipRare:SetScript("OnClick",function(this)
-		GMC.settings.skipRare=this:GetChecked()
+		settings.skipRare=this:GetChecked()
 		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
 	end)
 	local warning=GMC:CreateFontString(nil,"ARTWORK","CombatTextFont")
@@ -436,12 +441,12 @@ function module:OnInitialized()
 	warning:SetPoint("TOPRIGHT",GMC,"TOPRIGHT",0,-25)
 	warning:SetJustifyH("CENTER")
 	warning:SetTextColor(C.Orange())
-	if (GMC.settings.skipEpic) then warning:Show() else warning:Hide() end
-	GMC.skipEpic=factory:Checkbox(GMC,GMC.settings.skipEpic,L["Ignore epic followers for xp only missions"])
+	if (settings.skipEpic) then warning:Show() else warning:Hide() end
+	GMC.skipEpic=factory:Checkbox(GMC,settings.skipEpic,L["Ignore epic followers for xp only missions"])
 	GMC.skipEpic:SetPoint("TOPLEFT",GMC.skipRare,"BOTTOMLEFT",0,-10)
 	GMC.skipEpic:SetScript("OnClick",function(this)
-		GMC.settings.skipEpic=this:GetChecked()
-		if (GMC.settings.skipEpic) then warning:Show() else warning:Hide() end
+		settings.skipEpic=this:GetChecked()
+		if (settings.skipEpic) then warning:Show() else warning:Hide() end
 		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
 	end)
 	GMC.Credits=GMC:CreateFontString(nil,"ARTWORK","QuestFont_Shadow_Small")
@@ -460,7 +465,7 @@ function module:GMCBuildChance()
 	GMC.cp = GMC.cf:CreateTexture(nil, 'BACKGROUND')
 	GMC.cp:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
 	GMC.cp:SetAtlas(chestTexture)
-	GMC.cp:SetDesaturated(not GMC.settings.useOneChance)
+	GMC.cp:SetDesaturated(not settings.useOneChance)
 	GMC.cp:SetSize((209-(209*0.25))*0.60, (155-(155*0.25))*0.60)
 	GMC.cp:SetPoint('CENTER', 0, 20)
 
@@ -472,27 +477,27 @@ function module:GMCBuildChance()
 
 	GMC.ct = GMC.cf:CreateFontString()
 	GMC.ct:SetFontObject('ZoneTextFont')
-	GMC.ct:SetFormattedText('%d%%',GMC.settings.minimumChance)
+	GMC.ct:SetFormattedText('%d%%',settings.minimumChance)
 	GMC.ct:SetPoint('TOP', 0, -40)
-	if GMC.settings.useOneChance then
+	if settings.useOneChance then
 		GMC.ct:SetTextColor(C:Green())
 	else
 		GMC.ct:SetTextColor(C:Silver())
 	end
-	GMC.cs = factory:Slider(GMC.cf,0,100,GMC.settings.minimumChance,'Minumum chance to start a mission')
+	GMC.cs = factory:Slider(GMC.cf,0,100,settings.minimumChance,'Minumum chance to start a mission')
 	GMC.cs:SetPoint('BOTTOM', 10, 0)
 	GMC.cs:SetScript('OnValueChanged', function(self, value)
 			local value = math.floor(value)
 			GMC.ct:SetText(value..'%')
-			GMC.settings.minimumChance = value
+			settings.minimumChance = value
 	end)
-	GMC.cs:SetValue(GMC.settings.minimumChance)
-	GMC.ck=factory:Checkbox(GMC.cs,GMC.settings.useOneChance,"Use this percentage for all missions")
+	GMC.cs:SetValue(settings.minimumChance)
+	GMC.ck=factory:Checkbox(GMC.cs,settings.useOneChance,"Use this percentage for all missions")
 	GMC.ck.tooltip="Unchecking this will allow you to set specific success chance for each reward type"
 	GMC.ck:SetPoint("TOPLEFT",GMC.cs,"BOTTOMLEFT",-25,-10)
 	GMC.ck:SetScript("OnClick",function(this)
-		GMC.settings.useOneChance=this:GetChecked()
-		if (GMC.settings.useOneChance) then
+		settings.useOneChance=this:GetChecked()
+		if (settings.useOneChance) then
 			GMC.cp:SetDesaturated(false)
 			GMC.ct:SetTextColor(C.Green())
 		else
@@ -506,16 +511,16 @@ end
 local function timeslidechange(this,value)
 	local value = math.floor(value)
 	if (this.max) then
-		GMC.settings.maxDuration = max(value,GMC.settings.minDuration)
-		if (value~=GMC.settings.maxDuration) then this:SetValue(GMC.settings.maxDuration) end
+		settings.maxDuration = max(value,settings.minDuration)
+		if (value~=settings.maxDuration) then this:SetValue(settings.maxDuration) end
 	else
-		GMC.settings.minDuration = min(value,GMC.settings.maxDuration)
-		if (value~=GMC.settings.minDuration) then this:SetValue(GMC.settings.minDuration) end
+		settings.minDuration = min(value,settings.maxDuration)
+		if (value~=settings.minDuration) then this:SetValue(settings.minDuration) end
 	end
 	local c = 1-(value*(1/24))
 	if c < 0.3 then c = 0.3 end
 	GMC.mt:SetTextColor(1, c, c)
-	GMC.mt:SetFormattedText("%d-%dh",GMC.settings.minDuration,GMC.settings.maxDuration)
+	GMC.mt:SetFormattedText("%d-%dh",settings.minDuration,settings.maxDuration)
 end
 function module:GMCBuildDuration()
 	-- Duration
@@ -545,19 +550,19 @@ function module:GMCBuildDuration()
 
 	GMC.mt = GMC.tf:CreateFontString()
 	GMC.mt:SetFontObject('ZoneTextFont')
-	GMC.mt:SetFormattedText('%d-%dh',GMC.settings.minDuration,GMC.settings.maxDuration)
+	GMC.mt:SetFormattedText('%d-%dh',settings.minDuration,settings.maxDuration)
 	GMC.mt:SetPoint('CENTER', 0, 0)
 	GMC.mt:SetTextColor(1, 1, 1)
 
-	GMC.ms1 = factory:Slider(GMC.tf,0,24,GMC.settings.minDuration,'Minimum mission duration.')
-	GMC.ms2 = factory:Slider(GMC.tf,0,24,GMC.settings.maxDuration,'Maximum mission duration.')
+	GMC.ms1 = factory:Slider(GMC.tf,0,24,settings.minDuration,'Minimum mission duration.')
+	GMC.ms2 = factory:Slider(GMC.tf,0,24,settings.maxDuration,'Maximum mission duration.')
 	GMC.ms1:SetPoint('BOTTOM', 0, 0)
 	GMC.ms2:SetPoint('TOP', GMC.ms1,"BOTTOM",0, -25)
 	GMC.ms2.max=true
 	GMC.ms1:SetScript('OnValueChanged', timeslidechange)
 	GMC.ms2:SetScript('OnValueChanged', timeslidechange)
-	timeslidechange(GMC.ms1,GMC.settings.minDuration)
-	timeslidechange(GMC.ms2,GMC.settings.maxDuration)
+	timeslidechange(GMC.ms1,settings.minDuration)
+	timeslidechange(GMC.ms2,settings.maxDuration)
 	return GMC.tf
 end
 function module:GMCBuildRewards()
@@ -569,21 +574,6 @@ function module:GMCBuildRewards()
 	GMC.itf:SetPoint('TOP', 0, -10)
 	GMC.itf:SetTextColor(1, 1, 1)
 	GMC.ignoreFrames = {}
-	-- converting from old data
-	local ar=GMC.settings.allowedRewards
-	local rc=GMC.settings.rewardChance
-	if ar.xpBonus then ar.xp=true end
-	ar.xpBonus=nil
-	if ar.followerUpgrade then ar.followerEquip=true end
-	ar.followerUpgrade=nil
-	if ar.itemLevel then ar.equip=true end
-	ar.itemLevel=nil
-	if rc.xpBonus then rc.xp=rc.xpbonus or 100 end
-	rc.xpBonus=nil
-	if rc.followerUpgrade then rc.followerEquip=rc.followerUpgrade or 100 end
-	rc.followerUpgrade=nil
-	if rc.itemLevel then rc.equip=rc.itemLevel or 100 end
-	rc.itemLevel=nil
 	local ref=drawItemButtons()
 	return GMC.aif
 end
