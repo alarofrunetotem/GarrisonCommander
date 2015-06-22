@@ -728,10 +728,11 @@ function addon:CreatePrivateDb()
 					}
 				},
 				missionControl={
+					version=1,
 					allowedRewards = {
-						followerEquip=true,
+						followerUpgrade=true,
 						gold=true,
-						equip=true,
+						itemLevel=true,
 						resources=true,
 						xp=true,
 						scroll=true,
@@ -740,9 +741,9 @@ function addon:CreatePrivateDb()
 						other=true
 					},
 					rewardChance={
-						followerEquip=100,
+						followerUpgrade=100,
 						gold=100,
-						equip=100,
+						itemLevel=100,
 						resources=100,
 						xp=100,
 						scroll=100,
