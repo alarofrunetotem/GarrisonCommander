@@ -11,11 +11,12 @@ local generated
 local module=addon:NewSubClass('ShipYard') --#Module
 function module:OnInitialize()
 	print("ShipYard Loaded")
+	self:SafeHookScript(GSF,"OnShow","Setup",true)
 end
-function module:Setup()
-	print("Doing one time initialization")
-	self:SafeHookScript(GSF,"OnShow","GSF_OnShow",true)
+function module:Setup(this,...)
+	print("Doing one time initialization for",this:GetName(),...)
+	self:SafeHookScript(GSF,"OnShow","OnShow",true)
 end
-function module:GSF_OnShow()
+function module:OnShow()
 	print("Doing all time initialization")
 end

@@ -442,3 +442,6 @@ TargetSpellHasFollowerItemLevelUpgrade",
 UpgradeBuilding",
 UpgradeGarrison",
 
+GARRISON_FOLLOWER_ADDEDD 0x0000000000AAE2CA Moira's Hammer Destroyer 63895     100   2                false 	Ships_DreadnaughtA 2
+GARRISON_FOLLOWER_ADDEDD FollowerID         name           className displayID level foolowerTyoeID  isFavorite texPrefix          quality
+
