@@ -1,11 +1,11 @@
-## Interface: 60100
+## Interface: 60200
 ## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
 ## Notes-frFR: Data-Broker pour GarrisonCommander
 ## Author: Alar of Daggerspine
-## Version: @project-version@ @project-abbreviated-hash@
-## X-Version: 2.4.8
+## Version: @project-version@ 6.2
+## X-Version: 2.6.0
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
