@@ -6,6 +6,8 @@ local GMF=GarrisonMissionFrame
 local GMFMissions=GarrisonMissionFrameMissions
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY or 0
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local pairs=pairs
 local format=format
 local strsplit=strsplit
@@ -91,7 +93,11 @@ function module:CloseReport()
 	if report then pcall(report.Close,report) report=nil end
 end
 function module:MissionComplete(this,button)
-	missions=G.GetCompleteMissions()
+	if ns.toc < 60200 then
+		missions=G.GetCompleteMissions()
+	else
+		missions=G.GetCompleteMissions(LE_FOLLOWER_TYPE_GARRISON_6_0)
+	end
 	if (missions and #missions > 0) then
 		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		report=self:GenerateMissionCompleteList("Missions' results")

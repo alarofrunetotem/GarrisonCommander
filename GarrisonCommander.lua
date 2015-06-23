@@ -2082,6 +2082,7 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		showItemLevel = false;
 	end
+	print(info.name,info.followerID,info.quality)
 	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false);
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
@@ -3006,6 +3007,9 @@ override("GarrisonMissionPageFollowerFrame_OnEnter")
 override("GarrisonMissionList_SetTab")
 override("GarrisonMissionButton_OnClick")
 override("GarrisonMissionFrame","SelectTab")
+if (ns.toc < 60200) then
+	override("GarrisonMissionFrame_SelectTab")
+end
 
 GMF.MissionTab.MissionPage.CloseButton:SetScript("OnClick",over.GarrisonMissionPage_Close)
 for i=1,#GMFMissionListButtons do
