@@ -24,6 +24,8 @@ local scavengerTrait=79 -- More resources
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local dbg
+local useCap=false
+local currentCap=100
 local function formatScore(c,r,x,t,maxres,cap)
 	if (not maxres) then cap=100 end
 	return format("%03d %03d %03d %03d %01d",min(c,cap),r,c,x,t),c
@@ -37,7 +39,7 @@ function addon:MissionScore(mission,voidcap)
 	local r=mission.class=="gold" and goldMultiplier or materialMultiplier
 	local t=isMissionTimeImproved and 1 or 0
 	local x=mission.xp and xpBonus/mission.xp*100 or 0
-	return formatScore(successChance,r,x,t,mission.maxable and self:GetBoolean("MAXRES"),self:GetNumber("MAXRESCHANCHE"))
+	return formatScore(successChance,r,x,t,mission.maxable and useCap,currentCap)
 end
 function addon:xMissionScore(mission)
 	if (mission) then
@@ -161,6 +163,7 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 	end
 end
 local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
+	print("Current cap",currentCap)
 	local mission=self:GetMissionData(missionID)
 	local class=self:GetMissionData(missionID,'class')
 	local filterOut=filters[class] or filters.other
@@ -188,7 +191,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		buffeds=buffeds+1
 	end
 	--]]
-	local minchance=floor(self:GetNumber('MAXRESCHANCE')/mission.numFollowers)-mission.numFollowers*mission.numFollowers
+	local minchance=floor(currentCap/mission.numFollowers)-mission.numFollowers*mission.numFollowers
 	for _,followerID in self:GetFollowersIterator() do
 		if self:IsFollowerAvailableForMission(followerID,filters.skipBusy) then
 			if P:AddFollower(followerID) then
@@ -196,7 +199,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 				if (score~=self:FollowerScore(nil,followerID) and chance >minchance) then
 					tinsert(scores,format("%s@%s",score,followerID))
 				else
-					tinsert(fillers,format("%s@%s",score,followerID))
+					tinsert(scores,format("%s@%s",score,followerID))
 				end
 				P:RemoveFollower(followerID)
 			end
@@ -270,7 +273,10 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	P:Close(party)
 	--del(buffed)
 end
-function addon:MCMatchMaker(missionID,party,skipEpic)
+function addon:MCMatchMaker(missionID,party,skipEpic,cap)
+	useCap=true
+	currentCap=cap
+	print("Using cap data:",useCap,currentCap)
 	MatchMaker(self,missionID,party,false)
 	if (skipEpic) then
 		if (self:GetMissionData(missionID,'class')=='xp') then
@@ -286,6 +292,8 @@ function addon:MCMatchMaker(missionID,party,skipEpic)
 end
 function addon:MatchMaker(missionID,party,includeBusy)
 	if (not party) then party=self:GetParty(missionID) end
+	useCap=self:GetBoolean("MAXRES")
+	currentCap= self:GetNumber("MAXRESCHANCE")
 	MatchMaker(self,missionID,party,includeBusy)
 end
 function addon:TestMission(missionID,includeBusy)
@@ -293,6 +301,19 @@ function addon:TestMission(missionID,includeBusy)
 	local party=new()
 	party.members=new()
 	self:MatchMaker(missionID,party,includeBusy)
+--@debug@
+	DevTools_Dump(party)
+--@end-debug@
+	del(party.members)
+	del(party)
+	scroller=nop
+	dbg=false
+end
+function addon:MCTestMission(missionID,includeBusy,chance)
+	dbg=true
+	local party=new()
+	party.members=new()
+	self:MCMatchMaker(missionID,party,includeBusy,true,chance)
 --@debug@
 	DevTools_Dump(party)
 --@end-debug@

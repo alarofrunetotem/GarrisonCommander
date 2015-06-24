@@ -152,11 +152,11 @@ do
 				if (settings.useOneChance) then
 					minimumChance=tonumber(settings.minimumChance) or 100
 				else
-					minimumChance=tonumber(settings.rewardChance[classo]) or 100
+					minimumChance=tonumber(settings.rewardChance[class]) or 100
 				end
 				local party={members={},perc=0}
-				self:MCMatchMaker(missionID,party,settings.skipEpic)
-				--print ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full)
+				print ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
+				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
 				if ( party.full and party.perc >= minimumChance) then
 					--print("                           Mission accepted")
 					local mb=AceGUI:Create("GMCMissionButton")
