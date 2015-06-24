@@ -392,6 +392,7 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Class=L["Reward type"],
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
+	self:AddToggle("USEFUL",true,L["Enhance tooltip"],L["Adds a list of other useful followers to tooltip"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
 	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when maximise result is enabled. Default is 80%"])
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
@@ -607,23 +608,29 @@ function addon:AddFollowersToTooltip(missionID,followerTypeID)
 	-- Adding All available followers
 	local party=self:GetParty(missionID)
 	local members=party.members
-	local useful=new()
-	local traited=G.GetFollowersTraitsForMission(missionID)
-	local buffed=G.GetBuffedFollowersForMission(missionID)
-	if (type(traited)=='table') then
-		self:AddIconsToFollower(missionID,useful,traited,members,followerTypeID)
-	end
-	if (type(buffed)=='table') then
-		self:AddIconsToFollower(missionID,useful,buffed,members,followerTypeID)
-	end
-	if next(useful) then
-		table.sort(useful)
-		GameTooltip:AddDoubleLine(L["Other useful followers"],L["(Ignores low bias ones)"])
-		for followerID,data in pairs(useful) do
-			GameTooltip:AddDoubleLine(data:sub(5),self:GetFollowerStatus(followerID,true,true))
+	if self:GetBoolean("USEFUL") then
+		local useful=new()
+		local traited=G.GetFollowersTraitsForMission(missionID)
+		local buffed=G.GetBuffedFollowersForMission(missionID)
+		if (type(traited)=='table') then
+			self:AddIconsToFollower(missionID,useful,traited,members,followerTypeID)
 		end
+		if (type(buffed)=='table') then
+			self:AddIconsToFollower(missionID,useful,buffed,members,followerTypeID)
+		end
+		if next(useful) then
+			table.sort(useful)
+			GameTooltip:AddDoubleLine(L["Other useful followers"],L["(Ignores low bias ones)"])
+			local inactive=C(GARRISON_FOLLOWER_INACTIVE,'Red')
+			for followerID,data in pairs(useful) do
+				local status=self:GetFollowerStatus(followerID,true,true)
+				if status ~=inactive then
+					GameTooltip:AddDoubleLine(data:sub(5),status)
+				end
+			end
+		end
+		del(useful)
 	end
-	del(useful)
 	local perc=party.perc
 	local q=self:GetDifficultyColor(perc)
 	GameTooltip:AddDoubleLine(GARRISON_MISSION_SUCCESS,format(GARRISON_MISSION_PERCENT_CHANCE,perc),nil,nil,nil,q.r,q.g,q.b)
@@ -1634,7 +1641,7 @@ function addon:MissionComplete()
 	return self:GetModule("MissionCompletion"):MissionComplete()
 end
 function addon:AddMenu()
-	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT','MAXRES')
+	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
 	--self:AddOptionToOptionsLayer(GCF.Menu,'MSORT')
 	--self:AddOptionToOptionsLayer(GCF.Menu,'OpenMissionControlTab')
 --@debug@
