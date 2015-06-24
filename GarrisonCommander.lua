@@ -374,7 +374,7 @@ function addon:OnInitialized()
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED",function(...) GCF:Hide() end)
 	self:SafeHookScript("GarrisonMissionFrame","OnShow","SetUp",true)
 	self:AddLabel("Appearance")
-	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"])
+	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
 	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	self:AddToggle("PIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
 	self:AddLabel("Mission Panel")
@@ -1641,9 +1641,7 @@ function addon:MissionComplete()
 	return self:GetModule("MissionCompletion"):MissionComplete()
 end
 function addon:AddMenu()
-	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MOVEPANEL','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
-	--self:AddOptionToOptionsLayer(GCF.Menu,'MSORT')
-	--self:AddOptionToOptionsLayer(GCF.Menu,'OpenMissionControlTab')
+	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
 	self:AddOptionToOptionsLayer(menu,'TRC')
@@ -2089,7 +2087,6 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		showItemLevel = false;
 	end
-	print(info.name,info.followerID,info.quality)
 	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false);
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
