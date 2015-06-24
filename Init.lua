@@ -14,6 +14,7 @@ local tostring=tostring
 local tonumber=tonumber
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
+print(LoadAddOn("LibDebug"))
 if LibDebug then LibDebug() ns.print=print else ns.print=function() end end
 --@end-debug@
 --[===[@non-debug@

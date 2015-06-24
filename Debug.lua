@@ -309,8 +309,8 @@ local function eventTrace ( self, event, ... )
 		trackedEvents[event]=signature
 	end
 end
-function addon:showdata(fullargs,action,missionid)
-	self:Print(fullargs,",",missionid)
+function addon:showdata(fullargs,action,missionid,chance)
+	self:Print(fullargs,",",missionid,chance)
 	missionid=tonumber(missionid)
 	if missionid then
 		if action=="score" then
@@ -319,6 +319,8 @@ function addon:showdata(fullargs,action,missionid)
 			self:DumpMission(missionid)
 		elseif action=="match" then
 			self:TestMission(missionid)
+		elseif action=="mcmatch" then
+			self:GCTestMission(missionid,false,tonumber(chance) or 50)
 		end
 	else
 		if action=="traits" then
