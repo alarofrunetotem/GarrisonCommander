@@ -27,6 +27,7 @@ local dbg
 local useCap=false
 local currentCap=100
 local function formatScore(c,r,x,t,maxres,cap)
+	cap=tonumber(cap) or 100
 	if (not maxres) then cap=100 end
 	return format("%03d %03d %03d %03d %01d",min(c,cap),r,c,x,t),c
 end
