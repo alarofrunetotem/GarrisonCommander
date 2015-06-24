@@ -199,7 +199,7 @@ function cache:GetFollowersWithTrait(trait)
 	return self.traits[trait]
 end
 function cache:GetFollowersWithCounterFor(threat)
-	self:refresh()
+	self:Refresh()
 	return self.threats[threat]
 end
 
