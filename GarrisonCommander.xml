@@ -410,6 +410,17 @@
 		<Scripts>
 			<OnEnter function="GarrisonTraitCounter_OnEnter"/>
 			<OnLeave function="GameTooltip_Hide"/>
+			<OnClick>
+				PlaySound("igMainMenuOptionCheckBoxOn");
+				local searchBox = GarrisonMissionFrameFollowers.SearchBox
+				local searchString = searchBox:GetText();
+				if (searchString == self.name) then
+					searchBox:SetText("");
+				else
+					searchBox:SetText(self.name);
+				end
+
+			</OnClick>
 		</Scripts>
 	</Button>
 	<Frame name="GarrisonTraitCountersFrame" hidden="true">

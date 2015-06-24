@@ -284,6 +284,7 @@ function addon:FillCounters(this,category)
 		frame.id = id;
 		frame:Show()
 	end
+	self:GarrisonTraitCountersFrame_OnShow(GarrisonTraitCountersFrame)
 	for j=i+1,#this.TraitsList do
 		this.TraitsList[j]:Hide()
 	end
