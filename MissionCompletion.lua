@@ -223,7 +223,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 			end
 			currentMission.state=step
 		else
-			report:AddButton(L["Building Final report"],function() module:MissionsPrintResult() end)
+			report:AddButton(L["Building Final report"],function() module:MissionsPrintResults() end)
 			startTimer(1,"LOOT")
 		end
 	end

@@ -21,7 +21,7 @@ local trc=false
 local pin=false
 local baseHeight
 local minHeight
-local addon=addon --#addon
+local addon=addon --#self
 ns.bigscreen=true
 -- Blizzard functions override support
 local orig={} --#originals
@@ -413,6 +413,17 @@ function addon:OnInitialized()
 	self:Trigger("MSORT")
 	self:AddOpenCmd("show","showdata","Prints a mission score")
 	LoadAddOn("GarrisonCommander-Broker")
+--@debug@
+	print("Sanity checks")
+	print(self:GetAgeColor(1/0))
+	print(self:GetAgeColor(0/0))
+	print(self:GetAgeColor(GetTime()+100))
+	print(type(1/0))
+	print(type(0/0))
+	print(pcall(format,"%03d %03d",1/0,0/0))
+	print(pcall(format,"%03d %03d",tonumber(1/0) or 1,tonumber(0/0) or 2))
+--@end-debug@
+
 	return true
 end
 function addon:showdata(fullargs,action,missionid)
@@ -1921,7 +1932,7 @@ function addon:FillMissionPage(missionInfo)
 		stage.expires:SetDrawLayer(stage.MissionEnv:GetDrawLayer())
 		stage.expires:SetPoint("TOPLEFT",stage.MissionEnv,"BOTTOMLEFT")
 	end
-	stage.expires:SetFormattedText(GARRISON_MISSION_AVAILABILITY2,missionInfo.offerTimeRemaining)
+	stage.expires:SetFormattedText(GARRISON_MISSION_AVAILABILITY2,missionInfo.offerTimeRemaining or "")
 	stage.expires:SetTextColor(self:GetAgeColor(missionInfo.offerEndTime))
 --@debug@
 if not stage.missionid then
@@ -2882,6 +2893,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 	end
 end
 function addon:GetAgeColor(age)
+		age=tonumber(age) or 0
 		if age>GetTime() then age=age-GetTime() end
 		if age < 0 then age=0 end
 		local hours=floor(age/3600)

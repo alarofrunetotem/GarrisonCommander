@@ -26,26 +26,24 @@ local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local dbg
 local useCap=false
 local currentCap=100
+
 local function formatScore(c,r,x,t,maxres,cap)
+	c=tonumber(c) or 0
+	r=tonumber(r) or 0
+	x=tonumber(x) or 0
+	t=tonumber(t) or 0
 	cap=tonumber(cap) or 100
 	if (not maxres) then cap=100 end
-	return format("%03d %03d %03d %03d %01d",min(c,cap),r,c,x,t),c
+	return format("%03d %03d %03d %03d %01d",math.min(c,cap),r,c,x,t),c
 end
-function addon:MissionScore(mission,voidcap)
-	if ns.toc >=60200 then return self:xMissionScore(mission) end
-	if not mission then
-		return formatScore(0,1,0,0,false,0)
-	end
-	local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
-	local r=mission.class=="gold" and goldMultiplier or materialMultiplier
-	local t=isMissionTimeImproved and 1 or 0
-	local x=mission.xp and xpBonus/mission.xp*100 or 0
-	return formatScore(successChance,r,x,t,mission.maxable and useCap,currentCap)
-end
-function addon:xMissionScore(mission)
+
+-- Empty lines to keep line numbers in sync
+
+function addon:MissionScore(mission)
 	if (mission) then
 		local totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier,goldMultiplier = G.GetPartyMissionInfo(mission.missionID)
 		local x=mission.xp and xpBonus/mission.xp*100 or 0
+		if x~=x then x=0 end -- Nan is the only value which differs from itself
 		local r=0
 		if type(materialMultiplier)=='table' then
 			for _,v in pairs(mission.rewards) do

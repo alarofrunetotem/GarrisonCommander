@@ -12,6 +12,7 @@ local strspilit=strsplit
 local tostringall=tostringall
 local tostring=tostring
 local tonumber=tonumber
+local type=type
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
 print(LoadAddOn("LibDebug"))
@@ -82,7 +83,20 @@ do
 	end
 	--@end-debug@
 end
-
+-- my implementation of tonumber which accounts for nan and inf
+function ns.tonumber(value)
+	if value~=value then return nil
+	elseif value==math.huge then return nil
+	else return tonumber(value) or nil
+	end
+end
+-- my implementation of type which accounts for nan and inf
+function ns.type(value)
+	if value~=value then return nil
+	elseif value==math.huge then return nil
+	else return type(value)
+	end
+end
 local stacklevel=0
 local frames
 function ns.holdEvents()
