@@ -1,6 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
-* *2.6.0*
+* *2.6.2*
+Fixed all raised issues both from Curse comments and from CurseForge tickets
 
+* *2.6.0*
 Feature: priorities and allowed items are now the in the same list. Drag items around to change priorities
 Feature: Should now try more aggressively to maximise outcome of gold,oil and resources missions
 Feature: In follower page, a list of trait is shown in the bottom. It works like the one for abilities

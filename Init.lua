@@ -30,6 +30,14 @@ ns.C=ns.addon:GetColorTable()
 ns.L=ns.addon:GetLocale()
 ns.G=C_Garrison
 ns.GMF=_G.GarrisonMissionFrame
+if not ns.GMF then
+	print("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available")
+	print(GetTime())
+	LoadAddOn("Blizzard_GarrisonUI")
+	print(GetTime())
+	ns.GMF=_G.GarrisonMissionFrame
+end
+if not ns.GMF then error("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available") end
 ns.GMFMissions=_G.GarrisonMissionFrameMissions
 ns.GSF=_G.GarrisonShipFrame
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675

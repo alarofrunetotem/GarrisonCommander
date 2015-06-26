@@ -10,6 +10,7 @@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
 ## OptionalDeps: LibInit
+## Dependencies: Blizzard_GarrisonUI
 ## DefaultState: Enabled
 ## LoadOnDemand: 1
 ## LoadWith: Blizzard_GarrisonUI
