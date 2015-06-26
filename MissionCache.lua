@@ -64,9 +64,7 @@ function addon:GetMissionData(missionID,key,default)
 		mission=G.GetMissionInfo(missionID)
 	end
 	if not mission then
---@debug@
-		self:Print("Could not find info for mission",missionID,G.GetMissionName(missionID))
---@end-debug@
+		print("Could not find info for mission",missionID,G.GetMissionName(missionID))
 		return default
 	end
 	if (key==nil) then
@@ -82,6 +80,7 @@ function addon:GetMissionData(missionID,key,default)
 		return mission[key]
 	end
 	if key=='improvedDurationSeconds' then
+		if type(mission.durationSeconds) ~= 'number' then return default end
 		if self:GetParty(missionID,'isMissionTimeImproved') then
 			return mission.durationSeconds/2
 		else
@@ -90,10 +89,10 @@ function addon:GetMissionData(missionID,key,default)
 	end
 	if (key=='rank') then
 		mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
-		return mission.rank
+		return mission.rank or default
 	elseif(key=='basePerc') then
 		mission.basePerc=select(4,G.GetPartyMissionInfo(missionID))
-		return mission.basePerc
+		return mission.basePerc or default
 	else
 		--AddExtraData(mission)
 		return mission[key] or default
