@@ -5,7 +5,7 @@
 ## Notes-frFR: Vous aide au moment de choisir le droit utilisateur pour la bonne mission
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ 6.2.0
-## X-Version: 2.6.1
+## X-Version: 2.6.3
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it

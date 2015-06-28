@@ -1,4 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
+
+* *2.6.3*
+Added Draenic Weaponry and Draenic Armor Set to the enhancement list
+
 * *2.6.2*
 Fixed all raised issues both from Curse comments and from CurseForge tickets
 
