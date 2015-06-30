@@ -180,9 +180,24 @@ local items={
 [114086]={icon='inv_jewelry_necklace_70',quality=4},
 [114082]={icon='inv_bracer_cloth_reputation_c_01',quality=4},
 }
+local itemcaches={
+[118529]=655,--Cache of Highmaul Treasures,
+[122484]=670, --Blackrock Foundry Spoils,
+[128391]=685,--Iron Fleet Treasure Chest
+[122486]=700, --Blackrock Foundry Spoils
+[120301]=600, -- Folower Generic armor upgrade
+[120302]=600, -- Folower Generic weapon upgrade
+
+}
+function addon:GetTrueLevel(itemid,itemlevel)
+	return itemcaches[itemid] or itemlevel
+end
 for i=1,#upgrades do
 	local _,id,level=strsplit(':',upgrades[i])
-	followerItems[id]=level
+	followerItems[tonumber(id)]=level
+end
+function addon:IsFollowerUpgrade(id)
+	return followerItems[id]
 end
 function addon:GetUpgrades()
 	return upgrades
@@ -223,75 +238,95 @@ function addon:GetType(itemID)
 	if (followerItems[itemID]) then return "followerEquip" end
 	return "generic"
 end
---Data
-if ns.toc < 60200 then
-ns.traitTable= {
-		{
-			[9] = "Wastelander",
-		[7] = "Mountaineer",
-		[45] = "Cave Dweller",
-		[46] = "Guerilla Fighter",
-		[44] = "Naturalist",
-		[48] = "Marshwalker",
-		[49] = "Plainsrunner",
-		[8] = "Cold-Blooded",
-	}, -- [1]
-	{
-		[79] = "Scavenger",
-		[80] = "Extra Training",
-		[29] = "Fast Learner",
-		[256] = "Treasure Hunter",
-	}, -- [2]
-	{
-		[76] = "High Stamina",
-		[221] = "Epic Mount",
-		[77] = "Burst of Power",
-	}, -- [3]
-	[5] = {
-		[61] = "Tailoring",
-		[52] = "Mining",
-		[54] = "Alchemy",
-		[56] = "Enchanting",
-		[58] = "Inscription",
-		[60] = "Leatherworking",
-		[62] = "Skinning",
-		[53] = "Herbalism",
-		[55] = "Blacksmithing",
-		[57] = "Engineering",
-		[59] = "Jewelcrafting",
-	},
-	[6] = {
-		[73] = "Voodoo Zealot",
-		[63] = "Gnome-Lover",
-		[66] = "Child of the Moon",
-		[70] = "Child of Draenor",
-		[74] = "Elvenkind",
-		[67] = "Ally of Argus",
-		[71] = "Death Fascination",
-		[75] = "Economist",
-		[64] = "Humanist",
-		[68] = "Canine Companion",
-		[72] = "Totemist",
-		[65] = "Dwarvenborn",
-		[69] = "Brew Aficionado",
-	},
-	[7] = {
-		[37] = "Beastslayer",
-		[39] = "Primalslayer",
-		[4] = "Orcslayer",
-		[43] = "Talonslayer",
-		[36] = "Demonslayer",
-		[38] = "Ogreslayer",
-		[40] = "Gronnslayer",
-		[42] = "Voidslayer",
-		[41] = "Furyslayer",
-	},
-}
-else
+-- Thanks to wowheade
 ns.traitTable={
-[1]={  [9]="Wastelander",  [7]="Mountaineer",  [45]="Cave Dweller",  [46]="Guerilla Fighter",  [44]="Naturalist",  [48]="Marshwalker",  [49]="Plainsrunner",  [8]="Cold-Blooded"},[2]={  [80]="Extra Training",  [314]="Greasemonkey",  [79]="Scavenger",  [256]="Treasure Hunter",  [29]="Fast Learner"},[3]={  [76]="High Stamina",  [221]="Epic Mount",  [77]="Burst of Power"},[6]={  [61]="Tailoring",  [52]="Mining",  [54]="Alchemy",  [56]="Enchanting",  [58]="Inscription",  [60]="Leatherworking",  [62]="Skinning",  [53]="Herbalism",  [55]="Blacksmithing",  [57]="Engineering",  [59]="Jewelcrafting"},[7]={  [64]="Humanist",  [66]="Child of the Moon",  [68]="Canine Companion",  [65]="Dwarvenborn",  [67]="Ally of Argus",  [69]="Brew Aficionado",  [63]="Gnome-Lover"},[8]={  [37]="Beastslayer",  [39]="Primalslayer",  [4]="Orcslayer",  [43]="Talonslayer",  [36]="Demonslayer",  [38]="Ogreslayer",  [40]="Gronnslayer",  [42]="Voidslayer",  [41]="Furyslayer"}
+[1]={
+	[45]="Cave Dweller",
+	[8]="Cold-Blooded",
+	[46]="Guerilla Fighter",
+	[48]="Marshwalker",
+	[7]="Mountaineer",
+	[44]="Naturalist",
+	[49]="Plainsrunner",
+	[9]="Wastelander",
+},
+[2]={
+	[326] = "Apexis Attenuation",
+	[80]  ="Extra Training",
+	[29]  ="Fast Learner",
+	[314] ="Greasemonkey",
+	[236] = "Heartstone Pro",
+	[248] = "Mentor",
+	[79]  ="Scavenger",
+	[256] ="Treasure Hunter",
+},
+[3]={
+	[77]="Burst of Power",
+	[221]="Epic Mount",
+	[76]="High Stamina",
+	[250]="Speed of Light",
+},
+[4]={
+	[201]="Combat Experience",
+	[303]="Demonic Knowledge",
+	[47]="Master Assassin",
+},
+[5]={
+	[244]="Brute",
+	[78]="Lone Wolf",
+},
+[6]={
+	[54]="Alchemy",
+	[227]="Angler",
+	[55]="Blacksmithing",
+	[231]="Bodyguard",
+	[56]="Enchanting",
+	[57]="Engineering",
+	[62]="Evergreen",
+	[53]="Herbalism",
+	[52]="Mining",
+	[58]="Inscription",
+	[59]="Jewelcrafting",
+	[60]="Leatherworking",
+	[62]="Skinning",
+	[61]="Tailoring",
+},
+[7]={
+	[67] = "Ally of Argus",
+	[254]= "Bird Watcher",
+	[69] = "Brew Aficionado",
+	[68] = "Canine Companion",
+	[70] = "Child of Draenor",
+	[66] = "Child of the Moon",
+	[71] = "Death Fascination",
+	[65] = "Dwarvenborn",
+	[75] = "Economist",
+	[74] = "Elvenkind",
+	[63] = "Gnome-Lover",
+	[64] = "Humanist",
+	[253]= "Mechano Affictionado",
+	[252]= "Ogre Buddy",
+	[72] = "Totemist",
+	[73] = "Voodoo Zealot",
+	[255]= "Wildling",
+},
+[8]={
+	[37]="Beastslayer",
+	[36]="Demonslayer",
+	[325]="Exorcist",
+	[41]="Furyslayer",
+	[40]="Gronnslayer",
+	[38]="Ogreslayer",
+	[4]="Orcslayer",
+	[39]="Primalslayer",
+	[43]="Talonslayer",
+	[42]="Voidslayer",
+},
+[9]={
+	[232]="Dancer"
 }
-end
+}
+
 -- Pseudo Global Support.
 -- Calling ns.Configure() will give to the calling function a preloaded env
 

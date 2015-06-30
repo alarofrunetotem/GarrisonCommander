@@ -18,7 +18,6 @@ local Mbase = GMFMissions
 --	C_Garrison.GetAvailableMissions(self.availableMissions);
 local Index={}
 local sorted={}
-local ItemRewards={122484,118529,128391}
 local rushOrders="interface\\icons\\inv_scroll_12.blp"
 local function keyToIndex(key)
 	local idx=Index[key]
@@ -105,6 +104,7 @@ function addon:AddExtraData(mission)
 	mission.resources=0
 	mission.oil=0
 	mission.apexis=0
+	mission.seal=0
 	mission.gold=0
 	mission.followerUpgrade=0
 	mission.itemLevel=0
@@ -120,13 +120,12 @@ function addon:AddExtraData(mission)
 		if v.currencyID and v.currencyID==GARRISON_CURRENCY then mission.resources=v.quantity end
 		if v.currencyID and v.currencyID==GARRISON_SHIP_OIL_CURRENCY then mission.oil=v.quantity end
 		if v.currencyID and v.currencyID==823 then mission.apexis =mission.apexis+v.quantity end
+		if v.currencyID and v.currencyID==994 then mission.seal =mission.seal+v.quantity end
 		if v.currencyID and v.currencyID==0 then mission.gold =mission.gold+v.quantity/10000 end
 		if v.icon=="Interface\\Icons\\XPBonus_Icon" and v.followerXP then
 			mission.xpBonus=mission.xpBonus+v.followerXP
 		elseif (v.itemID) then
-			if tcontains(ItemRewards,v.itemID) then
-				mission.itemLevel=655
-			elseif v.itemID~=120205 then -- xp item
+			if v.itemID~=120205 then -- xp item
 				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
 				if (not itemName or not itemTexture) then
 					mission.class="retry"
@@ -135,10 +134,14 @@ function addon:AddExtraData(mission)
 				if itemTexture:lower()==rushOrders then
 					mission.rush=mission.rush+v.quantity
 				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
-					if itemLevel > 1 and itemMinLevel >=90 then
+					itemLevel=addon:GetTrueLevel(v.itemID,itemLevel)
+					if mission.missionID==364 then print(4,itemLevel) end
+					if (addon:IsFollowerUpgrade(v.itemID)) then
+						mission.followerUpgrade=itemRarity
+					elseif itemLevel > 500 and itemMinLevel >=90 then
 						mission.itemLevel=itemLevel
 					else
-						mission.followerUpgrade=itemRarity
+						mission.others=mission.others+v.quantity
 					end
 				else
 					mission.others=mission.others+v.quantity
@@ -159,6 +162,10 @@ function addon:AddExtraData(mission)
 		mission.class='apexis'
 		mission.maxable=true
 		mission.mat=true
+	elseif mission.seal > 0 then
+		mission.class='seal'
+		mission.maxable=fase
+		mission.mat=false
 	elseif mission.gold >0 then
 		mission.class='gold'
 		mission.maxable=true
@@ -167,11 +174,9 @@ function addon:AddExtraData(mission)
 		mission.class='itemLevel'
 	elseif mission.followerUpgrade>0 then
 		mission.class='followerUpgrade'
-	elseif mission.itemLevel>=645 then
-		mission.class='epic'
 	elseif mission.rush>0 then
 		mission.class='rush'
-	elseif numrewards > 1 then
+	elseif mission.others >0 or numrewards > 1 then
 		mission.class='other'
 	else
 		mission.class='xp'

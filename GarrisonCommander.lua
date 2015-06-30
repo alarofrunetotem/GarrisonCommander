@@ -767,9 +767,10 @@ function addon:CreatePrivateDb()
 						scroll=100,
 						apexis=100,
 						oil=100,
+						seal=100,
 						other=100
 					},
-					rewardOrder={1,2,3,4,5,6,7,8,9},
+					rewardOrder={1,2,3,4,5,6,7,8,9,10},
 					useOneChance=true,
 					minimumChance = 100,
 					minDuration = 0,
@@ -2502,7 +2503,11 @@ function over.GarrisonMissionButton_SetRewards(self, rewards, numRewards)
 				else
 					local name,link,quality,iLevel,level=GetItemInfo(reward.itemID)
 					if (name) then
-						Reward.Quantity:SetText(iLevel==1 and level or iLevel);
+						if (iLevel<500 and reward.quantity) then
+							Reward.Quantity:SetText(reward.quantity);
+						else
+							Reward.Quantity:SetText(iLevel==1 and level or iLevel);
+						end
 						Reward.Quantity:SetTextColor(ITEM_QUALITY_COLORS[quality].r,ITEM_QUALITY_COLORS[quality].g,ITEM_QUALITY_COLORS[quality].b)
 						Reward.Quantity:Show();
 					end

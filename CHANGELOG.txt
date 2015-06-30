@@ -1,5 +1,9 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.4*
+Completed traits list in follower page for both Horde and Alliance
+Added Seal of Tempered Fate as a unique category in mission control
+
 * *2.6.3*
 Added Draenic Weaponry and Draenic Armor Set to the enhancement list
 

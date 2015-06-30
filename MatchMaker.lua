@@ -88,12 +88,7 @@ function filters.xp(followerID,missionID)
 	return filters.maxed(followerID,missionID) or filters.other(followerID,missionID)
 end
 --alias
---filters.resources=filters.generic
---filters.oil=filters.generic
---filters.gold=filters.generic
---filters.equip=filters.generic
---filters.followerEquip=filters.generic
---filters.epic=filters.generic
+
 local nop={addRow=function() end}
 local scroller=nop
 local function CreateFilter(missionClass)
@@ -265,8 +260,9 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 		party.resources=mission.resources
 		party.oil=mission.oil
 		party.apexis=mission.apexis
-		party.epic=mission.epic
+		party.seal=mission.seal
 		party.other=mission.other
+		party.rush=mission.rush
 	end
 	P:StoreFollowers(party.members)
 	P:Close(party)
