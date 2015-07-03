@@ -1,5 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.5*
+Garrison Broker is now aware of enhanced Garrison Cache sizes (750 and 1000)
+
 * *2.6.4*
 Completed traits list in follower page for both Horde and Alliance
 Added Seal of Tempered Fate as a unique category in mission control

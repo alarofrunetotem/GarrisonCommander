@@ -5,7 +5,7 @@
 ## Notes-frFR: Data-Broker pour GarrisonCommander
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ 6.2
-## X-Version: 2.6.0
+## X-Version: 2.6.5
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it

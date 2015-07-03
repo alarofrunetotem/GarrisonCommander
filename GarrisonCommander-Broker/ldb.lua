@@ -8,10 +8,12 @@ end
 local pp=print
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
+LoadAddOn("LibDebug")
 if LibDebug then LibDebug() end
 --@end-debug@
+local print=print
 --[===[@non-debug@
-setfenv(1,setmetatable({print=function(...) end},{__index=_G}))
+print=function() end
 --@end-non-debug@]===]
 print("Garrison-Broker")
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
@@ -122,6 +124,15 @@ function addon:ZONE_CHANGED_NEW_AREA()
 	self:ScheduleTimer("CheckEvents",1)
 	self:ScheduleTimer("DiscoverFarms",1)
 
+end
+function addon:QUEST_TURNED_IN(event,quest,item,gold)
+	if quest==37485 then
+		self.db.realm.cachesize[ns.me] = 1000
+		self:Print("Your garrison cache sise was increased to 1000")
+	elseif quest==38445 then
+		self.db.realm.cachesize[ns.me] = 750
+		self:Print("Your garrison cache sise was increased to 750")
+	end
 end
 function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
 	if (unit=='player') then
@@ -271,7 +282,11 @@ function addon:SetDbDefaults(default)
 				["*"]=false
 			}},
 		caches={["*"]=0},
+		cachesize={["*"]=false},
 		dbversion=1
+	}
+	default.profile={
+		allowedWorkOrders={["*"]=true}
 	}
 end
 function addon:OnInitialized()
@@ -294,19 +309,24 @@ function addon:OnInitialized()
 			v[s]=tonumber(v[s]) or 0
 		end
 	end
-
 	ns.me=GetUnitName("player",false)
 	self:RegisterEvent("GARRISON_MISSION_STARTED")
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("SHIPMENT_CRAFTER_INFO")
 	self:RegisterEvent("SHOW_LOOT_TOAST")
+	self:RegisterEvent("QUEST_AUTOCOMPLETE",print)
+	self:RegisterEvent("QUEST_COMPLETE",print)
+	self:RegisterEvent("QUEST_FINISH",print)
+	self:RegisterEvent("QUEST_TURNED_IN",print)
 	--self:RegisterEvent("SHIPMENT_CRAFTER_REAGENT_UPDATE",print)
 	self:AddLabel(GARRISON_NUM_COMPLETED_MISSIONS)
 	self:AddToggle("OLDINT",false,L["Use old interface"],L["Uses the old, more intrusive interface"])
 	self:AddToggle("SHOWNEXT",false,L["Show next toon"],L["Show the next toon whicg will complete a mission"])
 	self:AddSlider("FREQUENCY",5,1,60,L["Update frequency"])
 	frequency=self:GetNumber("FREQUENCY",5)
+	print("OnInitialized")
+	self:ScheduleTimer("DelayedInit",5)
 end
 function addon:ApplyFREQUENCY(value)
 	frequency=value
@@ -322,6 +342,8 @@ end
 function addon:SHOW_LOOT_TOAST(event,typeIdentifier, itemLink, quantity, specID, sex, isPersonal, lootSource)
 	if (isPersonal and lootSource==10) then -- GARRISON_CACHE
 		self.db.realm.caches[ns.me]=time()
+		self.db.realm.caches[ns.me]=time()
+
 		cacheobj:Update()
 	end
 end
@@ -333,8 +355,10 @@ function addon:DelayedInit()
 	farmobj:Update()
 	workobj:Update()
 	dataobj:Update()
+	self.db.realm.cachesize[ns.me] = IsQuestFlaggedCompleted(37485) and 1000 or IsQuestFlaggedCompleted(38445) and 750 or self.db.realm.cachesize[ns.me]
 end
 function addon:OnEnabled()
+	print("OnEnabled")
 	self:ScheduleTimer("DelayedInit",5)
 end
 function addon:Gradient(perc)
@@ -425,9 +449,10 @@ end
 function cacheobj:OnTooltipShow()
 	self:AddLine(GARRISON_CACHE)
 	for k,v in kpairs(addon.db.realm.caches) do
-		local resources=math.min(500,math.floor((time()-v)*(1/600)))
-		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),resources,nil,nil,nil,
-		addon:ColorGradient(resources/500,0,1,0,1,1,0,1,0,0))
+		local m=addon.db.realm.cachesize[k] or 500
+		local resources=math.min(m,math.floor((time()-v)*(1/600)))
+		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),format("%d/%d",resources,m),nil,nil,nil,
+		addon:ColorGradient(resources/m,0,1,0,1,1,0,1,0,0))
 	end
 	self:AddLine(me,C.Silver())
 end
