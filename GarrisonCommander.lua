@@ -24,8 +24,8 @@ local minHeight
 local addon=addon --#self
 ns.bigscreen=true
 -- Blizzard functions override support
-local orig={} --#originals
-local over={} --#overridden
+local orig=orig --#originals
+local over=over --#overridden
 local backdrop = {
 		--bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
 		bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
@@ -1643,14 +1643,13 @@ function addon:SetUp(...)
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
-
-
+	bt.missionType=LE_FOLLOWER_TYPE_GARRISON_6_0
 	return self:StartUp()
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
-function addon:MissionComplete()
-	return self:GetModule("MissionCompletion"):MissionComplete()
+function addon:MissionComplete(...)
+	return self:GetModule("MissionCompletion"):MissionComplete(...)
 end
 function addon:AddMenu()
 	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
@@ -2099,7 +2098,10 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		showItemLevel = false;
 	end
-	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false);
+	local rc,message= pcall(GarrisonMissionFrame_SetFollowerPortrait,frame.PortraitFrame, info, false);
+--@debug@	
+	if not rc then print(message) end
+--@end-debug@	
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
 		if (missionID and not GMFMissions.showInProgress) then
@@ -2371,19 +2373,6 @@ end
 addon.SetUp=addon.ExperimentalSetUp
 --]]
 
-
--- Blizzard functions override
-local function override(blizfunc,...)
-	local overrider=blizfunc
-	if select('#',...) > 0 then
-		blizfunc=strjoin('.',blizfunc,...)
-		overrider=strjoin('_',overrider,...)
-	end
-	assert(type(over[overrider])=="function",overrider)
-	if (orig[overrider]) then return end
-	local code="local orig,over,overrider=... orig[overrider]=_G."..blizfunc.." _G."..blizfunc.."=over[overrider]"
-	assert(loadstring(code, "Executing " ..code))(orig,over,overrider)
-end
 function over.StolenGarrisonMissionPageFollowerFrame_OnEnter(self)
 	if not self.info then
 		return;
@@ -2457,11 +2446,7 @@ function over.GarrisonMissionFrame_SetFollowerPortrait(portraitFrame, followerIn
 end
 
 function over.GarrisonMissionPage_Close(self)
-	if ns.toc < 60200 then
-		GarrisonMissionPage_ClearParty()
-	else
-		GMF:ClearParty()
-	end
+	GMF:ClearParty()
 	GarrisonMissionFrame.MissionTab.MissionPage:Hide();
 	GarrisonMissionFrame.followerCounters = nil;
 	GarrisonMissionFrame.MissionTab.MissionPage.missionInfo = nil;
@@ -3028,10 +3013,6 @@ override("GarrisonMissionPageFollowerFrame_OnEnter")
 override("GarrisonMissionList_SetTab")
 override("GarrisonMissionButton_OnClick")
 override("GarrisonMissionFrame","SelectTab")
-if (ns.toc < 60200) then
-	override("GarrisonMissionFrame_SelectTab")
-end
-
 GMF.MissionTab.MissionPage.CloseButton:SetScript("OnClick",over.GarrisonMissionPage_Close)
 for i=1,#GMFMissionListButtons do
 	local b=GMFMissionListButtons[i]

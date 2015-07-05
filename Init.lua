@@ -39,7 +39,8 @@ if not ns.GMF then
 end
 if not ns.GMF then error("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available") end
 ns.GMFMissions=_G.GarrisonMissionFrameMissions
-ns.GSF=_G.GarrisonShipFrame
+ns.GSF=_G.GarrisonShipyardFrame
+ns.GSFMissions=_G.GarrisonShipyardFrame.MissionTab.MissionList
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 do
 	--@debug@
@@ -61,7 +62,7 @@ do
 			return {}
 		end
 	end
-	function ns.copy(t)
+	function ns.tCopy(t)
 		local c = ns.new()
 		for k, v in pairs(t) do
 			c[k] = v
@@ -105,6 +106,23 @@ function ns.type(value)
 	else return type(value)
 	end
 end
+ns.orig={}
+ns.over={}
+local orig=ns.orig
+local over=ns.over
+-- Blizzard functions override
+function ns.override(blizfunc,...)
+	local overrider=blizfunc
+	if select('#',...) > 0 then
+		blizfunc=strjoin('.',blizfunc,...)
+		overrider=strjoin('_',overrider,...)
+	end
+	assert(type(over[overrider])=="function",overrider)
+	if (orig[overrider]) then return end
+	local code="local orig,over,overrider=... orig[overrider]=_G."..blizfunc.." _G."..blizfunc.."=over[overrider]"
+	assert(loadstring(code, "Executing " ..code))(orig,over,overrider)
+end
+
 local stacklevel=0
 local frames
 function ns.holdEvents()
