@@ -364,7 +364,7 @@ end
 function addon:GetImprovedCacheSize()
 	if IsQuestFlaggedCompleted(37485) then
 		return 1000 -- Arakkoa item
-	elseif IsQuestFlaggedCompleted(38845) then
+	elseif IsQuestFlaggedCompleted(38445) then
 		return 750 --Alliance improved logistic
 	elseif IsQuestFlaggedCompleted(37953) then
 		return 750 --Horde improved logistic
