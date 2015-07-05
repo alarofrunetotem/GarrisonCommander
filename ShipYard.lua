@@ -15,11 +15,11 @@ function sprint(nome,this,...)
 	print(nome,this:GetName(),...)
 end
 function module:OnInitialize()
-	override("GarrisonShipyardFrame","OnClickMission")
 	override("GarrisonFollowerButton_UpdateCounters")
-	override("GarrisonShipyardMapMission_SetTooltip")
 --@debug@
 	print("ShipYard Loaded")
+	override("GarrisonShipyardMapMission_SetTooltip")
+	override("GarrisonShipyardFrame","OnClickMission")
 	self:SafeHookScript(GSF,"OnShow","Setup",true)
 	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",function(... ) sprint("CompleteDialog",...) end,true)
 	self:SafeHookScript(GSF.MissionTab,"OnShow",function(... ) sprint("MissionTab",...) end,true)
@@ -40,7 +40,7 @@ local over=over --#over
 function over.GarrisonShipyardFrame_OnClickMission(this,missionInfo)
 	-- this = GarrisonShipyardframe
 	local frame=GSF.MissionTab.MissionPage.Stage
-	orig.GarrisonShipyardFrame_OnClickMission(frame,missionInfo)
+	orig.GarrisonShipyardFrame_OnClickMission(this,missionInfo)
 --@debug@
 	if not frame.GCID then
 		frame.GCID=frame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
@@ -56,11 +56,7 @@ function over.GarrisonFollowerButton_UpdateCounters(gsf,frame,follower,showcount
 		frame.GCXp=frame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
 	end
 	if follower.isCollected and follower.quality < GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY  then
-		if frame.BusyFrame:IsShown() then
-			frame.GCXp:SetPoint("TOPLEFT",frame.BusyFrame,"TOPRIGHT",5,0)
-		else
-			frame.GCXp:SetPoint("TOPLEFT",frame,"TOPLEFT",0,0)
-		end
+		frame.GCXp:SetPoint("TOPRIGHT",frame,"TOPRIGHT",0,-5)
 		frame.GCXp:SetFormattedText("Xp to go: %d",follower.levelXP-follower.xp)
 		frame.GCXp:Show()
 	else
