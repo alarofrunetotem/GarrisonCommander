@@ -157,7 +157,6 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 	end
 end
 local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
-	print("Current cap",currentCap)
 	local mission=self:GetMissionData(missionID)
 	local class=self:GetMissionData(missionID,'class')
 	local filterOut=filters[class] or filters.other
