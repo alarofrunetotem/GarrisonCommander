@@ -47,6 +47,7 @@ local NEXT=NEXT
 local NONE=C(NONE,"Red")
 local DONE=C(DONE,"Green")
 local NEED=C(NEED,"Red")
+local IsQuestFlaggedCompleted=IsQuestFlaggedCompleted
 
 local CAPACITANCE_SHIPMENT_COUNT=CAPACITANCE_SHIPMENT_COUNT -- "%d of %d Work Orders Available";
 local CAPACITANCE_SHIPMENT_READY=CAPACITANCE_SHIPMENT_READY -- "Work Order ready for pickup!";
@@ -130,6 +131,9 @@ function addon:QUEST_TURNED_IN(event,quest,item,gold)
 		self.db.realm.cachesize[ns.me] = 1000
 		self:Print("Your garrison cache sise was increased to 1000")
 	elseif quest==38445 then
+		self.db.realm.cachesize[ns.me] = 750
+		self:Print("Your garrison cache sise was increased to 750")
+	elseif quest==37935 then
 		self.db.realm.cachesize[ns.me] = 750
 		self:Print("Your garrison cache sise was increased to 750")
 	end
@@ -343,7 +347,7 @@ function addon:SHOW_LOOT_TOAST(event,typeIdentifier, itemLink, quantity, specID,
 	if (isPersonal and lootSource==10) then -- GARRISON_CACHE
 		self.db.realm.caches[ns.me]=time()
 		self.db.realm.caches[ns.me]=time()
-
+		self.db.realm.cachesize[ns.me]=self:GetImprovedCacheSize()
 		cacheobj:Update()
 	end
 end
@@ -355,8 +359,20 @@ function addon:DelayedInit()
 	farmobj:Update()
 	workobj:Update()
 	dataobj:Update()
-	self.db.realm.cachesize[ns.me] = IsQuestFlaggedCompleted(37485) and 1000 or IsQuestFlaggedCompleted(38445) and 750 or self.db.realm.cachesize[ns.me]
+	self.db.realm.cachesize[ns.me] = self:GetImprovedCacheSize()
 end
+function addon:GetImprovedCacheSize()
+	if IsQuestFlaggedCompleted(37485) then
+		return 1000 -- Arakkoa item
+	elseif IsQuestFlaggedCompleted(38845) then
+		return 750 --Alliance improved logistic
+	elseif IsQuestFlaggedCompleted(37953) then
+		return 750 --Horde improved logistic
+	else
+		return 500
+	end
+end
+
 function addon:OnEnabled()
 	print("OnEnabled")
 	self:ScheduleTimer("DelayedInit",5)
