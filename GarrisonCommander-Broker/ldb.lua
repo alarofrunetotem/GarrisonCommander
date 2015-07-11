@@ -15,7 +15,6 @@ local print=print
 --[===[@non-debug@
 print=function() end
 --@end-non-debug@]===]
-print("Garrison-Broker")
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
 --local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
 local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0","AceHook-3.0") --#addon
@@ -289,9 +288,7 @@ function addon:SetDbDefaults(default)
 		cachesize={["*"]=false},
 		dbversion=1
 	}
-	default.profile={
-		allowedWorkOrders={["*"]=true}
-	}
+	default.profile['allowedWorkOrders']={["*"]=true}
 end
 function addon:OnInitialized()
 	if dbversion>self.db.realm.dbversion then
@@ -319,17 +316,16 @@ function addon:OnInitialized()
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("SHIPMENT_CRAFTER_INFO")
 	self:RegisterEvent("SHOW_LOOT_TOAST")
-	self:RegisterEvent("QUEST_AUTOCOMPLETE",print)
-	self:RegisterEvent("QUEST_COMPLETE",print)
-	self:RegisterEvent("QUEST_FINISH",print)
-	self:RegisterEvent("QUEST_TURNED_IN",print)
+	--self:RegisterEvent("QUEST_AUTOCOMPLETE",print)
+	--self:RegisterEvent("QUEST_COMPLETE",print)
+	--self:RegisterEvent("QUEST_FINISH",print)
+	self:RegisterEvent("QUEST_TURNED_IN")
 	--self:RegisterEvent("SHIPMENT_CRAFTER_REAGENT_UPDATE",print)
 	self:AddLabel(GARRISON_NUM_COMPLETED_MISSIONS)
 	self:AddToggle("OLDINT",false,L["Use old interface"],L["Uses the old, more intrusive interface"])
 	self:AddToggle("SHOWNEXT",false,L["Show next toon"],L["Show the next toon whicg will complete a mission"])
 	self:AddSlider("FREQUENCY",5,1,60,L["Update frequency"])
 	frequency=self:GetNumber("FREQUENCY",5)
-	print("OnInitialized")
 	self:ScheduleTimer("DelayedInit",5)
 end
 function addon:ApplyFREQUENCY(value)
@@ -374,7 +370,6 @@ function addon:GetImprovedCacheSize()
 end
 
 function addon:OnEnabled()
-	print("OnEnabled")
 	self:ScheduleTimer("DelayedInit",5)
 end
 function addon:Gradient(perc)

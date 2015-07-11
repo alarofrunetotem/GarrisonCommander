@@ -1,5 +1,10 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.6*
+Feature: Quick mission completion enabled for shipyard
+Feature: In Ship missions mission expire time added
+Fix: Sometimes interacting with shipyard raised a protection issue
+More shipyard feature incoming
 * *2.6.5*
 Feature: Garrison Broker is now aware of enhanced Garrison Cache sizes (750 and 1000)
 Feature: Ship list enhanced with "xp to go"

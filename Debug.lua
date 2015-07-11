@@ -80,6 +80,7 @@ function m:AddRow(text,...)
 	self:AddChild(l)
 	return l
 end
+--[[
 function m:AddIconText(icon,text,qt)
 	local l=AceGUI:Create("InteractiveLabel")
 	l:SetFontObject(GameFontNormalSmall)
@@ -104,6 +105,7 @@ function m:AddItem(itemID,qt)
 		return self:AddIconText(itemtexture,itemlink)
 	end
 end
+--]]
 function addon:GetScroller(title,type,h,w)
 	h=h or 800
 	w=w or 400

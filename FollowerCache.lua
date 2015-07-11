@@ -204,6 +204,13 @@ function cache:GetFollowersWithCounterFor(threat)
 end
 
 -- Addon level proxies
+function addon:GetAnyData(followerType,...)
+	if followerType== LE_FOLLOWER_TYPE_GARRISON_6_0 then
+		return self:GetFollowerData(...)
+	else
+		return self:GetShipData(...)
+	end
+end
 function addon:GetFollowerData(followerID,key,default)
 	return module.followerCache:GetFollowerData(followerID,key,default)
 end

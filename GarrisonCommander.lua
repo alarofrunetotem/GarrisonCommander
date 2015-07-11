@@ -128,6 +128,7 @@ local BUSY_MESSAGE_FORMAT=L["Only first %1$d missions with over %2$d%% chance of
 local BUSY_MESSAGE=format(BUSY_MESSAGE_FORMAT,MAXMISSIONS,MINPERC)
 -- to be rmoved in 60200
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 
 local function splitFormat(base)
 	local i,s=base:find("|4.*:.*;")
@@ -409,19 +410,19 @@ function addon:OnInitialized()
 	self:AddLabel("Developers options")
 	self:AddToggle("DBG",false, "Enable Debug")
 	self:AddToggle("TRC",false, "Enable Trace")
+	self:AddOpenCmd("show","showdata","Prints a mission score")
 --@end-debug@
 	self:Trigger("MSORT")
-	self:AddOpenCmd("show","showdata","Prints a mission score")
 	LoadAddOn("GarrisonCommander-Broker")
 --@debug@
-	print("Sanity checks")
-	print(self:GetAgeColor(1/0))
-	print(self:GetAgeColor(0/0))
-	print(self:GetAgeColor(GetTime()+100))
-	print(type(1/0))
-	print(type(0/0))
-	print(pcall(format,"%03d %03d",1/0,0/0))
-	print(pcall(format,"%03d %03d",tonumber(1/0) or 1,tonumber(0/0) or 2))
+	assert(self:GetAgeColor(1/0))
+	assert(self:GetAgeColor(0/0))
+	assert(self:GetAgeColor(GetTime()+100))
+	assert(type(1/0)==nil)
+	assert(type(0/0)==nil)
+	assert("stringa"~=nil)
+	assert("stringa"==nil or true)
+	assert(pcall(format,"%03d %03d",tonumber(1/0) or 1,tonumber(0/0) or 2))
 --@end-debug@
 
 	return true
@@ -1397,11 +1398,7 @@ function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
 				self:HookedGarrisonFollowerPage_ShowFollower(frame.info,frame.info.followerID)
 			end
 		end
-		if ns.toc <60200 then
-			self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.2,frame,frame.info,false)
-		else
-			self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.2,GMF,frame,frame.info,false)
-		end
+		self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.2,GMF,frame,frame.info,false)
 		self:ShowUpgradeButtons()
 	end
 end
@@ -1638,12 +1635,12 @@ function addon:SetUp(...)
 	tabCF:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-60)
 	tabMC:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-110)
 	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
-	local bt = CreateFrame('BUTTON','GCQuickMissionCompletionButton', ref, 'UIPanelButtonTemplate')
+	local bt = CreateFrame('BUTTON',nil, ref, 'UIPanelButtonTemplate')
 	bt:SetWidth(300)
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
-	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
 	bt.missionType=LE_FOLLOWER_TYPE_GARRISON_6_0
+	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
 	return self:StartUp()
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
@@ -1770,43 +1767,38 @@ function addon:PermanentEvents()
 	-- Follower button enhancement in follower list
 	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
 end
-function addon:checkMethod(method,hook)
-	if (type(self[method])=="function") then
---@debug@
-		--print("Hooking ",hook,"to self:" .. method)
---@end-debug@
-		return true
---@debug@
-	else
-		--print("Hooking ",hook,"to print")
---@end-debug@
-	end
+function addon:checkHandler(handler)
+	return type(handler)=='function' or type(self[handler])=='function'
 end
 function addon:SafeRegisterEvent(event)
-	local method="Event"..event
-	if (self:checkMethod(method,event)) then
-		return self:RegisterEvent(event,method)
+	local handler="Event"..event
+	if (self:checkHandler(handler,event)) then
+		return self:RegisterEvent(event,handler)
 --@debug@
 	else
 		return self:RegisterEvent(event,print)
 --@end-debug@
 	end
 end
-function addon:SafeSecureHook(tobehooked,method)
-	if (self:IsHooked(tobehooked)) then return end
-	method=method or "Hooked"..tobehooked
-	if (self:checkMethod(method,tobehooked)) then
-		return self:SecureHook(tobehooked,method)
+function addon:SafeSecureHook(object,method,handler)
+	if (self:IsHooked(object,method)) then return end
+	if type(object) == "string" then
+		method, handler, object = object, method, nil
+	end
+	handler=handler or "Hooked"..method
+	if (self:checkHandler(handler)) then
+		return self:SecureHook(object,method,handler)
 --@debug@
 	else
+		print(object,method,handler)
 		do
-			local hooked=tobehooked
-			return self:SecureHook(tobehooked,function(...) print(hooked,...) end)
+			local hooked=method
+			return self:SecureHook(object,method,function(...) print(hooked,...) end)
 		end
 --@end-debug@
 	end
 end
-function addon:SafeHookScript(frame,hook,method,postHook)
+function addon:SafeHookScript(frame,method,handler,postHook)
 	local name="Unknown"
 	if (type(frame)=="string") then
 		name=frame
@@ -1817,35 +1809,48 @@ function addon:SafeHookScript(frame,hook,method,postHook)
 		end
 	end
 	if (frame) then
-		--This allow to change a hook, for example to substitute an one time init with the standard routine
-		if (self:IsHooked(frame,hook)) then self:Unhook(frame,hook)	end
-		if (method) then
+		--This allow to change a method, for example to substitute an one time init with the standard routine
+		if (self:IsHooked(frame,method)) then self:Unhook(frame,method)	end
+		if (handler) then
 			if (postHook) then
-				self:SecureHookScript(frame,hook,method)
+				self:SecureHookScript(frame,method,handler)
 			else
-				self:HookScript(frame,hook,method)
+				self:HookScript(frame,method,handler)
 			end
 		else
 			if (postHook) then
-				self:SecureHookScript(frame,hook,function(...) self:ScriptTrace(name,hook,...) end)
+				self:SecureHookScript(frame,method,function(...) self:ScriptTrace(name,method,...) end)
 			else
-				self:HookScript(frame,hook,function(...) self:ScriptTrace(name,hook,...) end)
+				self:HookScript(frame,method,function(...) self:ScriptTrace(name,method,...) end)
 			end
 		end
 	end
 end
 local converter=CreateFrame("Frame"):CreateTexture()
-function addon:GetFollowerTexture(followerID)
-	local rc,iconID=pcall(self.GetFollowerData,self,followerID,"portraitIconID")
-	if rc then
-		if iconID then
-			converter:SetToFileData(iconID)
-			return converter:GetTexture()
+local shipconv=CreateFrame("Frame",nil,nil,"GarrisonShipMissionCompleteFollowerTemplate")
+function addon:GetFollowerTexture(followerID,followerType)
+	followerType=followerType or LE_FOLLOWER_TYPE_GARRISON_6_0
+	if (followerType==LE_FOLLOWER_TYPE_GARRISON_6_0) then
+		local rc,iconID=pcall(self.GetAnyData,self,followerType,followerID,"portraitIconID")
+		if rc then
+			if iconID then
+				converter:SetToFileData(iconID)
+				return converter:GetTexture()
+			end
 		end
-		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
 	else
-		return "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+		local rc,texPrefix=pcall(self.GetAnyData,self,followerType,followerID,"texPrefix")
+		print(rc,texPrefix)
+		if rc then
+			if texPrefix then
+				shipconv.Portrait:SetAtlas(texPrefix)
+				print(shipconv.Portrait:GetTexture())
+				return shipconv.Portrait:GetTexture()
+			end
+		end
 	end
+		return followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+				or "Interface\\Garrison\\Portraits\\Ships_CargoShip-Portrait"
 end
 
 function addon:CleanUp()
@@ -1856,7 +1861,7 @@ function addon:CleanUp()
 	self:UnhookAll()
 	self:CancelAllTimers()
 	self:RemoveMenu()
-	self:HookScript(GMF,"OnSHow","StartUp",true)
+	self:HookScript(GMF,"OnShow","StartUp",true)
 	self:PermanentEvents() -- Reattaching permanent events
 	if (GarrisonFollowerTooltip.fs) then
 		GarrisonFollowerTooltip.fs:Hide()
@@ -1925,7 +1930,8 @@ local GARRISON_MISSION_ID=GARRISON_MISSION_ENVIRONMENT:sub(1,10)..'MissionID:|r 
 function addon:FillMissionPage(missionInfo)
 	if type(missionInfo)=="number" then missionInfo=self:GetMissionData(missionInfo) end
 	if not missionInfo then return end
-	local stage=GMF.MissionTab.MissionPage.Stage
+	local missionType=missionInfo.followerTypeID
+	local stage=missionType==LE_FOLLOWER_TYPE_GARRISON_6_0 and  GMF.MissionTab.MissionPage.Stage or GSF.MissionTab.MissionPage.Stage
 	if not stage.expires then
 		stage.expires=stage:CreateFontString()
 		stage.expires:SetFontObject(stage.MissionEnv:GetFontObject())
@@ -1945,6 +1951,10 @@ if not stage.missionid then
 --@end-debug@
 	if( IsControlKeyDown()) then self:Print("Shift key, ignoring mission prefill") return end
 	if (self:GetBoolean("NOFILL")) then return end
+	if missionType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+		print("SHip Mission",missionInfo)
+		return
+	end
 	local missionID=missionInfo.missionID
 --@debug@
 	print("UpdateMissionPage for",missionID,missionInfo.name,missionInfo.numFollowers)
@@ -2071,7 +2081,10 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 	frame.PortraitFrame.Level:SetTextColor(1,1,1,1)
 	frame.PortraitFrame.Portrait:Show()
 	local info=self:GetFollowerData(followerID)
-	if (not info) then return end
+	if (not info) then
+		print("Unable to find follower",followerID)
+	return
+	end
 	frame.info=info
 	frame.missionID=missionID
 	if (frame.Name) then
@@ -2099,9 +2112,9 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 		showItemLevel = false;
 	end
 	local rc,message= pcall(GarrisonMissionFrame_SetFollowerPortrait,frame.PortraitFrame, info, false);
---@debug@	
+--@debug@
 	if not rc then print(message) end
---@end-debug@	
+--@end-debug@
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
 		if (missionID and not GMFMissions.showInProgress) then
@@ -2487,6 +2500,7 @@ function over.GarrisonMissionButton_SetRewards(self, rewards, numRewards)
 					Reward.Quantity:Show();
 				else
 					local name,link,quality,iLevel,level=GetItemInfo(reward.itemID)
+					iLevel=addon:GetTrueLevel(reward.itemID,iLevel)
 					if (name) then
 						if (iLevel<500 and reward.quantity) then
 							Reward.Quantity:SetText(reward.quantity);
@@ -2709,7 +2723,11 @@ function addon:DrawSingleSlimButton(page,button,progressing,bigscreen)
 		local frame=button
 		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		over.GarrisonMissionButton_SetRewards(button, mission.rewards, mission.numRewards);
-		self:AddFollowersToButton(button,mission,missionID,bigscreen)
+		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
+			self:AddFollowersToButton(button,mission,missionID,bigscreen)
+		else
+			self:AddShipsToButton(button,mission,missionID,bigscreen)
+		end
 		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,-5)
 		frame.Success:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
 		frame.Failure:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
@@ -2929,6 +2947,8 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 			button.xp:Hide()
 		end
 	end
+end
+function addon:AddShipsToButton(button,mission,missionID,bigscreen)
 end
 function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 	if (not button.gcPANEL) then

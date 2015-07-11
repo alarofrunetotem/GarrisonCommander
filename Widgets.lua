@@ -3,7 +3,20 @@ ns.Configure()
 local addon=addon
 local _G=_G
 local wipe=wipe
+local format=format
+local UNKNOWN=UNKNOWN
+local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
+
 local module=addon:NewSubModule("Widgets") --#module
+local function Constructor()
+	local widget= AceGUI:Create("Label")
+	widget.SetAtlas=function (atlasname)
+		widget.image:SetAtlas(atlasname)
+	end
+	widget.OnRelease=function() widget.image:SetAtlas(nil) end
+end
+AceGUI:RegisterWidgetType("AtlasLabel", Constructor, 1)
 --- Quick backdrop
 --
 local backdrop = {
@@ -95,10 +108,12 @@ local function GMCList()
 		obj:AddChild(l)
 
 	end
-	function m:AddFollower(followerID,xp,levelup)
-		local follower=addon:GetFollowerData(followerID)
+	function m:AddFollower(follower,xp,levelup)
+		print(follower)
+		local followerID=follower.followerID
+		local followerType=follower.followerTypeID
 		if follower.maxed and not levelup then
-			return self:AddIconText(addon:GetFollowerTexture(followerID),
+			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(followerID),
 								format("%s is already at maximum xp",addon:GetFollowerData(followerID,'fullname')))
 		end
 		local quality=G.GetFollowerQuality(followerID) or follower.quality
@@ -106,10 +121,28 @@ local function GMCList()
 		if levelup then
 			PlaySound("UI_Garrison_CommandTable_Follower_LevelUp");
 		end
-		return self:AddIconText(addon:GetFollowerTexture(followerID),
-		format("%s gained %d xp%s%s",addon:GetFollowerData(followerID,'fullname',true),xp,
-		levelup and " |cffffed1a*** Level Up ***|r ." or ".",
-		format(" %d to go.",addon:GetFollowerData(followerID,'levelXP')-addon:GetFollowerData(followerID,'xp'))))
+		return self:AddFollowerIcon(followerType,
+			addon:GetFollowerTexture(followerID,followerType),
+			format("%s gained %d xp%s%s",
+				addon:GetAnyData(followerType,followerID,'fullname',UNKNOWN),
+				xp,
+				levelup and " |cffffed1a*** Level Up ***|r ." or ".",
+				format(" %d to go.",addon:GetAnyData(followerType,followerID,'levelXP')-addon:GetAnyData(followerType,followerID,'xp')))
+		)
+	end
+	function m:AddFollowerIcon(followerType,icon,text)
+		local l=self:AddIconText(icon,text)
+		if followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 then
+			l:SetImageSize(24,24)
+		else
+			local left,right,top,bottom
+			left=0
+			right=0.5
+			top=0
+			bottom=0.5
+			l:SetImage(icon,left,right,top,bottom)
+			l:SetImageSize(36,36)
+		end
 	end
 	function m:AddIconText(icon,text,qt)
 		local obj=self.scroll

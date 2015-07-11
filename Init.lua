@@ -47,6 +47,7 @@ do
 	local newcount, delcount,createdcount,cached = 0,0,0
 	--@end-debug@
 	local pool = setmetatable({},{__mode="k"})
+	---@function [parent=#ns] new
 	function ns.new()
 	--@debug@
 		newcount = newcount + 1
@@ -62,6 +63,7 @@ do
 			return {}
 		end
 	end
+	---@function [parent=#ns] tCopy
 	function ns.tCopy(t)
 		local c = ns.new()
 		for k, v in pairs(t) do
@@ -69,6 +71,7 @@ do
 		end
 		return c
 	end
+	---@function [parent=#ns] del
 	function ns.del(t)
 	--@debug@
 		delcount = delcount + 1
@@ -77,6 +80,7 @@ do
 		pool[t] = true
 	end
 	--@debug@
+	---@function [parent=#ns] cached
 	function cached()
 		local n = 0
 		for k in pairs(pool) do
@@ -84,7 +88,7 @@ do
 		end
 		return n
 	end
-	function ns.addon:CacheStats()
+	function addon:CacheStats()
 		print("Created:",createdcount)
 		print("Aquired:",newcount)
 		print("Released:",delcount)
@@ -93,6 +97,8 @@ do
 	--@end-debug@
 end
 -- my implementation of tonumber which accounts for nan and inf
+---@function [parent=#ns] tonumber
+
 function ns.tonumber(value)
 	if value~=value then return nil
 	elseif value==math.huge then return nil
@@ -100,6 +106,7 @@ function ns.tonumber(value)
 	end
 end
 -- my implementation of type which accounts for nan and inf
+---@function [parent=#ns] type
 function ns.type(value)
 	if value~=value then return nil
 	elseif value==math.huge then return nil
@@ -118,7 +125,7 @@ function ns.override(blizfunc,...)
 		overrider=strjoin('_',overrider,...)
 	end
 	assert(type(over[overrider])=="function",overrider)
-	if (orig[overrider]) then return end
+	if (orig[overrider]) then return end -- already hooked
 	local code="local orig,over,overrider=... orig[overrider]=_G."..blizfunc.." _G."..blizfunc.."=over[overrider]"
 	assert(loadstring(code, "Executing " ..code))(orig,over,overrider)
 end
