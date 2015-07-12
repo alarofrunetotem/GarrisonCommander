@@ -295,7 +295,8 @@ function module:MissionsPrintResults(success)
 	end
 	if not reported then
 		report:AddRow(L["Nothing to report"])
-	elseif not followers then
+	end
+	if not followers then
 		report:AddRow(L["No follower gained xp"])
 	end
 end
