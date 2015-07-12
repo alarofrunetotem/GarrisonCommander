@@ -2214,7 +2214,7 @@ do
 	local func=function(...) addon:IgnoreFollower(...) end
 	local func2=function(...) addon:UnignoreFollower(...) end
 	local menu= {
-	{ text="Follower", notClickable=true,notCheckable=true,isTitle=true },
+	{ text=L["Follower"], notClickable=true,notCheckable=true,isTitle=true },
 	{ text=L["Ignore for this mission"],checked=false, func=func, arg1=0, arg2="none"},
 --	{ text=L["Ignore for all missions"],checked=false, func=func, arg1=0, arg2="none"},
 	{ text=L["Consider again"], notClickable=true,notCheckable=true,isTitle=true },
