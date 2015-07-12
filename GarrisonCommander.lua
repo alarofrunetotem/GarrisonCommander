@@ -22,6 +22,8 @@ local pin=false
 local baseHeight
 local minHeight
 local addon=addon --#self
+local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 ns.bigscreen=true
 -- Blizzard functions override support
 local orig=orig --#originals
@@ -2745,7 +2747,9 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	button.Title:SetText(mission.name)
 --@end-non-debug@]===]
 	--@debug@
-	button.Title:SetText(mission.name:sub(1,15).."  " .. (mission.class or ""))
+	if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
+		button.Title:SetText(mission.name:sub(1,15).."  " .. (mission.class or ""))
+	end
 	--@end-debug@
 	button.Level:SetText(mission.level);
 	local seconds=self:GetMissionData(missionID,'improvedDurationSeconds')
@@ -2949,6 +2953,10 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	end
 end
 function addon:AddShipsToButton(button,mission,missionID,bigscreen)
+	for i=1,3 do
+		local frame=button.gcPANEL.Party[i]
+		frame:Hide()
+	end
 end
 function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 	if (not button.gcPANEL) then

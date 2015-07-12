@@ -64,6 +64,8 @@ local KEY_BUTTON1="Shift " .. KEY_BUTTON1
 local KEY_BUTTON2="Shift " .. KEY_BUTTON2
 local EMPTY=EMPTY -- "Empty"
 local GARRISON_CACHE=GARRISON_CACHE
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 
 local dbversion=1
 local frequency=5
@@ -106,7 +108,13 @@ function addon:ldbUpdate()
 end
 function addon:GARRISON_MISSION_STARTED(event,missionID)
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
-	local k=format("%015d.%4d.%s",time() + duration,missionID,ns.me)
+	local followerType=self.db.global.missionType[missionID]
+	if not followerType then
+		local t=G.GetBasicMissionInfo(missionID)
+		followerType=t.followerTypeID
+		self.db.global.missionType[missionID]=followerType
+	end
+	local k=format("%015d.%4d.%s.%d",time() + duration,missionID,ns.me,followerType)
 	tinsert(self.db.realm.missions,k)
 	table.sort(self.db.realm.missions)
 	self:ldbUpdate()
@@ -292,6 +300,7 @@ function addon:SetDbDefaults(default)
 		cachesize={["*"]=false},
 		dbversion=1
 	}
+	default.global.missionType={}
 	default.profile['allowedWorkOrders']={["*"]=true}
 end
 function addon:OnInitialized()
@@ -487,9 +496,10 @@ function dataobj:OnTooltipShow()
 	local now=time()
 	for i=1,#db do
 		if db[i] then
-			local t,missionID,pc=strsplit('.',db[i])
+			local t,missionID,pc,followerType=strsplit('.',db[i])
 			t=tonumber(t) or 0
-			local name=G.GetMissionName(missionID)
+
+			local name=(followerType and followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2) and C(G.GetMissionName(missionID),"cyan") or G.GetMissionName(missionID)
 			if (name) then
 				local msg=format("|cff%s%s|r: %s",pc==ns.me and C.Green.c or C.Orange.c,pc,name)
 				if t > now then
