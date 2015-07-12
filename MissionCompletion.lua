@@ -100,9 +100,6 @@ function module:MissionComplete(this,button)
 	print(this,button,this.missionType)
 	followerType=this.missionType
 	missions=G.GetCompleteMissions(followerType)
-	if followerType == LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
-		missions={tremove(missions)}
-	end
 	if (missions and #missions > 0) then
 		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		GSFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
