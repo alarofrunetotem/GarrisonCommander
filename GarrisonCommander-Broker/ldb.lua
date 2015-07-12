@@ -498,8 +498,8 @@ function dataobj:OnTooltipShow()
 		if db[i] then
 			local t,missionID,pc,followerType=strsplit('.',db[i])
 			t=tonumber(t) or 0
-
-			local name=(followerType and followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2) and C(G.GetMissionName(missionID),"cyan") or G.GetMissionName(missionID)
+			followerType=tonumber(followerType) or LE_FOLLOWER_TYPE_GARRISON_6_0
+			local name= (followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2) and C(G.GetMissionName(missionID),"cyan") or G.GetMissionName(missionID)
 			if (name) then
 				local msg=format("|cff%s%s|r: %s",pc==ns.me and C.Green.c or C.Orange.c,pc,name)
 				if t > now then
