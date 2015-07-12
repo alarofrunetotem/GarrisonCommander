@@ -139,8 +139,8 @@ local function GMCList()
 			top=0
 			bottom=0.5
 			l:SetImage(icon,left,right,top,bottom)
-			l:SetImageSize(24,24)
-			l:SetHeight(26)
+			l:SetImageSize(36,36)
+			l:SetHeight(38)
 		end
 	end
 	function m:AddIconText(icon,text,qt)
