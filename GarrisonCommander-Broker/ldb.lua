@@ -59,7 +59,7 @@ local GARRISON_SHIPMENT_IN_PROGRESS=GARRISON_SHIPMENT_IN_PROGRESS -- "Work Order
 local GARRISON_SHIPMENT_READY=GARRISON_SHIPMENT_READY -- "Work Order Ready";
 local QUEUED_STATUS_WAITING=QUEUED_STATUS_WAITING -- "Waiting"
 local CAPACITANCE_ALL_COMPLETE=format(CAPACITANCE_ALL_COMPLETE,'') -- "All work orders will be completed in: %s";
-local  GARRISON_NUM_COMPLETED_MISSIONS=format(GARRISON_NUM_COMPLETED_MISSIONS,'999'):gsub('999','') -- "%d Completed |4Mission:Missions;";
+local GARRISON_NUM_COMPLETED_MISSIONS=format(GARRISON_NUM_COMPLETED_MISSIONS,'999'):gsub('999','') -- "%d Completed |4Mission:Missions;";
 local KEY_BUTTON1="Shift " .. KEY_BUTTON1
 local KEY_BUTTON2="Shift " .. KEY_BUTTON2
 local EMPTY=EMPTY -- "Empty"
@@ -128,14 +128,17 @@ end
 function addon:QUEST_TURNED_IN(event,quest,item,gold)
 	if quest==37485 then
 		self.db.realm.cachesize[ns.me] = 1000
-		self:Print("Your garrison cache sise was increased to 1000")
+		self:Print(L["Your garrison cache size was increased to %d"],1000)
+--[[
 	elseif quest==38445 then
 		self.db.realm.cachesize[ns.me] = 750
-		self:Print("Your garrison cache sise was increased to 750")
+		self:Print(L["Your garrison cache size was increased to %d"],750)
 	elseif quest==37935 then
 		self.db.realm.cachesize[ns.me] = 750
-		self:Print("Your garrison cache sise was increased to 750")
+		self:Print(L["Your garrison cache size was increased to %d"],750)
+--]]
 	end
+
 end
 function addon:UNIT_SPELLCAST_START(event,unit,name,rank,lineID,spellID)
 	if (unit=='player') then
@@ -203,6 +206,7 @@ function addon:CountCaches()
 	local now=time()
 	local expired=400*600 -- 1 risorsa ogni 10 minuti, per fullare servono 500 * 600 secondi
 	for p,j in pairs(self.db.realm.caches) do
+		local expired=(addon.db.realm.cachesize[p] or 500)*0.9 /600
 		if j>0 then
 			tot=tot+1
 			if j+expired < now then
@@ -310,6 +314,13 @@ function addon:OnInitialized()
 			v[s]=tonumber(v[s]) or 0
 		end
 	end
+	-- I was not satisfied with logistic improved, now Ignore it
+	for k,v in pairs(addon.db.realm.cachesize) do
+		if v and v==750 then
+			addon.db.realm.cachesize[k]=500
+		end
+	end
+
 	ns.me=GetUnitName("player",false)
 	self:RegisterEvent("GARRISON_MISSION_STARTED")
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
@@ -360,10 +371,12 @@ end
 function addon:GetImprovedCacheSize()
 	if IsQuestFlaggedCompleted(37485) then
 		return 1000 -- Arakkoa item
+--[[
 	elseif IsQuestFlaggedCompleted(38445) then
 		return 750 --Alliance improved logistic
 	elseif IsQuestFlaggedCompleted(37953) then
 		return 750 --Horde improved logistic
+--]]
 	else
 		return 500
 	end
@@ -420,7 +433,7 @@ cacheobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Cache", {
 	label = "GC " .. GARRISON_CACHE,
 	text=QUEUED_STATUS_WAITING,
 	category = "Interface",
-	icon = "Interface\\Icons\\Trade_Engineering"
+	icon = "Interface\\Icons\\inv_garrison_resource"
 })
 function farmobj:Update()
 	local n,t=addon:CountMissing()

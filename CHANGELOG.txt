@@ -4,7 +4,9 @@
 Feature: Quick mission completion enabled for shipyard
 Feature: In Ship missions mission expire time added
 Fix: Sometimes interacting with shipyard raised a protection issue
-More shipyard feature incoming
+Change: I could not verify if "Improved logistic" actuall works so I removed that check from Broker. Cache size will be 500 or 1000
+More shipyard features incoming
+
 * *2.6.5*
 Feature: Garrison Broker is now aware of enhanced Garrison Cache sizes (750 and 1000)
 Feature: Ship list enhanced with "xp to go"
