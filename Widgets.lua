@@ -137,7 +137,7 @@ local function GMCList()
 			left=0
 			right=0.6
 			top=0
-			bottom=0.6
+			bottom=0.5
 			l:SetImage(icon,left,right,top,bottom)
 			l:SetImageSize(24,24)
 			l:SetHeight(26)
