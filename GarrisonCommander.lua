@@ -1843,7 +1843,7 @@ function addon:GetFollowerTexture(followerID,followerType)
 		print(rc,texPrefix)
 		if rc then
 			if texPrefix then
-				shipconv.Portrait:SetAtlas(texPrefix)
+				shipconv.Portrait:SetAtlas(texPrefix.."-List")
 				print(shipconv.Portrait:GetTexture())
 				return shipconv.Portrait:GetTexture()
 			end

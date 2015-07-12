@@ -132,16 +132,15 @@ local function GMCList()
 	end
 	function m:AddFollowerIcon(followerType,icon,text)
 		local l=self:AddIconText(icon,text)
-		if followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 then
-			l:SetImageSize(24,24)
-		else
+		if followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 			local left,right,top,bottom
 			left=0
-			right=0.5
+			right=0.6
 			top=0
-			bottom=0.5
+			bottom=0.6
 			l:SetImage(icon,left,right,top,bottom)
-			l:SetImageSize(36,36)
+			l:SetImageSize(24,24)
+			l:SetHeight(26)
 		end
 	end
 	function m:AddIconText(icon,text,qt)
@@ -155,6 +154,7 @@ local function GMCList()
 		end
 		l:SetImage(icon)
 		l:SetImageSize(24,24)
+		l:SetHeight(26)
 		l:SetFullWidth(true)
 		obj:AddChild(l)
 		if (obj.scrollbar and obj.scrollbar:IsShown()) then

@@ -485,7 +485,7 @@ function module:GMCBuildChance()
 	else
 		GMC.ct:SetTextColor(C:Silver())
 	end
-	GMC.cs = factory:Slider(GMC.cf,0,100,settings.minimumChance,L['Minumum requested success'])
+	GMC.cs = factory:Slider(GMC.cf,0,100,settings.minimumChance,L['Minumum needed chance'])
 	GMC.cs:SetPoint('BOTTOM', 10, 0)
 	GMC.cs:SetScript('OnValueChanged', function(self, value)
 			local value = math.floor(value)

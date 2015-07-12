@@ -21,16 +21,7 @@ function sprint(nome,this,...)
 end
 function module:OnInitialize()
 	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
---@debug@
-	print("ShipYard Loaded")
-	self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
 	self:SafeSecureHook(GSF,"OnClickMission","HookedGSF_OnClickMission")
-	self:SafeHookScript(GSF,"OnShow","Setup",true)
-	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",function(... ) sprint("CompleteDialog",...) end,true)
-	self:SafeHookScript(GSF.MissionTab,"OnShow",function(... ) sprint("MissionTab",...) end,true)
-	self:SafeHookScript(GSF.FollowerTab,"OnShow",function(... ) sprint("FollowerTab",...) end,true)
-	--GarrisonShipyardFrameFollowersListScrollFrameButton1
-	--GarrisonShipyardMapMission1
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
 	print(ref)
 	local bt = CreateFrame('BUTTON','GCQuickShipMissionCompletionButton', ref, 'UIPanelButtonTemplate')
@@ -39,9 +30,22 @@ function module:OnInitialize()
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
+--@debug@
+	print("ShipYard Loaded")
+	self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
+	self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions")
+	self:SafeHookScript(GSF,"OnShow","Setup",true)
+	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",function(... ) sprint("CompleteDialog",...) end,true)
+	self:SafeHookScript(GSF.MissionTab,"OnShow",function(... ) sprint("MissionTab",...) end,true)
+	self:SafeHookScript(GSF.FollowerTab,"OnShow",function(... ) sprint("FollowerTab",...) end,true)
+	--GarrisonShipyardFrameFollowersListScrollFrameButton1
+	--GarrisonShipyardMapMission1
 --@end-debug@
 end
-
+function module:HookedGarrisonShipyardMap_UpdateMissions()
+	local self = GarrisonShipyardFrame.MissionTab.MissionList
+	print("Could manage",#self.missions)
+end
 function module:HookedGSF_OnClickMission(this,missionInfo)
 	self:FillMissionPage(missionInfo)
 end
