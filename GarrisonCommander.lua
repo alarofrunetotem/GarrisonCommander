@@ -2749,6 +2749,8 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	--@debug@
 	if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 		button.Title:SetText(mission.name:sub(1,15).."  " .. (mission.class or ""))
+	else
+		button.Title:SetText(mission.name)
 	end
 	--@end-debug@
 	button.Level:SetText(mission.level);
@@ -2953,6 +2955,17 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	end
 end
 function addon:AddShipsToButton(button,mission,missionID,bigscreen)
+	if (not button.gcPANEL) then
+		local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
+		bg:SetPoint("RIGHT")
+		bg.button=button
+		bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
+		bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
+		bg:RegisterForClicks("AnyUp")
+		bg:SetScript("OnClick",function(...) self:OnClick_GCMissionButton(...) end)
+		button.gcPANEL=bg
+		if (not bg.Party) then self:BuildFollowersButtons(button,bg,3,bigscreen) end
+	end
 	for i=1,3 do
 		local frame=button.gcPANEL.Party[i]
 		frame:Hide()
