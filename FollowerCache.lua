@@ -22,6 +22,7 @@ local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local maxrank=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY*1000+GARRISON_FOLLOWER_MAX_LEVEL
 local module=addon:NewSubClass('FollowerCache')
 local cache={} --#cache
+local followerTypes={}
 local EMPTY={}
 function module:OnInitialized()
 	self:RegisterEvent("GARRISON_FOLLOWER_REMOVED","OnEvent")
@@ -74,6 +75,7 @@ function cache:Refresh()
 	if next(self.cache) then return end
 	self:Wipe()
 	for _,follower in pairs(G.GetFollowers(self.type)) do
+		followerTypes[follower.followerID]=follower.followerTypeID
 		if follower.isCollected then
 			self:AddExtraData(follower)
 			self:AddAbilities(follower)
@@ -205,10 +207,13 @@ end
 
 -- Addon level proxies
 function addon:GetAnyData(followerType,...)
-	if followerType== LE_FOLLOWER_TYPE_GARRISON_6_0 then
-		return self:GetFollowerData(...)
-	else
+	if followerType==0 then
+		followerType=self:GetFollowerType(...)
+	end
+	if followerType== LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 		return self:GetShipData(...)
+	else
+		return self:GetFollowerData(...)
 	end
 end
 function addon:GetFollowerData(followerID,key,default)
@@ -228,6 +233,16 @@ function addon:GetFollowersIterator(func)
 end
 function addon:GetShipsIterator(func)
 	return module.shipCache:GetFollowersIterator(func)
+end
+function addon:GetAnyIterator(followerType,func)
+	if followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 then
+		return self:GetFollowersIterator(func)
+	else
+		return self:GetShipsIterator(func)
+	end
+end
+function addon:GetFollowerType(followerID)
+	return followerTypes[followerID] or 0
 end
 
 --[=[

@@ -214,7 +214,7 @@ function addon:CountCaches()
 	local now=time()
 	local expired=400*600 -- 1 risorsa ogni 10 minuti, per fullare servono 500 * 600 secondi
 	for p,j in pairs(self.db.realm.caches) do
-		local expired=(addon.db.realm.cachesize[p] or 500)*0.9 /600
+		local expired=(addon.db.realm.cachesize[p] or 500)*0.9 *600
 		if j>0 then
 			tot=tot+1
 			if j+expired < now then
@@ -227,11 +227,11 @@ end
 function addon:CountEmpty()
 	local tot=0
 	local missing=0
-	local expire=time()+3600*24
+	local expire=time()+3600*12
 	for p,j in pairs(self.db.realm.orders) do
-		for s,_ in pairs(j) do
+		for s,w in pairs(j) do
 			tot=tot+1
-			if not j[s] or j[s] < expire then missing=missing+1 end
+			if not w or w < expire then missing=missing+1 end
 		end
 	end
 	return missing,tot
@@ -447,7 +447,7 @@ cacheobj=LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("GC-Cache", {
 function farmobj:Update()
 	local n,t=addon:CountMissing()
 	if (t>0) then
-		local c=addon:ColorToString(addon:Gradient((t-n)/t))
+		local c=addon:ColorToString(addon:Gradient(n/t))
 		farmobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
 	else
 		farmobj.text=NONE
@@ -456,7 +456,7 @@ end
 function cacheobj:Update()
 	local n,t=addon:CountCaches()
 	if (t>0) then
-		local c=addon:ColorToString(addon:Gradient((t-n)/t))
+		local c=addon:ColorToString(addon:Gradient(n/t))
 		cacheobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
 	else
 		cacheobj.text=NONE
@@ -542,7 +542,7 @@ end
 function workobj:Update()
 	local n,t=addon:CountEmpty()
 	if (t>0) then
-		local c=addon:ColorToString(addon:Gradient((t-n)/t))
+		local c=addon:ColorToString(addon:Gradient((n)/t))
 		workobj.text=format("|cff%s%d|r/|cff%s%d|r",c,t-n,C.Green.c,t)
 	else
 		workobj.text=NONE
@@ -551,17 +551,26 @@ function workobj:Update()
 end
 function workobj:OnTooltipShow()
 	self:AddLine(CAPACITANCE_WORK_ORDERS)
+	local now=time()
+	local normal=24*3600
+	local short=12*3600
+	local long=48*3600
 	for k,v in kpairs(addon.db.realm.orders) do
 		if (k==ns.me) then
 			self:AddLine(k,C.Green())
 		else
 			self:AddLine(k,C.Orange())
 		end
+
 		for s,d in kpairs(v) do
-			local delta=d-time()
+			local delta=d-now
 			if (delta >0) then
-				local hours=delta/(3600*48)
-				self:AddDoubleLine(s,SecondsToTime(delta),nil,nil,nil,addon:Gradient(hours))
+				local gradient=1
+				if delta > long then gradient=0
+				elseif delta > normal then  gradient=0.25
+				elseif delta >short then gradient=0.5
+				end
+				self:AddDoubleLine(s,SecondsToTime(delta),nil,nil,nil,addon:Gradient(gradient))
 			else
 				self:AddDoubleLine(s,EMPTY,nil,nil,nil,C:Red())
 			end

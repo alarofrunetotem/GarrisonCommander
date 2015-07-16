@@ -905,7 +905,6 @@ end
 function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards)
 	dbcache.history[missionID][time()]={result=100,success=rewards}
 	dbcache.seen[missionID]=nil
-	dbcache.seen[missionID]=nil
 end
 -----------------------------------------------------
 -- Coroutines data and clock management
@@ -1929,6 +1928,9 @@ end
 local GARRISON_MISSION_AVAILABILITY1=GARRISON_MISSION_AVAILABILITY..'\n %s'
 local GARRISON_MISSION_AVAILABILITY2=GARRISON_MISSION_ENVIRONMENT:sub(1,10)..GARRISON_MISSION_AVAILABILITY..':|r %s'
 local GARRISON_MISSION_ID=GARRISON_MISSION_ENVIRONMENT:sub(1,10)..'MissionID:|r |cffffffff%s|r'
+local fakeinfo={followerID=false}
+local fakeframe={}
+
 function addon:FillMissionPage(missionInfo)
 	if type(missionInfo)=="number" then missionInfo=self:GetMissionData(missionInfo) end
 	if not missionInfo then return end
@@ -1953,41 +1955,36 @@ if not stage.missionid then
 --@end-debug@
 	if( IsControlKeyDown()) then self:Print("Shift key, ignoring mission prefill") return end
 	if (self:GetBoolean("NOFILL")) then return end
-	if missionType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
-		print("SHip Mission",missionInfo)
-		return
-	end
 	local missionID=missionInfo.missionID
 --@debug@
 	print("UpdateMissionPage for",missionID,missionInfo.name,missionInfo.numFollowers)
 --@end-debug@
 	holdEvents()
-	if ns.toc < 60200 then
-		GarrisonMissionPage_ClearParty()
-	else
-		GMF:ClearParty()
-	end
+	local main=missionInfo.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF
+	local missionpage=main.MissionTab.MissionPage
+
+	main:ClearParty()
 	local party=self:GetParty(missionID)
 	if (party) then
 		local members=party.members
 		for i=1,missionInfo.numFollowers do
+			local followerframe=missionpage.Followers[i]
 			local followerID=members[i]
 			if (followerID) then
-					local rc,error=pcall(GarrisonMissionPage_AddFollower,followerID)
-					if (not rc) then
-						print("fillmissinopage",error)
-					end
+				main:AssignFollowerToMission(followerframe,self:GetAnyData(missionInfo.followerTypeID,followerID))
+				--	local rc,error=pcall(GarrisonMissionPage_AddFollower,followerID)
+				--	if (not rc) then
+				--		print("fillmissinopage",error)
+				--	end
 			end
 		end
-	end
-	if ns.toc < 60200 then
-		GarrisonMissionPage_UpdateParty()
 	else
-		GMF:UpdateMissionParty(GMF.MissionTab.MissionPage.Followers)
-		GMF:UpdateMissionData(GMF.MissionTab.MissionPage)
-		--self:Dump(GMF.MissionTab.MissionPage.Followers,"Selected followers")
-		--GarrisonMissionPage_UpdateEmptyString()
+		print("No martini no party")
 	end
+	main:UpdateMissionParty(main.MissionTab.MissionPage.Followers)
+	main:UpdateMissionData(main.MissionTab.MissionPage)
+	--self:Dump(GMF.MissionTab.MissionPage.Followers,"Selected followers")
+	--GarrisonMissionPage_UpdateEmptyString()
 	releaseEvents()
 end
 local firstcall=true

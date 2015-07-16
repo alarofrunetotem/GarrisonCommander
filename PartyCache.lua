@@ -112,12 +112,6 @@ function party:AddFollower(followerID)
 		if (rc and code) then
 			tinsert(members,followerID)
 			return true
---@debug@
-		else
-			print("Unable to add",followerID, G.GetFollowerName(followerID),"to",ID,code,self:IsIn(followerID),G.GetFollowerStatus(followerID))
-			print(members[1],members[2],members[3])
-			print(debugstack(1,6,0))
---@end-debug@
 		end
 	end
 end
@@ -141,7 +135,18 @@ function party:StoreFollowers(table)
 	return #table
 end
 local function fsort(a,b)
-	return addon:GetFollowerData(a,"rank")>addon:GetFollowerData(b,"rank")
+	--return addon:GetFollowerData(a,"rank")>addon:GetFollowerData(b,"rank")
+	local rank1=addon:GetAnyData(0,a,"rank")
+	local rank2=addon:GetAnyData(0,b,"rank")
+	if tonumber(rank1) and tonumber(rank2) then
+		return rank1 < rank2
+	else
+		print(a,rank1)
+		print(b,rank2)
+		print(G.GetFollowerName(a))
+		print(G.GetFollowerName(b))
+		return 0
+	end
 end
 function party:Close(desttable)
 	local perc
@@ -201,8 +206,10 @@ function addon:GetParty(missionID,key,default)
 		--Running Mission, taking followers from mission data
 		local followers=self:GetMissionData(missionID,'followers')
 		addPartyMissionInfo(party,missionID)
-		for i=1,#followers do
-			party.members[i]=followers[i]
+		if followers then
+			for i=1,#followers do
+				party.members[i]=followers[i]
+			end
 		end
 	end
 	if key then

@@ -34,6 +34,7 @@ function module:OnInitialize()
 	print("ShipYard Loaded")
 	self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
 	self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions")
+	self:SafeSecureHook("GarrisonShipyardMap_SetupBonus")
 	self:SafeHookScript(GSF,"OnShow","Setup",true)
 	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",function(... ) sprint("CompleteDialog",...) end,true)
 	self:SafeHookScript(GSF.MissionTab,"OnShow",function(... ) sprint("MissionTab",...) end,true)
@@ -42,9 +43,40 @@ function module:OnInitialize()
 	--GarrisonShipyardMapMission1
 --@end-debug@
 end
+---
+--Invoked on every mission display, only for available missions
+--
+local i=0
+function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
+	if not GSF:IsShown() then return end
+	print(frame:GetWidth(),mission)
+	addon:AddExtraData(mission)
+	local perc=addon:MatchMaker(mission)
+	local addendum=frame.GcAddendum
+	if not addendum then
+		if mission.inProgress then return end
+		i=i+1
+		addendum=CreateFrame("Frame",nil,frame)
+		addendum:SetPoint("TOPLEFT",frame,"TOPLEFT",64,-10)
+		addendum:SetWidth(100)
+		addendum:SetHeight(70)
+		addendum.chance=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightMedium")
+		addendum.chance:SetPoint("TOPLEFT")
+		addendum.expire=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
+		addendum.expire:SetPoint("TOPLEFT",addendum.chance,"BOTTOMLEFT")
+		--addendum.duration=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
+		--addendum.duration:SetPoint("TOPLEFT",addendum.expire,"BOTTOMLEFT")
+		frame.GcAddendum=addendum
+	end
+	if mission.inProgress then addendum:Hide() return end
+	addendum:Show()
+	addendum.chance:SetFormattedText("%d%%",perc)
+	addendum.chance:SetTextColor(self:GetDifficultyColors(perc))
+	addendum.expire:SetText(mission.class)
+	--addendum.duration:SetText(mission.duration)
+end
 function module:HookedGarrisonShipyardMap_UpdateMissions()
 	local self = GarrisonShipyardFrame.MissionTab.MissionList
-	print("Could manage",#self.missions)
 end
 function module:HookedGSF_OnClickMission(this,missionInfo)
 	self:FillMissionPage(missionInfo)
@@ -65,6 +97,7 @@ function module:HookedGarrisonFollowerButton_UpdateCounters(gsf,frame,follower,s
 	--print(follower)
 --@end-debug@
 end
+
 
 function module:Setup(this,...)
 	print("Doing one time initialization for",this:GetName(),...)
@@ -92,7 +125,7 @@ end
 function module:OpenLastTab()
 print("Should restore tab")
 end
---[[
+--[[ Follower
 displayHeight = 0.25
 followerTypeID = 2
 iLevel = 600
@@ -114,5 +147,38 @@ height = 0.30000001192093
 displayID = 63894
 scale = 110
 levelXP = 40000
+--]]
+--[[ Mission
+followerTypeID = 2
+description = Hellscream has posted a sub near the Horde's main base on Ashran. Take that sub out. Alliance, that means you, too. Factional hatreds have no place here.
+cost = 150
+adjustedPosX = 798
+duration = 8 hr
+adjustedPosY = -246
+durationSeconds = 28800
+state = -2
+inProgress=false
+typePrefix = ShipMissionIcon-Treasure
+typeAtlas = ShipMissionIcon-Treasure-Mission
+offerTimeRemaining = 19 days 1 hr
+level = 100
+offeredGarrMissionTextureID = 0
+offerEndTime = 1681052.25
+mapPosY = -246
+type = Ship-Treasure
+name = Warspear Fishing
+iLevel = 0
+numRewards = 1
+rewards = [table: 000000004D079210]
+hasBonusEffect = false
+numFollowers = 2
+costCurrencyTypesID = 1101
+followers = [table: 000000004D0791C0]
+missionID = 563
+canStart = false
+location = [ph]
+isRare = false
+mapPosX = 798
+locPrefix = GarrMissionLocation-TannanSea
 --]]
 --view mission button GSF.MissionTab.MissionList.CompleteDialog.BorderFrame.ViewButton

@@ -156,9 +156,9 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 		end
 	end
 end
-local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
-	local mission=self:GetMissionData(missionID)
-	local class=self:GetMissionData(missionID,'class')
+local function MatchMaker(self,mission,party,includeBusy,onlyBest)
+	local class=mission.class
+	local missionID=mission.missionID
 	local filterOut=filters[class] or filters.other
 	filters.skipMaxed=self:GetBoolean("IGP")
 	if (includeBusy==nil) then
@@ -185,7 +185,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	end
 	--]]
 	local minchance=floor(currentCap/mission.numFollowers)-mission.numFollowers*mission.numFollowers
-	for _,followerID in self:GetFollowersIterator() do
+	for _,followerID in self:GetAnyIterator(mission.followerTypeID) do
 		if self:IsFollowerAvailableForMission(followerID,filters.skipBusy) then
 			if P:AddFollower(followerID) then
 				local score,chance=self:FollowerScore(mission,followerID)
@@ -209,7 +209,7 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 			scroller:addRow("Cap Res Cha Xp T Vra Ran")
 			for i=1,#scores do
 				local score,followerID=strsplit('@',scores[i])
-				local t=score .. " " .. addon:GetFollowerData(followerID,'fullname') .. " " .. tostring(G.GetFollowerStatus(followerID))
+				local t=score .. " " .. addon:GetAnyData(mission.followerTypeID,followerID,'fullname') .. " " .. tostring(G.GetFollowerStatus(followerID))
 				scroller:addRow(t)
 			end
 		else
@@ -268,10 +268,13 @@ local function MatchMaker(self,missionID,party,includeBusy,onlyBest)
 	--del(buffed)
 end
 function addon:MCMatchMaker(missionID,party,skipEpic,cap)
+	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
+	missionID=mission.missionID
+	if (not party) then party=addon:GetParty(missionID) end
 	useCap=true
 	currentCap=cap
 	print("Using cap data:",useCap,currentCap)
-	MatchMaker(self,missionID,party,false)
+	MatchMaker(self,mission,party,false)
 	if (skipEpic) then
 		if (self:GetMissionData(missionID,'class')=='xp') then
 			for i=1,#party.members do
@@ -283,18 +286,24 @@ function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 			wipe(party.members)
 		end
 	end
+	return party.perc
 end
 function addon:MatchMaker(missionID,party,includeBusy)
-	if (not party) then party=self:GetParty(missionID) end
+	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
+	missionID=mission.missionID
+	if (not party) then party=addon:GetParty(missionID) end
 	useCap=self:GetBoolean("MAXRES")
 	currentCap= self:GetNumber("MAXRESCHANCE")
-	MatchMaker(self,missionID,party,includeBusy)
+	MatchMaker(self,mission,party,includeBusy)
+	return party.perc
 end
 function addon:TestMission(missionID,includeBusy)
+	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
+	missionID=mission.missionID
 	dbg=true
 	local party=new()
 	party.members=new()
-	self:MatchMaker(missionID,party,includeBusy)
+	self:MatchMaker(mission,party,includeBusy)
 --@debug@
 	DevTools_Dump(party)
 --@end-debug@
@@ -304,10 +313,12 @@ function addon:TestMission(missionID,includeBusy)
 	dbg=false
 end
 function addon:MCTestMission(missionID,includeBusy,chance)
+	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
+	missionID=mission.missionID
 	dbg=true
 	local party=new()
 	party.members=new()
-	self:MCMatchMaker(missionID,party,includeBusy,true,chance)
+	self:MCMatchMaker(mission,party,includeBusy,true,chance)
 --@debug@
 	DevTools_Dump(party)
 --@end-debug@
