@@ -20,8 +20,16 @@ function sprint(nome,this,...)
 	print(nome,this:GetName(),...)
 end
 function module:OnInitialize()
-	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
-	self:SafeSecureHook(GSF,"OnClickMission","HookedGSF_OnClickMission")
+	if IsAddOnLoaded("MasterPlanA") then
+		-- less efficient,  but survive MasterPlan
+		self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
+		self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
+	else
+		self:SafeSecureHook(GSF,"OnClickMission","HookedGSF_OnClickMission")
+--@debug@
+		self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
+--@end-debug@
+	end
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
 	print(ref)
 	local bt = CreateFrame('BUTTON','GCQuickShipMissionCompletionButton', ref, 'UIPanelButtonTemplate')
@@ -30,9 +38,6 @@ function module:OnInitialize()
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
---@debug@
-	print("ShipYard Loaded")
-	self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
 	self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions")
 	self:SafeSecureHook("GarrisonShipyardMap_SetupBonus")
 	self:SafeHookScript(GSF,"OnShow","Setup",true)
@@ -76,7 +81,17 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	--addendum.duration:SetText(mission.duration)
 end
 function module:HookedGarrisonShipyardMap_UpdateMissions()
-	local self = GarrisonShipyardFrame.MissionTab.MissionList
+	local list = GSF.MissionTab.MissionList
+	for i=1,#list.missions do
+		local frame = list.missionFrames[i]
+		if not self:IsHooked(frame,"PostClick") then
+			self:SafeHookScript(frame,"PostClick","HookedMapButtonOnClick",true)
+		end
+	end
+
+end
+function module:HookedMapButtonOnClick(this)
+	self:FillMissionPage(this.info)
 end
 function module:HookedGSF_OnClickMission(this,missionInfo)
 	self:FillMissionPage(missionInfo)
@@ -113,13 +128,25 @@ function module:OnShow()
 end
 function module:HookedGarrisonShipyardMapMission_SetTooltip(info,inProgress)
 	local tooltipFrame = GarrisonShipyardMapMissionTooltip;
-	tooltipFrame:SetHeight(tooltipFrame:GetHeight()+20)
+	local extra=10
+	if (not tooltipFrame.msg) then
+		tooltipFrame.msg=tooltipFrame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
+		tooltipFrame.msg:SetPoint("BOTTOMLEFT",10,extra)
+	end
+	tooltipFrame.msg:Show()
+	tooltipFrame.msg:SetText("Left click to let GC autofill mission");
+	tooltipFrame.msg:SetTextColor(C:Yellow());
+	extra=extra+10
+--@debug@
 	if (not tooltipFrame.dbg) then
 		tooltipFrame.dbg=tooltipFrame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-		tooltipFrame.dbg:SetPoint("BOTTOMLEFT",10,10)
+		tooltipFrame.dbg:SetPoint("BOTTOMLEFT",10,extra)
 	end
 	tooltipFrame.dbg:Show()
 	tooltipFrame.dbg:SetFormattedText("Mission ID: %d" ,info.missionID);
+	extra=extra+20
+--@end-debug
+	tooltipFrame:SetHeight(tooltipFrame:GetHeight()+extra)
 end
 
 function module:OpenLastTab()

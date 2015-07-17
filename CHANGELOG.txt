@@ -1,11 +1,14 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.8*
+Fix: Works even if a certain addon is loaded
+
 * *2.6.7*
 Feature: Shipyard mission autofill!! See the success chance in map and have your fleet automagically setup
 Fix: Consolidate broker colours for buttons, Now, red, always means ypu need to check it
 
 * *2.6.6*
-Feature: Quick mission completion enabled for shipyard
+Feature: Quick mission completion enabled for shipyard\
 Feature: In Ship missions mission expire time added
 Fix: Sometimes interacting with shipyard raised a protection issue
 Change: I could not verify if "Improved logistic" actuall works so I removed that check from Broker. Cache size will be 500 or 1000
