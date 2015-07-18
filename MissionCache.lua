@@ -22,7 +22,7 @@ function module:OnInitialized()
 	self:HookScript(GMF,"OnShow","PanelOpened",false)
 	self:HookScript(GMF,"OnHide","PanelClosed",false)
 	self:HookScript(GSF,"OnShow","PanelOpened",false)
-	self:HookScript(GSF,"OnHide","PanelOpened",fakse)
+	self:HookScript(GSF,"OnHide","PanelClosed",false)
 end
 local function load(t,inProgress)
 	for i=1,#t do
@@ -32,10 +32,14 @@ local function load(t,inProgress)
 			module:AddExtraData(cache[missionID])
 		end
 		cache[missionID].index=i
-		cache[missionID].inProgress=inProgress
+		if (inProgress) then
+			cache[missionID].inProgress=inProgress
+		end
 	end
+	DevTools_Dump(cache)
 end
 function module:PanelOpened(frame,...)
+	print("Panel Opened",frame:GetName())
 	local followerType=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 	if (frame:GetName()=="GarrisonMissionFrame") then
 		followerType=LE_FOLLOWER_TYPE_GARRISON_6_0
@@ -46,6 +50,8 @@ function module:PanelOpened(frame,...)
 		G.GetInProgressMissions(t,followerType)
 		load(t,true)
 		del(t)
+	else
+		load(GSFMissions.missions)
 	end
 end
 function module:PanelClosed(frame,...)
