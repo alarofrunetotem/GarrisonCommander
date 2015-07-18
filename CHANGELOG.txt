@@ -1,7 +1,7 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
 * *2.6.8*
-Fix: Works even if a certain addon is loaded
+Fix: Works even if some naval mission onclick is hijacked
 
 * *2.6.7*
 Feature: Shipyard mission autofill!! See the success chance in map and have your fleet automagically setup
