@@ -327,31 +327,31 @@ sorters.Xp=function (mission1, mission2)
 	end
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Chance);
 end
 function addon.Garrison_SortMissions_Age(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Age);
 end
 function addon.Garrison_SortMissions_Duration(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Duration);
 end
 function addon.Garrison_SortMissions_Followers(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Followers);
 end
 function addon.Garrison_SortMissions_Xp(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Xp);
 end
 function addon.Garrison_SortMissions_Original(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	origGarrison_SortMissions(missionsList)
 end
 function addon.Garrison_SortMissions_Class(missionsList)
-	addon:OnAllMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Class);
 end
 local t={}
@@ -1679,9 +1679,6 @@ function addon:AddMissionId(b)
 		GameTooltip:Show()
 	end
 end
-function addon:HookedClickOnTabs(tab)
-	lastTab=tab
-end
 ---
 -- Additional setup
 -- This method is called every time garrison mission panel is open because
@@ -1732,7 +1729,6 @@ function addon:StartUp(...)
 	self:RefreshFollowerStatus()
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
-	GMFMissions.listScroll.update = over.GarrisonMissionList_Update
 	self:FollowerPageStartUp()
 	return self:RefreshMissions()
 end
@@ -2472,17 +2468,20 @@ function over.GarrisonMissionPage_Close(self)
 	-- I hooked this handler, so I dont want it to be called in the middle of cleanup operations
 	GarrisonMissionFrame.MissionTab.MissionList:Show();
 end
-function over.GarrisonMissionButton_SetRewards(self, rewards, numRewards)
+function over.GarrisonMissionButton_SetRewards(frame,rewards,numRewards)
+	addon:DrawSingleButton(GMF,frame,false,ns.bigscreen)
+end
+function addon:AddRewards(frame, rewards, numRewards)
 	if (numRewards > 0) then
 		local index = 1;
-		local party=self.party
-		local mission=self.info
+		local party=frame.party
+		local mission=frame.info
 		for id, reward in pairs(rewards) do
-			if (not self.Rewards[index]) then
-				self.Rewards[index] = CreateFrame("Frame", nil, self, "GarrisonMissionListButtonRewardTemplate");
-				self.Rewards[index]:SetPoint("RIGHT", self.Rewards[index-1], "LEFT", 0, 0);
+			if (not frame.Rewards[index]) then
+				frame.Rewards[index] = CreateFrame("Frame", nil, frame, "GarrisonMissionListButtonRewardTemplate");
+				frame.Rewards[index]:SetPoint("RIGHT", frame.Rewards[index-1], "LEFT", 0, 0);
 			end
-			local Reward = self.Rewards[index];
+			local Reward = frame.Rewards[index];
 			Reward.Quantity:Hide();
 			Reward.itemID = nil;
 			Reward.currencyID = nil;
@@ -2495,7 +2494,7 @@ function over.GarrisonMissionButton_SetRewards(self, rewards, numRewards)
 					Reward.Quantity:SetText(reward.quantity);
 					Reward.Quantity:Show();
 				elseif reward.itemID==120205 then
-					Reward.Quantity:SetText(self.info.xp);
+					Reward.Quantity:SetText(frame.info.xp);
 					Reward.Quantity:Show();
 				else
 					local name,link,quality,iLevel,level=GetItemInfo(reward.itemID)
@@ -2560,62 +2559,8 @@ function over.GarrisonMissionButton_SetRewards(self, rewards, numRewards)
 		end
 	end
 
-	for i = (numRewards + 1), #self.Rewards do
-		self.Rewards[i]:Hide();
-	end
-end
-do
-	local lastcall=math.floor(GetTime()*10)
-	local progressing
-	function over.GarrisonMissionList_Update()
-		if (addon:IsRewardPage()) then return end
-		local self = GarrisonMissionFrame.MissionTab.MissionList;
-		local missions;
-		if (self.showInProgress) then
-			-- Ten times in a second is enough...
-			local tick=math.floor(GetTime())
-			if (tick == lastcall) then
-			else
-				collectgarbage("step",500)
-				lastcall=tick
-				return
-			end
-			table.sort(self.inProgressMissions,sorters.EndTime)
-			missions = self.inProgressMissions;
-		else
-			progressing=false
-			missions = self.availableMissions;
-		end
-		local numMissions = #missions;
-		local scrollFrame = self.listScroll;
-		local offset = HybridScrollFrame_GetOffset(scrollFrame);
-		local buttons = scrollFrame.buttons;
-		local numButtons = #buttons;
-
-		if (numMissions == 0) then
-			self.EmptyListString:Show();
-		else
-			self.EmptyListString:Hide();
-		end
-		for i = 1, numButtons do
-			dbg=i==1
-			local button = buttons[i];
-			local index = offset + i; -- adjust index
-			if ( index <= numMissions) then
-				local mission = missions[index];
-				button.id = index;
-				button.info = mission;
-				button.party=addon:GetParty(mission.missionID)
-			else
-				button.id=0
-				button.info=nil
-				button.party=nil
-			end
-			addon:DrawSingleButton(self,button,false,ns.bigscreen)
-		end
-		local totalHeight = numMissions * scrollFrame.buttonHeight;
-		local displayedHeight = numButtons * scrollFrame.buttonHeight;
-		HybridScrollFrame_Update(scrollFrame, totalHeight, displayedHeight);
+	for i = (numRewards + 1), #frame.Rewards do
+		frame.Rewards[i]:Hide();
 	end
 end
 function over.GarrisonMissionPageFollowerFrame_OnEnter(self)
@@ -2691,7 +2636,7 @@ function addon:DrawSingleButton(page,button,progressing,bigscreen)
 		if not button.party then button.party=self:GetParty(missionID) end
 		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		self:AddIndicatorToButton(button,mission,missionID,bigscreen)
-		over.GarrisonMissionButton_SetRewards(button, mission.rewards, mission.numRewards);
+		self:AddRewards(button, mission.rewards, mission.numRewards);
 		self:AddFollowersToButton(button,mission,missionID,bigscreen)
 		if page and not self:IsRewardPage() then
 			self:AddThreatsToButton(button,mission,missionID,bigscreen)
@@ -2721,7 +2666,7 @@ function addon:DrawSingleSlimButton(page,button,progressing,bigscreen)
 		local missionID=mission.missionID
 		local frame=button
 		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
-		over.GarrisonMissionButton_SetRewards(button, mission.rewards, mission.numRewards);
+		self.AddRewards(button, mission.rewards, mission.numRewards);
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 			self:AddFollowersToButton(button,mission,missionID,bigscreen)
 		else
@@ -2803,21 +2748,6 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
-	if page then
-		local isNewMission = page.newMissionIDs[mission.missionID];
-		if (isNewMission) then
-			if (not button.NewHighlight) then
-				button.NewHighlight = CreateFrame("Frame", nil, button, "GarrisonMissionListButtonNewHighlightTemplate");
-				button.NewHighlight:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0);
-				button.NewHighlight:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0);
-			end
-			button.NewHighlight:Show();
-		else
-			if (button.NewHighlight) then
-				button.NewHighlight:Hide();
-			end
-		end
-	end
 	local n=mission.numRewards
 	local w=button:GetWidth()-175 -- 655 for standard 830 button
 	if button:GetWidth()<1000 then n=n+mission.numFollowers end
@@ -2868,8 +2798,8 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 					button.Env:SetScript("OnEnter",nil)
 					button.Env:Hide()
 				end
-				for i=1,#mission.enemies do
-					local enemy=mission.enemies[i]
+				local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
+				for i,enemy in ipairs(enemies) do
 					for mechanicID, mechanic in pairs(enemy.mechanics) do
 						local th=button.GcThreats[threatIndex]
 						if (not th) then
@@ -2941,7 +2871,7 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 			button.xp:SetJustifyH("CENTER")
 		end
 		button.xp:SetWidth(0)
-		local xp=(self:GetMissionData(missionID,'xp')+self:GetMissionData(missionID,'xpBonus')+(self:GetParty(missionID)['xpBonus'] or 0) )*button.info.numFollowers
+		local xp=(self:GetMissionData(missionID,'xp',0)+self:GetMissionData(missionID,'xpBonus',0)+self:GetParty(missionID,'xpBonus',0) )*button.info.numFollowers
 		button.xp:SetFormattedText("Xp: %d",xp)
 		button.xp:SetTextColor(self:GetDifficultyColors(xp/3000*100))
 		button.xp:Show()
@@ -3024,9 +2954,12 @@ function over.GarrisonMissionList_SetTab(...)
 	end
 	if (HD) then addon:ResetSinks() end
 end
+function addon:HookedClickOnTabs(tab)
+	print(tab)
+	lastTab=tab
+end
 function over.GarrisonMissionFrame_SelectTab(self,tab,...)
-	-- I dont actually care wich page we are shoing, I know I must redraw missions
-	orig.GarrisonMissionFrame_SelectTab(self,tab,...)
+	print(tab)
 	addon:RefreshFollowerStatus()
 	for i=1,#GMFMissionListButtons do
 		GMFMissionListButtons.lastMissionID=nil
@@ -3038,19 +2971,14 @@ function over.GarrisonMissionFrame_SelectTab(self,tab,...)
 		ns.GMC:Hide()
 	end
 end
-function over.GarrisonMissionButton_OnClick(f,b)
-	print(f,f:GetName())
-	return orig.GarrisonMissionButton_OnClick(f,b)
-end
+--override("GarrisonMissionList_Update")
+override("GarrisonMissionButton_SetRewards",true)
+--GMFMissions.listScroll.update = over.GarrisonMissionList_Update
 
---hooksecurefunc("GarrisonMissionList_Update",function(...)print("Original GarrisonMissionList_Update",...)end)
-override("GarrisonMissionList_Update")
-override("GarrisonMissionButton_SetRewards")
 override("GarrisonMissionButton_OnEnter")
 override("GarrisonMissionPageFollowerFrame_OnEnter")
 override("GarrisonMissionList_SetTab")
-override("GarrisonMissionButton_OnClick")
-override("GarrisonMissionFrame","SelectTab")
+hooksecurefunc(GMF,"SelectTab",over.GarrisonMissionFrame_SelectTab)
 GMF.MissionTab.MissionPage.CloseButton:SetScript("OnClick",over.GarrisonMissionPage_Close)
 for i=1,#GMFMissionListButtons do
 	local b=GMFMissionListButtons[i]
