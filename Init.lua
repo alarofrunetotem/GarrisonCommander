@@ -38,9 +38,9 @@ if not ns.GMF then
 	ns.GMF=_G.GarrisonMissionFrame
 end
 if not ns.GMF then error("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available") end
-ns.GMFMissions=_G.GarrisonMissionFrameMissions
 ns.GSF=_G.GarrisonShipyardFrame
-ns.GSFMissions=_G.GarrisonShipyardFrame.MissionTab.MissionList
+ns.GMFMissions=ns.GMF.MissionTab.MissionList
+ns.GSFMissions=ns.GSF.MissionTab.MissionList
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 do
 	--@debug@
@@ -96,6 +96,20 @@ do
 	end
 	--@end-debug@
 end
+local backdrop = {
+		--bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
+		bgFile=nil,--"Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+		edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+		tile=true,
+		tileSize=16,
+		edgeSize=16,
+		insets={bottom=7,left=7,right=7,top=7}
+}
+function ns.AddBackdrop(frame)
+	frame:SetBackdrop(backdrop)
+	frame:SetBackdropColor(1,1,1,0)
+	frame:SetBackdropColor(1,0,0,1)
+end
 -- my implementation of tonumber which accounts for nan and inf
 ---@function [parent=#ns] tonumber
 
@@ -118,16 +132,17 @@ ns.over={}
 local orig=ns.orig
 local over=ns.over
 -- Blizzard functions override
-function ns.override(blizfunc,...)
+---@function [parent=#ns] Override
+function ns.override(blizfunc,secure)
 	local overrider=blizfunc
-	if select('#',...) > 0 then
-		blizfunc=strjoin('.',blizfunc,...)
-		overrider=strjoin('_',overrider,...)
-	end
 	assert(type(over[overrider])=="function",overrider)
-	if (orig[overrider]) then return end -- already hooked
-	local code="local orig,over,overrider=... orig[overrider]=_G."..blizfunc.." _G."..blizfunc.."=over[overrider]"
-	assert(loadstring(code, "Executing " ..code))(orig,over,overrider)
+	if (orig[blizfunc]) then return end -- already hooked
+	orig[blizfunc]=_G[blizfunc]
+	if (secure) then
+		hooksecurefunc(blizfunc,over[overrider])
+	else
+		_G[blizfunc]=over[overrider]
+	end
 end
 
 local stacklevel=0
