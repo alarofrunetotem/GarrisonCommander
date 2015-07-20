@@ -340,7 +340,9 @@ f:RegisterAllEvents()
 --]]
 --- Enable a trace for every function call. It's a VERY heavy debug
 --
+ns.HD=false
 if not ns.HD then return end
+print("DISABLEEEEEEEE")
 local memorysinks={}
 local callstack={}
 local lib=LibStub("LibInit")
@@ -350,7 +352,6 @@ for k,v in pairs(addon) do
 		do
 			local original=addon[k]
 			wrapped=function(...)
-				pp(k)
 				tinsert(callstack,k)
 				local membefore=GetAddOnMemoryUsage("GarrisonCommander")
 				local a1,a2,a3,a4,a5,a6,a7,a8,a9=original(...)
@@ -363,7 +364,7 @@ for k,v in pairs(addon) do
 				else
 					memorysinks[k].callers="main"
 				end
-				if (memafter-membefore > 20) then
+				if (memafter-membefore > 5) then
 					pp(C(k,'Red'),'used ',memafter-membefore)
 				end
 				return a1,a2,a3,a4,a5,a6,a7,a8,a9

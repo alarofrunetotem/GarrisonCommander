@@ -428,7 +428,6 @@ function addon:AddExtraData(mission)
 end
 
 function addon:OnAllGarrisonMissions(func,inProgress)
-	print("Mission Prefill",debugstack())
 	return module:OnAllGarrisonMissions(func,inProgress)
 end
 local sorters={}

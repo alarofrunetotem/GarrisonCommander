@@ -16,20 +16,20 @@ local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL
 local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local module=addon:NewSubClass('ShipYard') --#Module
+local GameTooltip=GameTooltip
+local GarrisonShipyardMapMissionTooltip=GarrisonShipyardMapMissionTooltip
+
 function sprint(nome,this,...)
 	print(nome,this:GetName(),...)
 end
+function module:Test()
+	print("test")
+end
 function module:OnInitialize()
-	if IsAddOnLoaded("MasterPlanA") then
-		-- less efficient,  but survive MasterPlan
-		self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
-		self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
-	else
-		self:SafeSecureHook(GSF,"OnClickMission","HookedGSF_OnClickMission")
---@debug@
-		self:SafeSecureHook("GarrisonShipyardMapMission_SetTooltip")
---@end-debug@
-	end
+	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
+	self:SafeSecureHook(GSF,"OnClickMission","HookedGSF_OnClickMission")
+	self:SafeSecureHook("GarrisonShipyardMapMission_OnEnter")
+	self:SafeSecureHook("GarrisonShipyardMapMission_OnLeave")
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
 	print(ref)
 	local bt = CreateFrame('BUTTON','GCQuickShipMissionCompletionButton', ref, 'UIPanelButtonTemplate')
@@ -38,7 +38,9 @@ function module:OnInitialize()
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
-	self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions")
+	if IsAddOnLoaded("MasterPlanA") then
+		self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions") -- low efficiency, but survives MasterPlan
+	end
 	self:SafeSecureHook("GarrisonShipyardMap_SetupBonus")
 	self:SafeHookScript(GSF,"OnShow","Setup",true)
 	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",function(... ) sprint("CompleteDialog",...) end,true)
@@ -52,6 +54,7 @@ end
 --Invoked on every mission display, only for available missions
 --
 local i=0
+
 function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	if not GSF:IsShown() then return end
 	print(frame:GetWidth(),mission)
@@ -126,29 +129,25 @@ end
 function module:OnShow()
 	print("Doing all time initialization")
 end
-function module:HookedGarrisonShipyardMapMission_SetTooltip(info,inProgress)
-	local tooltipFrame = GarrisonShipyardMapMissionTooltip;
-	local extra=10
-	if (not tooltipFrame.msg) then
-		tooltipFrame.msg=tooltipFrame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-		tooltipFrame.msg:SetPoint("BOTTOMLEFT",10,extra)
-	end
-	tooltipFrame.msg:Show()
-	tooltipFrame.msg:SetText("Left click to let GC autofill mission");
-	tooltipFrame.msg:SetTextColor(C:Yellow());
-	extra=extra+10
---@debug@
-	if (not tooltipFrame.dbg) then
-		tooltipFrame.dbg=tooltipFrame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-		tooltipFrame.dbg:SetPoint("BOTTOMLEFT",10,extra)
-	end
-	tooltipFrame.dbg:Show()
-	tooltipFrame.dbg:SetFormattedText("Mission ID: %d" ,info.missionID);
-	extra=extra+20
---@end-debug
-	tooltipFrame:SetHeight(tooltipFrame:GetHeight()+extra)
+function module:HookedGarrisonShipyardMapMission_OnLeave()
+	print("OnLeave")
+	GameTooltip:Hide()
 end
-
+function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
+	local g=GameTooltip
+	g:SetOwner(GarrisonShipyardMapMissionTooltip, "ANCHOR_NONE")
+	g:SetPoint("TOPLEFT",GarrisonShipyardMapMissionTooltip,"BOTTOMLEFT")
+	local mission=frame.info
+	local missionID=mission.missionID
+	addon:AddFollowersToTooltip(missionID,LE_FOLLOWER_TYPE_SHIPYARD_6_2)
+--@debug@
+	g:AddDoubleLine("MissionID:",missionID)
+--@end-debug
+	g:Show()
+	if g:GetWidth() < GarrisonShipyardMapMissionTooltip:GetWidth() then
+		g:SetWidth(GarrisonShipyardMapMissionTooltip:GetWidth())
+	end
+end
 function module:OpenLastTab()
 print("Should restore tab")
 end
