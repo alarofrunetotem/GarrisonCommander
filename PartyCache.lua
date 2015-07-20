@@ -211,6 +211,7 @@ function addon:GetParty(missionID,key,default)
 		if not party.perc or party.perc < 1 then
 			party.perc=G.GetMissionSuccessChance(missionID)
 		end
+		party.full=true
 		--Running Mission, taking followers from mission data
 		local followers=self:GetMissionData(missionID,'followers')
 		print(followers)

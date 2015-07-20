@@ -368,13 +368,13 @@ local function GMCMissionButton()
 		self.frame.info=mission
 		self.frame.fromFollowerPage=true
 		self.frame:EnableMouse(true)
-		self.frame.party=party
+		self.frame.party=party or addon:GetParty(mission.missionID)
 		if self.type==Type1 then
 			addon:DrawSingleButton(false,self.frame,false,false)
 			self.frame:SetScript("OnEnter",GarrisonMissionButton_OnEnter)
 			self.frame:SetScript("OnLeave",ns.OnLeave)
 		else
-			addon:DrawSingleSlimButton(false,self.frame,false,false)
+			addon:DrawSlimButton(false,self.frame,false,false)
 			self.frame:SetScript("OnEnter",nil)
 			self.frame:SetScript("OnLeave",nil)
 		end

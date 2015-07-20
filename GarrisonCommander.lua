@@ -331,7 +331,7 @@ function addon.Garrison_SortMissions_Chance(missionsList)
 	table.sort(missionsList, sorters.Chance);
 end
 function addon.Garrison_SortMissions_Age(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Age);
 end
 function addon.Garrison_SortMissions_Duration(missionsList)
@@ -339,7 +339,7 @@ function addon.Garrison_SortMissions_Duration(missionsList)
 	table.sort(missionsList, sorters.Duration);
 end
 function addon.Garrison_SortMissions_Followers(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Followers);
 end
 function addon.Garrison_SortMissions_Xp(missionsList)
@@ -347,11 +347,11 @@ function addon.Garrison_SortMissions_Xp(missionsList)
 	table.sort(missionsList, sorters.Xp);
 end
 function addon.Garrison_SortMissions_Original(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	origGarrison_SortMissions(missionsList)
 end
 function addon.Garrison_SortMissions_Class(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	table.sort(missionsList, sorters.Class);
 end
 local t={}
@@ -552,10 +552,11 @@ function addon:GetCounterBias(missionID,threat)
 	if (type(index)=="table" and type(counters)=="table") then
 		index=index[cleanicon(tostring(threat))]
 		if (type(index) == "table") then
+			local members=self:GetParty(missionID,'members',empty)
 			for i=1,#index do
 				local follower=data[index[i]]
 				if ((tonumber(follower.bias) or -1) > bias) then
-					if (tContains(self:GetParty(missionID).members,follower.followerID)) then
+					if (tContains(members,follower.followerID)) then
 						if (dbg) then print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
 						bias=follower.bias
 						who=follower.name
@@ -2468,9 +2469,6 @@ function over.GarrisonMissionPage_Close(self)
 	-- I hooked this handler, so I dont want it to be called in the middle of cleanup operations
 	GarrisonMissionFrame.MissionTab.MissionList:Show();
 end
-function over.GarrisonMissionButton_SetRewards(frame,rewards,numRewards)
-	addon:DrawSingleButton(GMF,frame,false,ns.bigscreen)
-end
 function addon:AddRewards(frame, rewards, numRewards)
 	if (numRewards > 0) then
 		local index = 1;
@@ -2630,10 +2628,10 @@ end
 -- @param bigscreen enlarge button or not
 
 function addon:DrawSingleButton(page,button,progressing,bigscreen)
+	button:SetAlpha(1.0)
 	local mission=button.info
 	if mission then
 		local missionID=mission.missionID
-		if not button.party then button.party=self:GetParty(missionID) end
 		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		self:AddIndicatorToButton(button,mission,missionID,bigscreen)
 		self:AddRewards(button, mission.rewards, mission.numRewards);
@@ -2660,30 +2658,44 @@ function addon:DrawSingleButton(page,button,progressing,bigscreen)
 		button.info=nil
 	end
 end
-function addon:DrawSingleSlimButton(page,button,progressing,bigscreen)
-	local mission=button.info
+function addon:DrawSlimButton(page,frame,progressing,bigscreen)
+	local mission=frame.info
 	if mission then
 		local missionID=mission.missionID
-		local frame=button
-		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
-		self.AddRewards(button, mission.rewards, mission.numRewards);
+		self:AddStandardDataToButton(page,frame,mission,missionID,bigscreen)
+		self:AddRewards(frame, mission.rewards, mission.numRewards);
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
-			self:AddFollowersToButton(button,mission,missionID,bigscreen)
+			self:AddFollowersToButton(frame,mission,missionID,bigscreen)
 		else
-			self:AddShipsToButton(button,mission,missionID,bigscreen)
+			self:AddShipsToButton(frame,mission,missionID,bigscreen)
 		end
 		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,-5)
 		frame.Success:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
 		frame.Failure:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
 		frame.Summary:ClearAllPoints()
 		frame.Summary:SetPoint("TOPLEFT",frame.Title,"BOTTOMLEFT",0,-10)
-		button:Show();
+		frame:Show();
 	else
-		button:Hide();
-		button.info=nil
+		frame:Hide();
+		frame.info=nil
 	end
 end
 function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
+	if (bigscreen) then
+		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
+		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
+		button:SetWidth(width+600)
+		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
+	end
+	button.MissionType:SetAtlas(mission.typeAtlas);
+	if page then return end
+	if (mission.inProgress) then
+		button.Overlay:Show();
+		button.Summary:SetText(mission.timeLeft.." "..RED_FONT_COLOR_CODE..GARRISON_MISSION_IN_PROGRESS..FONT_COLOR_CODE_CLOSE);
+	else
+		button.Overlay:Hide();
+	end
+
 	button.Title:SetWidth(0);
 --[===[@non-debug@
 	button.Title:SetText(mission.name)
@@ -2735,18 +2747,6 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	end
 
 	button:Enable();
-	if (mission.inProgress) then
-		button.Overlay:Show();
-		button.Summary:SetText(mission.timeLeft.." "..RED_FONT_COLOR_CODE..GARRISON_MISSION_IN_PROGRESS..FONT_COLOR_CODE_CLOSE);
-	else
-		button.Overlay:Hide();
-	end
-	if (bigscreen) then
-		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
-		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
-		button:SetWidth(width+600)
-		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
-	end
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
 	local n=mission.numRewards
 	local w=button:GetWidth()-175 -- 655 for standard 830 button
@@ -2762,7 +2762,6 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		button.Summary:ClearAllPoints();
 		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
 	end
-	button.MissionType:SetAtlas(mission.typeAtlas);
 end
 
 function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
@@ -2778,7 +2777,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 					button.GcThreats={}
 				end
 				button.Env.missionID=missionID
-				local party=self:GetParty(missionID)
+				local party=button.party
 				if mission.typeIcon then
 					button.Env.IsEnv=true
 					button.Env:Show()
@@ -2799,6 +2798,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 					button.Env:Hide()
 				end
 				local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
+				local threats=self:GetParty(missionID,'threats')
 				for i,enemy in ipairs(enemies) do
 					for mechanicID, mechanic in pairs(enemy.mechanics) do
 						local th=button.GcThreats[threatIndex]
@@ -2809,7 +2809,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 							th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
 							button.GcThreats[threatIndex]=th
 						end
-						th.countered=self:SetThreatColor(th,self:GetParty(missionID,'threats')[threatIndex])
+						th.countered=self:SetThreatColor(th,threats[threatIndex])
 						th.Icon:SetTexture(mechanic.icon)
 						th.texture=mechanic.icon
 						th.Name=mechanic.name
@@ -2850,14 +2850,21 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	local panel=button.gcINDICATOR
 	local perc=select(4,G.GetPartyMissionInfo(missionID))
 	if button.party then perc=button.party.perc end
-	panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
-	panel.Percent:SetTextColor(self:GetDifficultyColors(perc))
+	if button.party.full then
+		panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
+		panel.Percent:SetTextColor(self:GetDifficultyColors(perc))
+	else
+		panel.Percent:SetText("N/A")
+		panel.Percent:SetTextColor(C:Silver())
+	end
 	panel.Percent:SetWidth(80)
 	panel.Percent:Show()
 	if (GMFMissions.showInProgress) then
 		panel.Percent:SetJustifyV("CENTER")
+		panel.Percent:SetJustifyH("RIGHT")
 		panel.Age:Hide()
 	else
+		panel.Percent:SetJustifyV("BOTTOM")
 		panel.Percent:SetJustifyH("RIGHT")
 		panel.Age:SetFormattedText("Expires in \n%s",mission.offerTimeRemaining)
 		panel.Age:SetTextColor(self:GetAgeColor(mission.offerEndTime))
@@ -2921,7 +2928,6 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 		button.gcPANEL.Party[1]:SetPoint("BOTTOMLEFT",button.Rewards[1],"BOTTOMLEFT", position,0)
 	end
 	local party=button.party
-	if not party then party=self:GetParty(missionID) end
 	local t,b
 	if not GMFMissions.showInProgress then
 		b=G.GetBuffedFollowersForMission(missionID)
@@ -2971,9 +2977,21 @@ function over.GarrisonMissionFrame_SelectTab(self,tab,...)
 		ns.GMC:Hide()
 	end
 end
---override("GarrisonMissionList_Update")
-override("GarrisonMissionButton_SetRewards",true)
---GMFMissions.listScroll.update = over.GarrisonMissionList_Update
+function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
+	frame.party=self:GetParty(frame.info.missionID)
+	self:DrawSingleButton(GMF,frame,false,ns.bigscreen)
+end
+
+function addon:HookedGMFMissions_update(frame)
+	for _,b in ipairs(frame.buttons) do
+		if b.info then
+			b.party=self:GetParty(b.info.missionID)
+			self:DrawSingleButton(GMF,b,false,ns.bigscreen)
+		end
+	end
+end
+addon:SafeSecureHook(GMFMissions.listScroll,"update","HookedGMFMissions_update")
+addon:SafeSecureHook("GarrisonMissionButton_SetRewards")
 
 override("GarrisonMissionButton_OnEnter")
 override("GarrisonMissionPageFollowerFrame_OnEnter")
