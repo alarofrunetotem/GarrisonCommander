@@ -191,8 +191,8 @@ function addon:FollowerPageStartUp()
 	self:RegisterEvent("GARRISON_FOLLOWER_UPGRADED","DelayedRefresh")
 	self:RegisterEvent("CHAT_MSG_LOOT","DelayedRefresh")
 	self:GarrisonTraitCountersFrame_OnLoad(GarrisonTraitCountersFrame, L["%s |4follower:followers with %s"])
-	self:HookScript(GarrisonTraitCountersFrame,"OnEvent","GarrisonTraitCountersFrame_OnEvent")
-	self:HookScript(GarrisonTraitCountersFrame,"OnShow","GarrisonTraitCountersFrame_OnShow")
+	self:SafeHookScript(GarrisonTraitCountersFrame,"OnEvent","GarrisonTraitCountersFrame_OnEvent")
+	self:SafeHookScript(GarrisonTraitCountersFrame,"OnShow","GarrisonTraitCountersFrame_OnShow")
 end
 --[[
 		<Scripts>
