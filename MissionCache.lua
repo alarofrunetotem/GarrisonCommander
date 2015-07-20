@@ -14,42 +14,82 @@ local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local GMF=GMF
+local GSF=GSF
+local GMFMissions=GMFMissions
+local GSFMissions=GSFMissions
 local newcache=true
-local cache={}
+local rushOrders="interface\\icons\\inv_scroll_12.blp"
+local rawget=rawget
+local time=time
+local empty={}
+local cache
 -- Mission caching is a bit different fron follower caching mission appears and disappears on a regular basis
 local module=addon:NewSubClass('MissionCache') --#module
 function module:OnInitialized()
-	self:HookScript(GMF,"OnShow","PanelOpened",false)
-	self:HookScript(GMF,"OnHide","PanelClosed",false)
-	self:HookScript(GSF,"OnShow","PanelOpened",false)
-	self:HookScript(GSF,"OnHide","PanelClosed",false)
+	self:HookScript(GMF,"OnShow","PanelOpened",true)
+	self:HookScript(GMF,"OnHide","PanelClosed",true)
+	self:HookScript(GSF,"OnShow","PanelOpened",true)
+	self:HookScript(GSF,"OnHide","PanelClosed",true)
+	addon.db:RegisterNamespace('missionscache',{global={['*']={rewards={},followers={},_filled=0}}})
+	cache=addon.db:GetNamespace('missionscache').global
+	--wipe(cache)
+	print("OnInitialized")
+
+
 end
-local function load(t,inProgress)
+local function deepCopy(original,copy)
+		for k, v in pairs(original) do
+				-- as before, but if we find a table, make sure we copy that too
+				if type(v) == 'table' then
+					copy[k]={}
+					deepCopy(v,copy[k])
+				else
+					copy[k] = v
+				end
+		end
+		return copy
+end
+local function flatCopy(original,copy)
+		print("Destination",copy,"Original",original)
+		for k, v in pairs(original) do
+				-- as before, but if we find a table, make sure we copy that too
+				if type(v) ~= 'table' then
+					copy[k] = v
+				end
+		end
+		return copy
+end
+local runkeys={
+'inProgress',
+'offerTimeRemaining',
+'timeLeft',
+'missionEndTime',
+'canStart'
+}
+local function load(t,base)
 	for i=1,#t do
 		local missionID=t[i].missionID
-		if type(cache[missionID]) ~="table" then
-			cache[missionID]={followerType=t[i].followerType,missionID=missionID}
-			module:AddExtraData(cache[missionID])
+		local mission=t[i]
+		for _,k in ipairs(runkeys) do
+			cache[missionID][k]=mission[k]
 		end
-		cache[missionID].index=i
-		if (inProgress) then
-			cache[missionID].inProgress=inProgress
+		if mission.inProgress then
+			if (mission.followers) then
+				for f=1,#mission.followers do
+					cache[missionID].followers[f]=mission.followers[f]
+				end
+			end
+			print("Refreshed",mission.name,"followers",mission.followers)
+		else
+			wipe(mission.followers)
 		end
 	end
-	DevTools_Dump(cache)
 end
 function module:PanelOpened(frame,...)
-	print("Panel Opened",frame:GetName())
-	local followerType=LE_FOLLOWER_TYPE_SHIPYARD_6_2
-	if (frame:GetName()=="GarrisonMissionFrame") then
-		followerType=LE_FOLLOWER_TYPE_GARRISON_6_0
-		local t=new()
-		G.GetAvailableMissions(t,followerType)
-		load(t,false)
-		wipe(t)
-		G.GetInProgressMissions(t,followerType)
-		load(t,true)
-		del(t)
+	if (frame==GMF) then
+		load(GMFMissions.availableMissions)
+		load(GMFMissions.inProgressMissions)
 	else
 		load(GSFMissions.missions)
 	end
@@ -57,7 +97,36 @@ end
 function module:PanelClosed(frame,...)
 
 end
-function addon:GetMission(id)
+local keys={
+'followerTypeID',
+'cost',
+'duration',
+'durationSeconds',
+'level',
+'iLevel',
+'duration',
+'xpBonus',
+'numFollowers',
+'missionID',
+'numRewards',
+}
+function module:GetMission(id)
+	if time() - (tonumber(cache[id]._filled) or 0) > 3600 then
+		cache[id].name=G.GetMissionName(id)
+		if cache[id].name then -- I need to be sure mission actually exists
+			local t=G.GetBasicMissionInfo(id)
+			if (t) then
+				for _,k in ipairs(keys) do
+					cache[id][k]=t[k]
+				end
+				cache[id]._filled=time()
+				for i=1,#t.followers do
+					cache[id].followers[i]=t.followers[i]
+				end
+				deepCopy(t.rewards,cache[id].rewards)
+			end
+		end
+	end
 	return cache[id]
 end
 function module:AddExtraData(mission)
@@ -152,10 +221,36 @@ function module:AddExtraData(mission)
 		mission.xpOnly=true
 	end
 	if (mission.numFollowers) then
-		mission.globalXp=(mission.xp+mission.xpBonus+(addon:GetParty(mission.missionID)['xpBonus'] or 0) )*mission.numFollowers
+		local partyXP=tonumber(addon:GetParty(mission.missionID,'xpBonus',0))
+		mission.globalXp=(mission.xp+mission.xpBonus+partyXP)*mission.numFollowers
 	end
 
 end
+function module:GetMissionIterator(followerType)
+	local list
+	if followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+		list=GSFMissions.missions
+	else
+		list=GMFMissions.availableMissions
+	end
+	print("Iterator called, list is",list)
+	return function(sorted,i)
+		i=i+1
+		if type(sorted[i])=="table" then
+			return i,sorted[i].missionID
+		end
+	end,list,0
+end
+function module:OnAllGarrisonMissions(func,inProgress,missionType)
+	local list=inProgress and GMFMissions.inProgressMissions or GMFMissions.availableMissions
+	if type(list)=='table' then
+		for i=1,#list do
+			func(list[i].missionID)
+		end
+	end
+end
+
+-- Old cache to be removed
 
 
 local Mbase = GMFMissions
@@ -165,7 +260,6 @@ local Mbase = GMFMissions
 --	C_Garrison.GetAvailableMissions(self.availableMissions);
 local Index={}
 local sorted={}
-local rushOrders="interface\\icons\\inv_scroll_12.blp"
 local function keyToIndex(key)
 	local idx=Index[key]
 	if (idx and idx <= #Mbase.availableMissions) then
@@ -187,15 +281,12 @@ local function keyToIndex(key)
 	return idx
 end
 function addon:GetMissionData(missionID,key,default)
-	local idx=keyToIndex(missionID)
-	local mission=Mbase.availableMissions[idx]
-	if not mission then
-		for i=1,#Mbase.inProgressMissions do
-			if missionID==Mbase.inProgressMissions[i].missionID then
-				mission=Mbase.inProgressMissions[i]
-				break
-			end
-		end
+	local mission
+	if newcache then
+		mission=module:GetMission(missionID)
+	else
+		local idx=keyToIndex(missionID)
+		local mission=Mbase.availableMissions[idx]
 	end
 	if not mission then
 		mission=self:GetModule("MissionCompletion"):GetMission(missionID)
@@ -245,6 +336,7 @@ function addon:GetMissionData(missionID,key,default)
 	end
 end
 function addon:AddExtraData(mission)
+	if newcache then return module:AddExtraData(mission) end
 	local _
 	_,mission.xp,mission.type,mission.typeDesc,mission.typeIcon,mission.locPrefix,_,mission.enemies=G.GetMissionInfo(mission.missionID)
 	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
@@ -332,29 +424,13 @@ function addon:AddExtraData(mission)
 	mission.globalXp=(mission.xp+mission.xpBonus+(addon:GetParty(mission.missionID)['xpBonus'] or 0) )*mission.numFollowers
 
 end
-function addon:OnAllMissions(func,inProgress)
-	local list=inProgress and Mbase.inProgressMissions or Mbase.availableMissions
-	if type(list)=='table' then
-		for i=1,#list do
-			func(list[i].missionID)
-		end
-	end
+
+function addon:OnAllGarrisonMissions(func,inProgress)
+	print("Mission Prefill")
+	return module:OnAllGarrisonMissions(func,inProgress)
 end
 local sorters={}
 
-function addon:GetMissionIterator(func)
-	if (func) then
-		table.sort(sorted,sorters[func])
-	end
-	local f=Mbase.availableMissions
-	return function(sorted,i)
-		i=i+1
-		local x = sorted[i]
-		if x then
-			local v=f[x] and f[x].missionID or nil
-			if v then
-				return i,v
-			end
-		end
-	end,sorted,0
+function addon:GetMissionIterator(followerType,func)
+	return module:GetMissionIterator(followerType,func)
 end
