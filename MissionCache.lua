@@ -109,6 +109,8 @@ local keys={
 'numFollowers',
 'missionID',
 'numRewards',
+'costCurrencyTypesID',
+'cost'
 }
 function module:GetMission(id)
 	if time() - (tonumber(cache[id]._filled) or 0) > 3600 then
@@ -426,7 +428,7 @@ function addon:AddExtraData(mission)
 end
 
 function addon:OnAllGarrisonMissions(func,inProgress)
-	print("Mission Prefill")
+	print("Mission Prefill",debugstack())
 	return module:OnAllGarrisonMissions(func,inProgress)
 end
 local sorters={}
