@@ -97,7 +97,8 @@ local SHORTDATE=SHORTDATE.. " %s"
 local LEVEL=LEVEL -- Level
 local MISSING=ADDON_MISSING
 local NOT_COLLECTED=NOT_COLLECTED -- not collected
-local GMF=GarrisonMissionFrame
+local GMF=GMF
+local GSF=GSF
 local GMFFollowerPage=GMF.FollowerTab
 local GMFFollowers=GarrisonMissionFrameFollowers
 local GMFMissionPage=GMF.MissionTab.MissionPage
@@ -554,8 +555,9 @@ function addon:GetCounterBias(missionID,threat)
 					if (tContains(members,follower.followerID)) then
 						if (dbg) then
 --@debug@
-print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
+							print("   Choosen",self:GetFollowerData(follower.followerID,'fullname'))
 --@end-debug@
+						end
 						bias=follower.bias
 						who=follower.name
 					end
@@ -619,7 +621,7 @@ end
 function addon:AddFollowersToTooltip(missionID,followerTypeID)
 	--local f=GarrisonMissionListTooltipThreatsFrame
 	-- Adding All available followers
-	if not GameTooltip:IsVisible() then return end
+	if not GMF:IsVisible() and not GSF:IsVisible() then return end
 	local party=self:GetParty(missionID)
 	local cost=self:GetMissionData(missionID,'cost')
 	local currency=self:GetMissionData(missionID,'costCurrencyTypesID')
@@ -747,7 +749,6 @@ function addon:CreatePrivateDb()
 		GetAddOnMetadata(me,"X-Database")..'perChar',
 		{
 			profile={
-				seen={},
 				ignored={
 					["*"]={
 					}
@@ -806,6 +807,7 @@ function addon:CreatePrivateDb()
 	true)
 	dbcache=self.privatedb.profile
 	cache=self.private.profile
+	dbcache.seen=nil -- Removed in 2.6.9
 	cache.running=nil
 	cache.runningIndex=nil
 end
@@ -823,7 +825,6 @@ end
 function addon:WipeMission(missionID)
 	cache.missions[missionID]=nil
 	counters[missionID]=nil
-	dbcache.seen[missionID]=nil
 	parties[missionID]=nil
 	--collectgarbage("step")
 end
@@ -850,6 +851,7 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 --@debug@
 	print(event,missionID,...)
 --@end-debug@
+	self:RefreshFollowerStatus()
 	if (not GMF:IsShown()) then
 		-- Shipyard
 		return
@@ -857,8 +859,6 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 	wipe(dbcache.ignored[missionID])
 	local party=self:GetParty(missionID)
 	wipe(party.members) -- I remove preset party, so PartyCache will refill it with the ones from the actual mission
-	local v=dbcache.seen[missionID]
-	dbcache.seen[missionID]=nil
 end
 ---
 --@param #string event GARRISON_MISSION_FINISHED
@@ -882,7 +882,6 @@ end
 --
 function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards)
 	dbcache.history[missionID][time()]={result=100,success=rewards}
-	dbcache.seen[missionID]=nil
 end
 -----------------------------------------------------
 -- Coroutines data and clock management
@@ -1791,19 +1790,24 @@ function addon:SafeHookScript(frame,method,handler,hookType)
 		if not handler then
 			handler='Script'..name..method
 		elseif type(handler)=="boolean" then
-			handler=function(...)
 --@debug@
-print(name,method,...) end
+			do
+			local method=method
+			handler=function(...) print(name,method,...) end
+			end
 --@end-debug@
+--[===[@non-debug@
+			return -- Trace only hook are not for public
+--@end-non-debug@]===]
+
 		end
 		self:checkHandler(handler)
 		if hookType and type(hookType)=="boolean" then hookType="post" end
 	--This allow to change a method, for example to substitute an one time init with the standard routine
 		if (self:IsHooked(frame,method)) then self:Unhook(frame,method)	end
-
---@debug@
-print(hookType or "","Hooked Script",method,"on frame",name,"to",handler)
---@end-debug@
+		--@debug@
+		print(hookType or "","Hooked Script",method,"on frame",name,"to",handler)
+		--@end-debug@
 		if hookType=="post" or hookType=="secure" then
 			self:SecureHookScript(frame,method,handler)
 		elseif (hookType=="raw") then
@@ -2094,9 +2098,11 @@ print("Unable to find follower",followerID)
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		showItemLevel = false;
 	end
+--[===[@non-debug@
 	local rc,message= pcall(GarrisonMissionFrame_SetFollowerPortrait,frame.PortraitFrame, info, false);
+--@end-non-debug@]===]
 --@debug@
-	if not rc then print(message) end
+	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false)
 --@end-debug@
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
@@ -2168,15 +2174,6 @@ function addon:BuildFollowersButtons(button,bg,limit,bigscreen)
 		button.Threats[1]:ClearAllPoints()
 		button.Threats[1]:SetPoint("TOPLEFT",165,0)
 	end
-end
-function addon:CheckExpire(missionID)
-	local age=tonumber(dbcache.seen[missionID])
-	local expire=ns.wowhead[missionID]
-	print("Age",date("%m/%d/%y %H:%M:%S",age))
-	print("Now",date("%m/%d/%y %H:%M:%S"))
-	print("Expire",expire)
-	print("Age+expire",date("%m/%d/%y %H:%M:%S",age+expire))
-	print("Delta",age+expire-time())
 end
 function addon:BuildExtraButton(button,bigscreen)
 
@@ -2908,8 +2905,9 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 	local mission=missionInfo
 	if not mission then
 --@debug@
-print("Non ho la missione") return end -- something went wrong while refreshing
+	print("Non ho la missione") return  -- something went wrong while refreshing
 --@end-debug@
+	end
 	if (not bigscreen) then
 		local index=mission.numFollowers+mission.numRewards-3
 		local position=(index * -65) - 130
@@ -2927,7 +2925,7 @@ print("Non ho la missione") return end -- something went wrong while refreshing
 		if (i>mission.numFollowers) then
 			frame:Hide()
 		else
-			if (mission.followers[i]) then
+			if (mission.inProgress and mission.followers[i]) then
 				self:RenderFollowerButton(frame,mission.followers[i],missionID,b,t)
 				if (frame.NotFull) then frame.NotFull:Hide() end
 			elseif (party.members[i]) then
@@ -2943,11 +2941,10 @@ print("Non ho la missione") return end -- something went wrong while refreshing
 end
 -- Switchs between active and availabla missions depending on tab object
 function over.GarrisonMissionList_SetTab(...)
-
---@debug@
-print("Click su",...)
---@end-debug@
-	-- I dont actually care wich page we are shoing, I know I must redraw missions
+	--@debug@
+	print("Click su",...)
+	--@end-debug@
+	-- I dont actually care wich page we are showing, I know I must redraw missions
 	orig.GarrisonMissionList_SetTab(...)
 	addon:RefreshFollowerStatus()
 	for i=1,#GMFMissionListButtons do
@@ -2981,11 +2978,14 @@ end
 function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 	collectgarbage("step",200)
 	if frame.info then
-		if frame.info.inProgress and frame.lastID and frame.lastID == frame.info.missionID then
+		if frame.info.inProgress and frame.lastID and frame.lastID == frame.info.missionID and frame.lastProgress then
 			return
 		end
 		frame.lastID = frame.info.missionID
-		frame.party=self:GetParty(frame.info.missionID)
+		frame.lastProgress = frame.info.inProgress
+		if not frame.party or frame.party.missionID ~=frame.info.missionID then
+			frame.party=self:GetParty(frame.info.missionID)
+		end
 		self:DrawSingleButton(GMF,frame,false,ns.bigscreen)
 	end
 end
