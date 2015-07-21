@@ -98,20 +98,19 @@ end
 --@param #integer missionID Optional, to run a single mission
 --@param #bool start Optional, tells that follower already are on mission and that we need just to start it
 function module:GMCRunMission(missionID,start)
-
 --@debug@
-print("Asked to start mission",missionID)
+	print("Asked to start mission",missionID)
 --@end-debug@
 	if (start) then
 		G.StartMission(missionID)
 		PlaySound("UI_Garrison_CommandTable_MissionStart")
+		addon:RefreshFollowerStatus()
 		return
 	end
 	for i=1,#GMC.ml.Parties do
 		local party=GMC.ml.Parties[i]
-
 --@debug@
-print("Checking",party.missionID)
+		print("Checking",party.missionID)
 --@end-debug@
 		if (missionID and party.missionID==missionID or not missionID) then
 			GMC.ml.widget:RemoveChild(party.missionID)
@@ -127,9 +126,11 @@ print("Checking",party.missionID)
 					coroutine.yield(true)
 				else
 					self:ScheduleTimer("GMCRunMission",0.25,party.missionID,true)
+					return
 				end
 			end
 		end
+		addon:RefreshFollowerStatus()
 	end
 end
 do
@@ -174,13 +175,14 @@ do
 					minimumChance=tonumber(settings.rewardChance[class]) or 100
 				end
 				local party={members={},perc=0}
-
---@debug@
-print("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
---@end-debug@
 				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
+--@debug@
+				print(missionID,"  Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
+--@end-debug@
 				if ( party.full and party.perc >= minimumChance) then
-					--print("                           Mission accepted")
+--@debug@
+					print(missionID,"  Acccepted",party)
+--@end-debug@
 					local mb=AceGUI:Create("GMCMissionButton")
 					for i=1,#party.members do
 						GMCUsedFollowers[party.members[i]]=true
