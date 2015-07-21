@@ -15,7 +15,7 @@ local tonumber=tonumber
 local type=type
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
-print(LoadAddOn("LibDebug"))
+LoadAddOn("LibDebug")
 if LibDebug then LibDebug() ns.print=print else ns.print=function() end end
 --@end-debug@
 --[===[@non-debug@
@@ -31,10 +31,14 @@ ns.L=ns.addon:GetLocale()
 ns.G=C_Garrison
 ns.GMF=_G.GarrisonMissionFrame
 if not ns.GMF then
+--@debug@
 	print("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available")
 	print(GetTime())
+--@end-debug@
 	LoadAddOn("Blizzard_GarrisonUI")
+--@debug@
 	print(GetTime())
+--@end-debug@
 	ns.GMF=_G.GarrisonMissionFrame
 end
 if not ns.GMF then error("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available") end

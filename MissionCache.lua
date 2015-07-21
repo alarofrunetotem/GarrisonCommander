@@ -34,7 +34,10 @@ function module:OnInitialized()
 	addon.db:RegisterNamespace('missionscache',{global={['*']={rewards={},followers={},_filled=0}}})
 	cache=addon.db:GetNamespace('missionscache').global
 	--wipe(cache)
-	print("OnInitialized")
+
+--@debug@
+print("OnInitialized")
+--@end-debug@
 
 
 end
@@ -51,7 +54,10 @@ local function deepCopy(original,copy)
 		return copy
 end
 local function flatCopy(original,copy)
-		print("Destination",copy,"Original",original)
+
+--@debug@
+print("Destination",copy,"Original",original)
+--@end-debug@
 		for k, v in pairs(original) do
 				-- as before, but if we find a table, make sure we copy that too
 				if type(v) ~= 'table' then
@@ -80,7 +86,10 @@ local function load(t,base)
 					cache[missionID].followers[f]=mission.followers[f]
 				end
 			end
-			print("Refreshed",mission.name,"followers",mission.followers)
+
+--@debug@
+print("Refreshed",mission.name,"followers",mission.followers)
+--@end-debug@
 		else
 			wipe(mission.followers)
 		end
@@ -175,7 +184,10 @@ function module:AddExtraData(mission)
 					mission.rush=mission.rush+v.quantity
 				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
 					itemLevel=addon:GetTrueLevel(v.itemID,itemLevel)
-					if mission.missionID==364 then print(4,itemLevel) end
+					if mission.missionID==364 then
+--@debug@
+print(4,itemLevel) end
+--@end-debug@
 					if (addon:IsFollowerUpgrade(v.itemID)) then
 						mission.followerUpgrade=itemRarity
 					elseif itemLevel > 500 and itemMinLevel >=90 then
@@ -235,7 +247,10 @@ function module:GetMissionIterator(followerType)
 	else
 		list=GMFMissions.availableMissions
 	end
-	print("Iterator called, list is",list)
+
+--@debug@
+print("Iterator called, list is",list)
+--@end-debug@
 	return function(sorted,i)
 		i=i+1
 		if type(sorted[i])=="table" then
@@ -303,7 +318,10 @@ function addon:GetMissionData(missionID,key,default)
 		mission=G.GetMissionInfo(missionID)
 	end
 	if not mission then
-		print("Could not find info for mission",missionID,G.GetMissionName(missionID))
+
+--@debug@
+print("Could not find info for mission",missionID,G.GetMissionName(missionID))
+--@end-debug@
 		return default
 	end
 	if (key==nil) then
@@ -376,7 +394,10 @@ function addon:AddExtraData(mission)
 					mission.rush=mission.rush+v.quantity
 				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
 					itemLevel=addon:GetTrueLevel(v.itemID,itemLevel)
-					if mission.missionID==364 then print(4,itemLevel) end
+					if mission.missionID==364 then
+--@debug@
+print(4,itemLevel) end
+--@end-debug@
 					if (addon:IsFollowerUpgrade(v.itemID)) then
 						mission.followerUpgrade=itemRarity
 					elseif itemLevel > 500 and itemMinLevel >=90 then

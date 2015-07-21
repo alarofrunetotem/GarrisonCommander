@@ -109,7 +109,10 @@ local function GMCList()
 
 	end
 	function m:AddFollower(follower,xp,levelup)
-		print(follower)
+
+--@debug@
+print(follower)
+--@end-debug@
 		local followerID=follower.followerID
 		local followerType=follower.followerTypeID
 		if follower.maxed and not levelup then

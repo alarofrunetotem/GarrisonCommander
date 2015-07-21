@@ -1,6 +1,8 @@
 local me,ns=...
 ns.Configure()
+--@debug@
 print("loaded")
+--@end-debug@
 local addon=addon --#addon
 --local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
 --upvalue
@@ -43,7 +45,10 @@ function module:OnEvent(event,...)
 		self.followerCache:Wipe()
 		self.shipCache:Wipe()
 	end
-	print(event,...)
+
+--@debug@
+print(event,...)
+--@end-debug@
 end
 function cache:new(type)
 	local rc=setmetatable({type=type,names={},sorted={},threats={},traits={},cache={}},{__index=self})
@@ -51,7 +56,10 @@ function cache:new(type)
 	return rc
 end
 function cache:OnEvent(event,...)
-	print(event,...)
+
+--@debug@
+print(event,...)
+--@end-debug@
 	if event=="GARRISON_FOLLOWER_UPGRADED" or event=="GARRISON_FOLLOWER_XP_CHANGED" then
 		local followerID=...
 		if (self.cache[followerID]) then

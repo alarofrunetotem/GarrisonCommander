@@ -49,18 +49,30 @@ function module:GMCCreateMissionList(workList)
 		local discarded=false
 		local class=self:GetMissionData(missionID,"class")
 		repeat
-			print("|cffff0000",'Examing',missionID,self:GetMissionData(missionID,"name"),class,"|r")
+
+--@debug@
+print("|cffff0000",'Examing',missionID,self:GetMissionData(missionID,"name"),class,"|r")
+--@end-debug@
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
-				print(missionID,"discarded due to len",durationSeconds /3600)
+
+--@debug@
+print(missionID,"discarded due to len",durationSeconds /3600)
+--@end-debug@
 				break
 			end -- Mission too long, out of here
 			if (self:GetMissionData(missionID,'isRare') and settings.skipRare) then
-				print(missionID,"discarded due to rarity")
+
+--@debug@
+print(missionID,"discarded due to rarity")
+--@end-debug@
 				break
 			end
 			if (not ar[class]) then
-				print(missionID,"discarded due to class == ", class)
+
+--@debug@
+print(missionID,"discarded due to class == ", class)
+--@end-debug@
 				discarded=true
 				break
 			end
@@ -86,7 +98,10 @@ end
 --@param #integer missionID Optional, to run a single mission
 --@param #bool start Optional, tells that follower already are on mission and that we need just to start it
 function module:GMCRunMission(missionID,start)
-	print("Asked to start mission",missionID)
+
+--@debug@
+print("Asked to start mission",missionID)
+--@end-debug@
 	if (start) then
 		G.StartMission(missionID)
 		PlaySound("UI_Garrison_CommandTable_MissionStart")
@@ -94,7 +109,10 @@ function module:GMCRunMission(missionID,start)
 	end
 	for i=1,#GMC.ml.Parties do
 		local party=GMC.ml.Parties[i]
-		print("Checking",party.missionID)
+
+--@debug@
+print("Checking",party.missionID)
+--@end-debug@
 		if (missionID and party.missionID==missionID or not missionID) then
 			GMC.ml.widget:RemoveChild(party.missionID)
 			GMC.ml.widget:DoLayout()
@@ -156,7 +174,10 @@ do
 					minimumChance=tonumber(settings.rewardChance[class]) or 100
 				end
 				local party={members={},perc=0}
-				print ("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
+
+--@debug@
+print("                           Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
+--@end-debug@
 				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
 				if ( party.full and party.perc >= minimumChance) then
 					--print("                           Mission accepted")
@@ -202,7 +223,10 @@ function module:GMC_OnClick_Run(this,button)
 	end
 end
 function module:GMC_OnClick_Start(this,button)
-	print(C("-------------------------------------------------","Yellow"))
+
+--@debug@
+print(C("-------------------------------------------------","Yellow"))
+--@end-debug@
 	GMC.ml.widget:ClearChildren()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
 		GMC.ml.widget:SetTitle("All followers are busy")
@@ -297,19 +321,28 @@ local function drawItemButtons()
 		frame:RegisterForDrag("LeftButton")
 		frame:SetMovable(true)
 		frame:SetScript("OnDragStart",function(this,button)
-			print("Start",this:GetID(),this.key)
+
+--@debug@
+print("Start",this:GetID(),this.key)
+--@end-debug@
 			this:StartMoving()
 			this.oldframestrata=this:GetFrameStrata()
 			this:SetFrameStrata("FULLSCREEN_DIALOG")
 		end)
 		frame:SetScript("OnDragStop",function(this,button)
 			this:StopMovingOrSizing()
-			print("Stopped",this:GetID(),this.key)
+
+--@debug@
+print("Stopped",this:GetID(),this.key)
+--@end-debug@
 			this:SetFrameStrata(this.oldframestrata)
 
 		end)
 		frame:SetScript("OnReceiveDrag",function(this)
-				print("Receive",this:GetID(),this.key)
+
+--@debug@
+print("Receive",this:GetID(),this.key)
+--@end-debug@
 				local from=this:GetID()
 				local to
 				local x,y=this:GetCenter()
@@ -323,7 +356,10 @@ local function drawItemButtons()
 					end
 				end
 				if (to) then
-					print("from:",from,"to:",to)
+
+--@debug@
+print("from:",from,"to:",to)
+--@end-debug@
 					local appo=tremove(tOrder,from)
 					tinsert(tOrder,to,appo)
 				end

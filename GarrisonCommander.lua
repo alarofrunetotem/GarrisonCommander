@@ -364,7 +364,10 @@ function addon:ApplyMSORT(value)
 	if (type(func)=="function") then
 		Garrison_SortMissions=self[value]
 	else
-		print("Could not found ",value," in addon")
+
+--@debug@
+print("Could not found ",value," in addon")
+--@end-debug@
 		Garrison_SortMissions=origGarrison_SortMissions
 	end
 	self:RefreshMissions()
@@ -549,7 +552,10 @@ function addon:GetCounterBias(missionID,threat)
 				local follower=data[index[i]]
 				if ((tonumber(follower.bias) or -1) > bias) then
 					if (tContains(members,follower.followerID)) then
-						if (dbg) then print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
+						if (dbg) then
+--@debug@
+print("   Choosen",self:GetFollowerData(follower.followerID,'fullname')) end
+--@end-debug@
 						bias=follower.bias
 						who=follower.name
 					end
@@ -1462,7 +1468,10 @@ function addon.ClonedGarrisonMissionMechanic_OnEnter(this)
 			local t=G.GetFollowersTraitsForMission(this.missionID)
 			for followerID,k in pairs(t) do
 				for i=1,#k do
-					print(k[i].icon)
+
+--@debug@
+print(k[i].icon)
+--@end-debug@
 					if k[i].icon==this.texture then
 						tip:AddDoubleLine(addon:GetFollowerData(followerID,'fullname'),this.Name)
 					end
@@ -1490,7 +1499,10 @@ do
 	local ml=nil
 	local tContains=tContains
 	local function MissionOnClick(this,...)
-		print(this.frame,this.frame:GetName())
+
+--@debug@
+print(this.frame,this.frame:GetName())
+--@end-debug@
 		GMF:OnClickMission(this.frame.info)
 		if (PanelTemplates_GetSelectedTab(GMF) ~= 1) then
 			addon:OpenMissionsTab()
@@ -1779,13 +1791,19 @@ function addon:SafeHookScript(frame,method,handler,hookType)
 		if not handler then
 			handler='Script'..name..method
 		elseif type(handler)=="boolean" then
-			handler=function(...)	 print(name,method,...) end
+			handler=function(...)
+--@debug@
+print(name,method,...) end
+--@end-debug@
 		end
 		self:checkHandler(handler)
 		if hookType and type(hookType)=="boolean" then hookType="post" end
 	--This allow to change a method, for example to substitute an one time init with the standard routine
 		if (self:IsHooked(frame,method)) then self:Unhook(frame,method)	end
-		print(hookType or "","Hooked Script",method,"on frame",name,"to",handler)
+
+--@debug@
+print(hookType or "","Hooked Script",method,"on frame",name,"to",handler)
+--@end-debug@
 		if hookType=="post" or hookType=="secure" then
 			self:SecureHookScript(frame,method,handler)
 		elseif (hookType=="raw") then
@@ -1810,11 +1828,17 @@ function addon:GetFollowerTexture(followerID,followerType)
 		end
 	else
 		local rc,texPrefix=pcall(self.GetAnyData,self,followerType,followerID,"texPrefix")
-		print(rc,texPrefix)
+
+--@debug@
+print(rc,texPrefix)
+--@end-debug@
 		if rc then
 			if texPrefix then
 				shipconv.Portrait:SetAtlas(texPrefix.."-List")
-				print(shipconv.Portrait:GetTexture())
+
+--@debug@
+print(shipconv.Portrait:GetTexture())
+--@end-debug@
 				return shipconv.Portrait:GetTexture()
 			end
 		end
@@ -1933,7 +1957,10 @@ function addon:FillMissionPage(missionInfo)
 			end
 		end
 	else
-		print("No martini no party")
+
+--@debug@
+print("No martini no party")
+--@end-debug@
 	end
 	main:UpdateMissionParty(main.MissionTab.MissionPage.Followers)
 	main:UpdateMissionData(main.MissionTab.MissionPage)
@@ -2035,7 +2062,10 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 	frame.PortraitFrame.Portrait:Show()
 	local info=self:GetFollowerData(followerID)
 	if (not info) then
-		print("Unable to find follower",followerID)
+
+--@debug@
+print("Unable to find follower",followerID)
+--@end-debug@
 	return
 	end
 	frame.info=info
@@ -2303,7 +2333,10 @@ function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(th
 end
 function addon:OnClick_GarrisonMissionButton(tab,button)
 	local frame = tab:GetParent():GetParent():GetParent():GetParent():GetParent();
-	print(frame:GetName())
+
+--@debug@
+print(frame:GetName())
+--@end-debug@
 	lastTab=1
 	if (GMF.MissionTab.MissionList.showInProgress) then
 		return
@@ -2873,7 +2906,10 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 	local missionInfo=button.info
 	local missionID=missionInfo.missionID
 	local mission=missionInfo
-	if not mission then print("Non ho la missione") return end -- something went wrong while refreshing
+	if not mission then
+--@debug@
+print("Non ho la missione") return end -- something went wrong while refreshing
+--@end-debug@
 	if (not bigscreen) then
 		local index=mission.numFollowers+mission.numRewards-3
 		local position=(index * -65) - 130
@@ -2907,7 +2943,10 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 end
 -- Switchs between active and availabla missions depending on tab object
 function over.GarrisonMissionList_SetTab(...)
-	print("Click su",...)
+
+--@debug@
+print("Click su",...)
+--@end-debug@
 	-- I dont actually care wich page we are shoing, I know I must redraw missions
 	orig.GarrisonMissionList_SetTab(...)
 	addon:RefreshFollowerStatus()
@@ -2917,11 +2956,17 @@ function over.GarrisonMissionList_SetTab(...)
 	if (HD) then addon:ResetSinks() end
 end
 function addon:HookedClickOnTabs(tab)
-	print(tab)
+
+--@debug@
+print(tab)
+--@end-debug@
 	lastTab=tab
 end
 function over.GarrisonMissionFrame_SelectTab(self,tab,...)
-	print(tab)
+
+--@debug@
+print(tab)
+--@end-debug@
 	addon:RefreshFollowerStatus()
 	for i=1,#GMFMissionListButtons do
 		GMFMissionListButtons.lastMissionID=nil

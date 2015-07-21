@@ -29,13 +29,19 @@ function addon:ShowImprovements()
 			local b=scroller:AddItem(itemID)
 			b:SetUserData("item",itemID)
 			b:SetCallback("OnEnter",function(this)
-				print("Item:",this:GetUserData("item"))
+
+--@debug@
+print("Item:",this:GetUserData("item"))
+--@end-debug@
 				GameTooltip:SetOwner(this.frame,"ANCHOR_CURSOR")
 				GameTooltip:AddLine("Reward")
 				GameTooltip:SetItemByID(this:GetUserData("item"))
 				GameTooltip:Show() end)
 			b:SetCallback("OnLeave",function(this) GameTooltip:Hide() end)
-			b:SetCallback("OnClick",function(this) print("Clicckete") end)
+			b:SetCallback("OnClick",function(this)
+--@debug@
+print("Clicckete") end)
+--@end-debug@
 		end
 	end
 	scroller:AddRow("Item Tokens",C.Orange())
@@ -203,7 +209,10 @@ end
 --]]
 
 function addon:GarrisonTraitCountersFrame_OnLoad(this, tooltipString)
-	print("Load")
+
+--@debug@
+print("Load")
+--@end-debug@
 	this:ClearAllPoints()
 	this:SetParent(GarrisonThreatCountersFrame:GetParent())
 	this:SetPoint("BOTTOMLEFT",185,6)

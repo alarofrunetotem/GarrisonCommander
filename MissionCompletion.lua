@@ -62,9 +62,9 @@ local function startTimer(delay,event,...)
 	event=event or "LOOP"
 	stopTimer()
 	timer=module:ScheduleRepeatingTimer("MissionAutoComplete",delay,event,...)
-	--@alpha@
+	--@debug@
 	print("Timer rearmed for",event,delay)
-	--@end-alpha@
+	--@end-debug@
 end
 function module:MissionsCleanup()
 	local f=followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF
@@ -97,7 +97,10 @@ function module:CloseReport()
 	if report then pcall(report.Close,report) report=nil end
 end
 function module:MissionComplete(this,button)
-	print(this,button,this.missionType)
+
+--@debug@
+print(this,button,this.missionType)
+--@end-debug@
 	followerType=this.missionType
 	missions=G.GetCompleteMissions(followerType)
 	if (missions and #missions > 0) then
@@ -144,9 +147,9 @@ end
 function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
---@alpha@
+--@debug@
 	--print("evt",event,ID,arg1 or'',arg2 or '',arg3 or '')
---@end-alpha@
+--@end-debug@
 	if event=="LOOT" then
 		return self:MissionsPrintResults()
 	end
@@ -201,15 +204,15 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 				report:AddMissionButton(currentMission,addon:GetParty(currentMission.missionID),currentMission.successChance)
 			end
 			if (step==0) then
-				--@alpha@
+				--@debug@
 				print("Fired mission complete for",currentMission.missionID)
-				--@end-alpha@
+				--@end-debug@
 				G.MarkMissionComplete(currentMission.missionID)
 				startTimer(2)
 			elseif (step==1) then
-				--@alpha@
+				--@debug@
 				print("Fired bonus roll complete for",currentMission.missionID)
-				--@end-alpha@
+				--@end-debug@
 				G.MissionBonusRoll(currentMission.missionID)
 				startTimer(2)
 			elseif (step>=2) then

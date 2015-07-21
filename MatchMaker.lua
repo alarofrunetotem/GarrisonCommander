@@ -107,7 +107,10 @@ local function CreateFilter(missionClass)
 	return filterdata
 	]]
 	code = code:gsub("TEST", " filters." ..missionClass .."(followerID,missionID)")
-	print("Compiling ",missionClass,"filterOut")
+
+--@debug@
+print("Compiling ",missionClass,"filterOut")
+--@end-debug@
 	return assert(loadstring(code, "filterOut for " .. missionClass))(filters,print,pairs)
 end
 
@@ -273,7 +276,10 @@ function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 	if (not party) then party=addon:GetParty(missionID) end
 	useCap=true
 	currentCap=cap
-	print("Using cap data:",useCap,currentCap)
+
+--@debug@
+print("Using cap data:",useCap,currentCap)
+--@end-debug@
 	MatchMaker(self,mission,party,false)
 	if (skipEpic) then
 		if (self:GetMissionData(missionID,'class')=='xp') then

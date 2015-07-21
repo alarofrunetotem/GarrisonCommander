@@ -20,10 +20,16 @@ local GameTooltip=GameTooltip
 local GarrisonShipyardMapMissionTooltip=GarrisonShipyardMapMissionTooltip
 
 function sprint(nome,this,...)
-	print(nome,this:GetName(),...)
+
+--@debug@
+print(nome,this:GetName(),...)
+--@end-debug@
 end
 function module:Test()
-	print("test")
+
+--@debug@
+print("test")
+--@end-debug@
 end
 function module:OnInitialize()
 	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
@@ -31,7 +37,10 @@ function module:OnInitialize()
 	self:SafeSecureHook("GarrisonShipyardMapMission_OnEnter")
 	self:SafeSecureHook("GarrisonShipyardMapMission_OnLeave")
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
-	print(ref)
+
+--@debug@
+print(ref)
+--@end-debug@
 	local bt = CreateFrame('BUTTON','GCQuickShipMissionCompletionButton', ref, 'UIPanelButtonTemplate')
 	bt.missionType=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 	bt:SetWidth(300)
@@ -57,7 +66,10 @@ local i=0
 
 function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	if not GSF:IsShown() then return end
-	print(frame:GetWidth(),mission)
+
+--@debug@
+print(frame:GetWidth(),mission)
+--@end-debug@
 	addon:AddExtraData(mission)
 	local perc=addon:MatchMaker(mission)
 	local addendum=frame.GcAddendum
@@ -118,7 +130,10 @@ end
 
 
 function module:Setup(this,...)
-	print("Doing one time initialization for",this:GetName(),...)
+
+--@debug@
+print("Doing one time initialization for",this:GetName(),...)
+--@end-debug@
 	self:SafeHookScript(GSF,"OnShow","OnShow",true)
 	GSF:EnableMouse(true)
 	GSF:SetMovable(true)
@@ -127,10 +142,16 @@ function module:Setup(this,...)
 	GSF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 end
 function module:OnShow()
-	print("Doing all time initialization")
+
+--@debug@
+print("Doing all time initialization")
+--@end-debug@
 end
 function module:HookedGarrisonShipyardMapMission_OnLeave()
-	print("OnLeave")
+
+--@debug@
+print("OnLeave")
+--@end-debug@
 	GameTooltip:Hide()
 end
 function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
@@ -149,7 +170,9 @@ function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
 	end
 end
 function module:OpenLastTab()
+--@debug@
 print("Should restore tab")
+--@end-debug@
 end
 --[[ Follower
 displayHeight = 0.25

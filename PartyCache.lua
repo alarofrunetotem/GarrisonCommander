@@ -96,11 +96,13 @@ function party:IsFull()
 end
 
 function party:Dump()
+--@debug@
 	print("Dumping party for mission",ID)
 	for i=1,#members do
 		print(addon:GetFollowerData(members[i],'fullname'),G.GetFollowerStatus(members[i] or 1))
 	end
 	print(G.GetPartyMissionInfo(ID))
+--@end-debug@
 end
 
 function party:AddFollower(followerID)
@@ -143,10 +145,12 @@ local function fsort(a,b)
 	if tonumber(rank1) and tonumber(rank2) then
 		return rank1 < rank2
 	else
+--@debug@
 		print(a,rank1)
 		print(b,rank2)
 		print(G.GetFollowerName(a))
 		print(G.GetFollowerName(b))
+--@end-debug@
 		return 0
 	end
 end
@@ -205,7 +209,10 @@ end
 function addon:GetParty(missionID,key,default)
 	if not missionID then return parties end
 	local party=parties[missionID]
-	if not party then print(GetTime(),missionID,G.GetMissionName(missionID),"Empty") end
+	if not party then
+--@debug@
+print(GetTime(),missionID,G.GetMissionName(missionID),"Empty") end
+--@end-debug@
 	if not party then return default end
 	if #party.members==0 and G.GetNumFollowersOnMission(missionID)>0 then
 		if not party.perc or party.perc < 1 then
@@ -214,7 +221,10 @@ function addon:GetParty(missionID,key,default)
 		party.full=true
 		--Running Mission, taking followers from mission data
 		local followers=self:GetMissionData(missionID,'followers')
-		print(followers)
+
+--@debug@
+print(followers)
+--@end-debug@
 		--addPartyMissionInfo(party,missionID)
 		if followers then
 			for i=1,#followers do
