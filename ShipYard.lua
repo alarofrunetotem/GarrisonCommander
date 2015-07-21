@@ -52,9 +52,9 @@ print(ref)
 	end
 	self:SafeSecureHook("GarrisonShipyardMap_SetupBonus")
 	self:SafeHookScript(GSF,"OnShow","Setup",true)
-	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",function(... ) sprint("CompleteDialog",...) end,true)
-	self:SafeHookScript(GSF.MissionTab,"OnShow",function(... ) sprint("MissionTab",...) end,true)
-	self:SafeHookScript(GSF.FollowerTab,"OnShow",function(... ) sprint("FollowerTab",...) end,true)
+	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",true)
+	self:SafeHookScript(GSF.MissionTab,"OnShow",true)
+	self:SafeHookScript(GSF.FollowerTab,"OnShow",true)
 	--GarrisonShipyardFrameFollowersListScrollFrameButton1
 	--GarrisonShipyardMapMission1
 --@end-debug@

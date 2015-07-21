@@ -189,7 +189,7 @@ function party:Close(desttable)
 		if (members[i]) then
 			local rc,code=pcall(G.RemoveFollowerFromMission,ID,members[i])
 --@debug@
-			if (not rc) then ns.xtrace("Unable to pop", G.GetFollowerName(members[i])," from ",ID,code) end
+			if (not rc) then print("Unable to pop", G.GetFollowerName(members[i])," from ",ID,code,debugstack()) end
 --@end-debug@
 
 		else
@@ -209,10 +209,12 @@ end
 function addon:GetParty(missionID,key,default)
 	if not missionID then return parties end
 	local party=parties[missionID]
+	party.missionID=missionID
 	if not party then
 --@debug@
-print(GetTime(),missionID,G.GetMissionName(missionID),"Empty") end
+		print(GetTime(),missionID,G.GetMissionName(missionID),"Empty")
 --@end-debug@
+	end
 	if not party then return default end
 	if #party.members==0 and G.GetNumFollowersOnMission(missionID)>0 then
 		if not party.perc or party.perc < 1 then
@@ -221,9 +223,8 @@ print(GetTime(),missionID,G.GetMissionName(missionID),"Empty") end
 		party.full=true
 		--Running Mission, taking followers from mission data
 		local followers=self:GetMissionData(missionID,'followers')
-
 --@debug@
-print(followers)
+		print(followers)
 --@end-debug@
 		--addPartyMissionInfo(party,missionID)
 		if followers then

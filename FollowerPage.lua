@@ -31,16 +31,15 @@ function addon:ShowImprovements()
 			b:SetCallback("OnEnter",function(this)
 
 --@debug@
-print("Item:",this:GetUserData("item"))
+			print("Item:",this:GetUserData("item"))
 --@end-debug@
-				GameTooltip:SetOwner(this.frame,"ANCHOR_CURSOR")
-				GameTooltip:AddLine("Reward")
-				GameTooltip:SetItemByID(this:GetUserData("item"))
-				GameTooltip:Show() end)
+			GameTooltip:SetOwner(this.frame,"ANCHOR_CURSOR")
+			GameTooltip:AddLine("Reward")
+			GameTooltip:SetItemByID(this:GetUserData("item"))
+			GameTooltip:Show() end)
 			b:SetCallback("OnLeave",function(this) GameTooltip:Hide() end)
-			b:SetCallback("OnClick",function(this)
 --@debug@
-print("Clicckete") end)
+			b:SetCallback("OnClick",function(this) print("Click") end)
 --@end-debug@
 		end
 	end
