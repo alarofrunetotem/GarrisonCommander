@@ -9,8 +9,7 @@ local _G=_G
 local factory=addon:GetFactory()
 --GMC_G.frame = CreateFrame('FRAME')
 local aMissions={}
-local dbcache
-local cache
+local chardb
 local db
 local GMC
 local GMF=GarrisonMissionFrame
@@ -403,12 +402,11 @@ end
 function module:OnInitialized()
 	local bigscreen=ns.bigscreen
 	db=addon.db.global
-	dbcache=addon.privatedb.profile
-	cache=addon.private.profile
+	chardb=addon.privatedb.profile
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
 	GMC = CreateFrame('FRAME', 'GMCOptions', GMF)
 	ns.GMC=GMC
-	settings=dbcache.missionControl
+	settings=chardb.missionControl
 	tOrder=settings.rewardOrder
 	if settings.version < 2 then
 		dbfixV1()

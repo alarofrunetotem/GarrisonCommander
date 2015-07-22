@@ -1,5 +1,11 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.9*
+Fix: Restored GarrisonMissionManager compatibility, sorry guys
+Feature: Shipyard map enhanced with success chance. Chance is show as a number, and the border around it says if you have oil enough (green good, red not enough)
+Feature: Enhanced Shipyard map tooltip
+
+
 * *2.6.8*
 Fix: Works even if some naval mission onclick is hijacked
 

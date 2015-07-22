@@ -102,17 +102,17 @@ do
 end
 local backdrop = {
 		--bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
-		bgFile=nil,--"Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+		bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
 		edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
 		tile=true,
 		tileSize=16,
 		edgeSize=16,
-		insets={bottom=7,left=7,right=7,top=7}
+		insets={bottom=3,left=3,right=3,top=3}
 }
 function ns.AddBackdrop(frame)
 	frame:SetBackdrop(backdrop)
 	frame:SetBackdropColor(1,1,1,0)
-	frame:SetBackdropColor(1,0,0,1)
+	frame:SetBackdropBorderColor(1,0,0,1)
 end
 -- my implementation of tonumber which accounts for nan and inf
 ---@function [parent=#ns] tonumber

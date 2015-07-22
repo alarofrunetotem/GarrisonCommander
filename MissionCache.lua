@@ -23,129 +23,48 @@ local rushOrders="interface\\icons\\inv_scroll_12.blp"
 local rawget=rawget
 local time=time
 local empty={}
-local cache
+local index={}
 -- Mission caching is a bit different fron follower caching mission appears and disappears on a regular basis
 local module=addon:NewSubClass('MissionCache') --#module
 function module:OnInitialized()
-	self:HookScript(GMF,"OnShow","PanelOpened",true)
-	self:HookScript(GMF,"OnHide","PanelClosed",true)
-	self:HookScript(GSF,"OnShow","PanelOpened",true)
-	self:HookScript(GSF,"OnHide","PanelClosed",true)
-	addon.db:RegisterNamespace('missionscache',{global={['*']={rewards={},followers={},_filled=0}}})
-	cache=addon.db:GetNamespace('missionscache').global
-	--wipe(cache)
-
 --@debug@
-print("OnInitialized")
+	print("OnInitialized")
 --@end-debug@
-
-
 end
-local function deepCopy(original,copy)
-		for k, v in pairs(original) do
-				-- as before, but if we find a table, make sure we copy that too
-				if type(v) == 'table' then
-					copy[k]={}
-					deepCopy(v,copy[k])
-				else
-					copy[k] = v
-				end
-		end
-		return copy
-end
-local function flatCopy(original,copy)
-
---@debug@
-print("Destination",copy,"Original",original)
---@end-debug@
-		for k, v in pairs(original) do
-				-- as before, but if we find a table, make sure we copy that too
-				if type(v) ~= 'table' then
-					copy[k] = v
-				end
-		end
-		return copy
-end
-local runkeys={
-'inProgress',
-'offerTimeRemaining',
-'timeLeft',
-'missionEndTime',
-'canStart'
-}
-local function load(t,base)
-	for i=1,#t do
-		local missionID=t[i].missionID
-		local mission=t[i]
-		for _,k in ipairs(runkeys) do
-			cache[missionID][k]=mission[k]
-		end
-		if mission.inProgress then
-			if (mission.followers) then
-				for f=1,#mission.followers do
-					cache[missionID].followers[f]=mission.followers[f]
-				end
-			end
-
---@debug@
-print("Refreshed",mission.name,"followers",mission.followers)
---@end-debug@
-		else
-			wipe(mission.followers)
+local function scan(t,s)
+	if type(t)=="table" then
+		for i=1,#t do
+			index[t[i].missionID]=format("%s@%d",s,i)
 		end
 	end
 end
-function module:PanelOpened(frame,...)
-	if (frame==GMF) then
-		load(GMFMissions.availableMissions)
-		load(GMFMissions.inProgressMissions)
-	else
-		load(GSFMissions.missions)
-	end
-end
-function module:PanelClosed(frame,...)
-
-end
-local keys={
-'followerTypeID',
-'cost',
-'duration',
-'durationSeconds',
-'level',
-'iLevel',
-'duration',
-'xpBonus',
-'numFollowers',
-'missionID',
-'numRewards',
-'costCurrencyTypesID',
-'cost'
-}
-function module:GetMission(id)
-	if time() - (tonumber(cache[id]._filled) or 0) > 3600 then
-		cache[id].name=G.GetMissionName(id)
-		if cache[id].name then -- I need to be sure mission actually exists
-			local t=G.GetBasicMissionInfo(id)
-			if (t) then
-				for _,k in ipairs(keys) do
-					cache[id][k]=t[k]
-				end
-				cache[id]._filled=time()
-				for i=1,#t.followers do
-					cache[id].followers[i]=t.followers[i]
-				end
-				deepCopy(t.rewards,cache[id].rewards)
-			end
+function module:GetMission(id,noretry)
+	local mission
+	if index[id] then
+		print(id,index[id])
+		local type,ix=strsplit("@",index[id])
+		ix=tonumber(ix)
+		if type=="a" then
+			mission=GMFMissions.availableMissions[ix]
+			if mission and mission.missionID==id then return mission end
+		elseif type=="p" then
+			mission=GMFMissions.inProgressMissions[ix]
+			if mission and mission.missionID==id then return mission end
+		elseif type=="s" then
+			mission=GSFMissions.missions[ix]
+			if mission and mission.missionID==id then return mission end
 		end
 	end
-	return cache[id]
+	if noretry then return end
+	wipe(index)
+	scan(GMFMissions.availableMissions,'a')
+	scan(GMFMissions.inProgressMissions,'p')
+	scan(GSFMissions.missions,'s')
+	return self:GetMission(id,true)
 end
 function module:AddExtraData(mission)
-	local _
-	_,mission.xp,mission.type,mission.typeDesc,mission.typeIcon,mission.locPrefix,_,mission.enemies=G.GetMissionInfo(mission.missionID)
-	if mission.level then
-		mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
-	end
+	print(mission)
+	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 	mission.resources=0
 	mission.oil=0
 	mission.apexis=0
@@ -293,13 +212,11 @@ local function keyToIndex(key)
 	end
 	return idx
 end
+
 function addon:GetMissionData(missionID,key,default)
-	local mission
-	if newcache then
-		mission=module:GetMission(missionID)
-	else
-		local idx=keyToIndex(missionID)
-		local mission=Mbase.availableMissions[idx]
+	local mission=module:GetMission(missionID)
+	if mission and not mission.class then
+			self:AddExtraData(mission)
 	end
 	if not mission then
 		mission=self:GetModule("MissionCompletion"):GetMission(missionID)

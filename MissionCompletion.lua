@@ -300,3 +300,6 @@ function module:MissionsPrintResults(success)
 		report:AddRow(L["No follower gained xp"])
 	end
 end
+function addon:MissionComplete(...)
+	return module:MissionComplete(...)
+end

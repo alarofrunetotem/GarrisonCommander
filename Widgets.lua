@@ -332,6 +332,9 @@ local function GMCMissionButton()
 	local Type2="GMCSlimMissionButton"
 	local Version=1
 	local unique=0
+	local function GarrisonMissionButton_OnEnter(...)
+		addon:ScriptGarrisonMissionButton_OnEnter(...)
+	end
 	local m={} --#GMCMissionButton
 	function m:OnAcquire()
 		local frame=self.frame

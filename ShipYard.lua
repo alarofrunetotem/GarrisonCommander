@@ -66,10 +66,6 @@ local i=0
 
 function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	if not GSF:IsShown() then return end
-
---@debug@
-print(frame:GetWidth(),mission)
---@end-debug@
 	addon:AddExtraData(mission)
 	local perc=addon:MatchMaker(mission)
 	local addendum=frame.GcAddendum
@@ -78,20 +74,35 @@ print(frame:GetWidth(),mission)
 		i=i+1
 		addendum=CreateFrame("Frame",nil,frame)
 		addendum:SetPoint("TOPLEFT",frame,"TOPRIGHT",-15,0)
-		addendum:SetWidth(100)
-		addendum:SetHeight(70)
-		addendum.chance=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightMedium")
-		addendum.chance:SetPoint("TOPLEFT")
-		--addendum.expire=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-		--addendum.expire:SetPoint("TOPLEFT",addendum.chance,"BOTTOMLEFT")
-		--addendum.duration=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-		--addendum.duration:SetPoint("TOPLEFT",addendum.expire,"BOTTOMLEFT")
+		addendum:SetFrameStrata("FULLSCREEN_DIALOG")
+		addendum:SetFrameLevel(GSF:GetFrameLevel()+5)
+		AddBackdrop(addendum)
+		addendum:SetBackdropColor(0,0,0,0.5)
+		addendum:SetWidth(50)
+		addendum:SetHeight(25)
+		addendum.chance=addendum:CreateFontString(nil,"TOOLTIP","GameFontHighlightMedium")
+		addendum.chance:SetAllPoints()
+		addendum.chance:SetJustifyH("CENTER")
+		addendum.chance:SetJustifyV("CENTER")
 		frame.GcAddendum=addendum
 	end
 	if mission.inProgress then addendum:Hide() return end
 	addendum:Show()
 	addendum.chance:SetFormattedText("%d%%",perc)
 	addendum.chance:SetTextColor(self:GetDifficultyColors(perc))
+	local cost=mission.cost
+	local currency=mission.costCurrencyTypesID
+	if cost and currency then
+		local _,available=GetCurrencyInfo(currency)
+		if cost>available then
+			addendum:SetBackdropBorderColor(1,0,0)
+		else
+			addendum:SetBackdropBorderorderCOlor(0,1,0)
+		end
+	else
+		addendum:SetBackdropBorderorderCOlor(1,1,1)
+
+	end
 	--addendum.expire:SetText(mission.class)
 	--addendum.duration:SetText(mission.duration)
 end
@@ -100,12 +111,12 @@ function module:HookedGarrisonShipyardMap_UpdateMissions()
 	for i=1,#list.missions do
 		local frame = list.missionFrames[i]
 		if not self:IsHooked(frame,"PostClick") then
-			self:SafeHookScript(frame,"PostClick","HookedMapButtonOnClick",true)
+			self:SafeHookScript(frame,"PostClick","ScriptMapButtonOnClick",true)
 		end
 	end
 
 end
-function module:HookedMapButtonOnClick(this)
+function module:ScriptMapButtonOnClick(this)
 	self:FillMissionPage(this.info)
 end
 function module:HookedGSF_OnClickMission(this,missionInfo)
@@ -134,14 +145,14 @@ function module:Setup(this,...)
 --@debug@
 print("Doing one time initialization for",this:GetName(),...)
 --@end-debug@
-	self:SafeHookScript(GSF,"OnShow","OnShow",true)
+	self:SafeSecureHookScript("GarrisonShipyardFrame","OnShow")
 	GSF:EnableMouse(true)
 	GSF:SetMovable(true)
 	GSF:RegisterForDrag("LeftButton")
 	GSF:SetScript("OnDragStart",function(frame)if (self:GetBoolean("MOVEPANEL")) then frame:StartMoving() end end)
 	GSF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 end
-function module:OnShow()
+function module:ScriptGarrisonShipyardFrame_OnShow()
 
 --@debug@
 print("Doing all time initialization")
@@ -163,7 +174,7 @@ function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
 	addon:AddFollowersToTooltip(missionID,LE_FOLLOWER_TYPE_SHIPYARD_6_2)
 --@debug@
 	g:AddDoubleLine("MissionID:",missionID)
---@end-debug
+--@end-debug@
 	g:Show()
 	if g:GetWidth() < GarrisonShipyardMapMissionTooltip:GetWidth() then
 		g:SetWidth(GarrisonShipyardMapMissionTooltip:GetWidth())
