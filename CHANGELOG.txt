@@ -1,7 +1,7 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
 * *2.6.9*
-Fix: Restored GarrisonMissionManager compatibility, sorry guys
+Fix: Restored GarrisonMissionManager compatibility (sorry guys)
 Feature: Shipyard map enhanced with success chance. Chance is show as a number, and the border around it says if you have oil enough (green good, red not enough)
 Feature: Enhanced Shipyard map tooltip
 
@@ -11,7 +11,7 @@ Fix: Works even if some naval mission onclick is hijacked
 
 * *2.6.7*
 Feature: Shipyard mission autofill!! See the success chance in map and have your fleet automagically setup
-Fix: Consolidate broker colours for buttons, Now, red, always means ypu need to check it
+Fix: Consolidate broker colours for buttons, Now, red, always means you need to check it
 
 * *2.6.6*
 Feature: Quick mission completion enabled for shipyard\

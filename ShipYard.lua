@@ -74,7 +74,7 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		i=i+1
 		addendum=CreateFrame("Frame",nil,frame)
 		addendum:SetPoint("TOPLEFT",frame,"TOPRIGHT",-15,0)
-		addendum:SetFrameStrata("FULLSCREEN_DIALOG")
+		addendum:SetFrameStrata("MEDIUM")
 		addendum:SetFrameLevel(GSF:GetFrameLevel()+5)
 		AddBackdrop(addendum)
 		addendum:SetBackdropColor(0,0,0,0.5)
@@ -97,10 +97,10 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		if cost>available then
 			addendum:SetBackdropBorderColor(1,0,0)
 		else
-			addendum:SetBackdropBorderorderCOlor(0,1,0)
+			addendum:SetBackdropBorderColor(0,1,0)
 		end
 	else
-		addendum:SetBackdropBorderorderCOlor(1,1,1)
+		addendum:SetBackdropBorderColor(1,1,1)
 
 	end
 	--addendum.expire:SetText(mission.class)
