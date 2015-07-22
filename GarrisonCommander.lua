@@ -2638,64 +2638,65 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
 	end
 end
-
 function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 	local threatIndex=1
 	if (not GMF.MissionTab.MissionList.showInProgress) then
 		if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator (Only MP <= 1.8)
-			if (not GMF.MissionTab.MissionList.showInProgress) then
-				if (not button.Env) then
-					button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-					button.Env:SetWidth(20)
-					button.Env:SetHeight(20)
-					button.Env:SetPoint("BOTTOMLEFT",button,165,8)
-					button.GcThreats={}
-				end
-				button.Env.missionID=missionID
-				local party=button.party
-				if mission.typeIcon then
-					button.Env.IsEnv=true
-					button.Env:Show()
-					button.Env.Icon:SetTexture(mission.typeIcon)
-					button.Env.texture=mission.typeIcon
-					button.Env.countered=party.isEnvMechanicCountered
-					if (party.isEnvMechanicCountered) then
-						button.Env.Border:SetVertexColor(C.Green())
-					else
-						button.Env.Border:SetVertexColor(C.Red())
-					end
-					button.Env.Description=mission.typeDesc
-					button.Env.Name=mission.type
-					button.Env:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
-					button.Env:SetScript("OnLeave",function() GameTooltip:Hide() end)
+			if (not button.Env) then
+				button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+				button.Env:SetWidth(20)
+				button.Env:SetHeight(20)
+				button.Env:SetPoint("BOTTOMLEFT",button,165,8)
+				button.GcThreats={}
+			end
+			button.Env.missionID=missionID
+			local party=button.party
+			if not mission.typeIcon then
+				mission.typeIcon=select(5,G.GetMissionInfo(missionID))
+			end
+			if mission.typeIcon then
+				button.Env.IsEnv=true
+				button.Env:Show()
+				button.Env.Icon:SetTexture(mission.typeIcon)
+				button.Env.texture=mission.typeIcon
+				button.Env.countered=party.isEnvMechanicCountered
+				if (party.isEnvMechanicCountered) then
+					button.Env.Border:SetVertexColor(C.Green())
 				else
-					button.Env:SetScript("OnEnter",nil)
-					button.Env:Hide()
+					button.Env.Border:SetVertexColor(C.Red())
 				end
-				local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
-				local threats=self:GetParty(missionID,'threats')
-				for i,enemy in ipairs(enemies) do
-					for mechanicID, mechanic in pairs(enemy.mechanics) do
-						local th=button.GcThreats[threatIndex]
-						if (not th) then
-							th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-							th:SetWidth(20)
-							th:SetHeight(20)
-							th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
-							button.GcThreats[threatIndex]=th
-						end
-						th.countered=self:SetThreatColor(th,threats[threatIndex])
-						th.Icon:SetTexture(mechanic.icon)
-						th.texture=mechanic.icon
-						th.Name=mechanic.name
-						th.Description=mechanic.description
-						th.missionID=missionID
-						--GarrisonMissionButton_CheckTooltipThreat(th,missionID,mechanicID,counteredThreats)
-						th:Show()
-						th:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
-						th:SetScript("OnLeave",function() GameTooltip:Hide() end)
-						threatIndex=threatIndex+1
+				button.Env.Description=mission.typeDesc
+				button.Env.Name=mission.type
+				button.Env:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
+				button.Env:SetScript("OnLeave",function() GameTooltip:Hide() end)
+			else
+				print("No typeIcon in",mission)
+				button.Env:SetScript("OnEnter",nil)
+				button.Env:Hide()
+			end
+			local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
+			local threats=self:GetParty(missionID,'threats')
+			for i,enemy in ipairs(enemies) do
+				for mechanicID, mechanic in pairs(enemy.mechanics) do
+					local th=button.GcThreats[threatIndex]
+					if (not th) then
+						th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+						th:SetWidth(20)
+						th:SetHeight(20)
+						th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
+						button.GcThreats[threatIndex]=th
 					end
+					th.countered=self:SetThreatColor(th,threats[threatIndex])
+					th.Icon:SetTexture(mechanic.icon)
+					th.texture=mechanic.icon
+					th.Name=mechanic.name
+					th.Description=mechanic.description
+					th.missionID=missionID
+					--GarrisonMissionButton_CheckTooltipThreat(th,missionID,mechanicID,counteredThreats)
+					th:Show()
+					th:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
+					th:SetScript("OnLeave",function() GameTooltip:Hide() end)
+					threatIndex=threatIndex+1
 				end
 			end
 		end
