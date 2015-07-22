@@ -181,6 +181,14 @@ function addon:GetDifficultyColors(perc,usePurple)
 	local q=self:GetDifficultyColor(perc,usePurple)
 	return q.r,q.g,q.b
 end
+function addon:GetQualityColor(n)
+	local c=ITEM_QUALITY_COLORS[n]
+	if c then
+		return c.r,c.g,c.b,1
+	else
+		return 1,1,1,1
+	end
+end
 function addon:GetDifficultyColor(perc,usePurple)
 	if(perc >90) then
 		return QuestDifficultyColors['standard']
@@ -393,6 +401,7 @@ print("Initialize")
 	db.lifespan=nil -- Removed in 2.6.9
 	db.traits=nil -- Removed in 2.6.9
 	dbGAC.namespaces.missionscache=nil  -- Removed in 2.6.9
+	dbGAC.global.types=nil  -- Removed in 2.6.9
 	self:AddLabel("Appearance")
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
 	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
@@ -481,13 +490,18 @@ end
 function addon:CheckGMM()
 	if (IsAddOnLoaded("GarrisonMissionManager")) then
 		GMM=true
+		self:RefreshParties()
 		self:RefreshMissions()
 	end
 end
 function addon:ApplyIGM(value)
+	if not GMF:IsVisible() then return end
+	self:RefreshParties()
 	self:RefreshMissions()
 end
 function addon:ApplyMAXRES(value)
+	if not GMF:IsVisible() then return end
+	self:RefreshParties()
 	self:RefreshMissions()
 end
 function addon:ApplyCKMP(value)
@@ -521,6 +535,8 @@ function addon:ApplyBIGSCREEN(value)
 		)
 end
 function addon:ApplyIGP(value)
+	if not GMF:IsVisible() then return end
+	self:RefreshParties()
 	self:RefreshMissions()
 end
 function addon:ApplyMAXMISSIONS(value)
@@ -717,7 +733,12 @@ function addon:RefreshParties()
 end
 function addon:RefreshMissions(missionID)
 	if (GMF:IsVisible()) then
+		--@debug@
+		print("Mission Refresh")
+		--@end-debug@
 		GarrisonMissionList_UpdateMissions()
+		--GMF.MissionTab.MissionList.listScroll:update()
+		print("Mission Refreshed")
 	end
 end
 
@@ -1064,6 +1085,9 @@ end
 function addon:Toggle(button)
 	local f=button.Toggle
 	local name=f:GetName() or "Unnamed"
+	--@debug@
+	print(name,f:IsShown())
+	--@end-debug@
 	if (f:IsShown()) then  f:Hide() else  f:Show() end
 	if (button.SetChecked) then
 		button:SetChecked(f:IsShown())
@@ -1081,6 +1105,9 @@ function addon:CreateOptionsLayer(...)
 	return o,totsize
 end
 function addon:AddOptionToOptionsLayer(o,flag,maxsize)
+--@debug@
+	print("Adding option",flag)
+--@end-debug@
 	maxsize=tonumber(maxsize) or 140
 	if (not flag) then return 0 end
 	local info=self:GetVarInfo(flag)
@@ -2499,6 +2526,7 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 	end
 --@debug@
 	GameTooltip:AddDoubleLine("MissionID",this.info.missionID)
+	GameTooltip:AddDoubleLine("Class",this.info.class)
 --@end-debug@
 	GameTooltip:Show();
 end
@@ -2509,42 +2537,40 @@ end
 -- @param progressing true if at second iteration of progress page
 -- @param bigscreen enlarge button or not
 
-function addon:DrawSingleButton(page,button,progressing,bigscreen)
-	button:SetAlpha(1.0)
-	local mission=button.info
+function addon:DrawSingleButton(page,frame,progressing,bigscreen)
+	frame:SetAlpha(1.0)
+	local mission=frame.info
 	if mission then
 		local missionID=mission.missionID
-		self:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
-		self:AddIndicatorToButton(button,mission,missionID,bigscreen)
-		self:AddRewards(button, mission.rewards, mission.numRewards);
-		self:AddFollowersToButton(button,mission,missionID,bigscreen)
-		if page and not self:IsRewardPage() then
-			self:AddThreatsToButton(button,mission,missionID,bigscreen)
+		self:AddStandardDataToButton(page,frame,mission,missionID,bigscreen)
+		self:AddIndicatorToButton(frame,mission,missionID,bigscreen)
+		self:AddRewards(frame, mission.rewards, mission.numRewards);
+		self:AddFollowersToButton(frame,mission,missionID,bigscreen)
+		if page and not self:IsRewardPage() and not progressing then
+			self:AddThreatsToButton(frame,mission,missionID,bigscreen)
 		end
-		local a1,f,a2,h,v=button.Title:GetPoint(1)
-		if page then
-			v=v+10
-			button.Title:ClearAllPoints()
-			button.Title:SetPoint(a1,f,a2,h,v)
-		else
-			v=v+20
-			button.Title:ClearAllPoints()
-			button.Title:SetPoint(a1,f,a2,h,v)
-			button.Summary:ClearAllPoints()
-			button.Summary:SetPoint("TOPLEFT",button.Title,"BOTTOMLEFT",0,-5)
+		if progressing then
+			if frame.Env then
+				frame.Env:Hide()
+			end
+			if frame.GcThreats then
+				for i=1,#frame.GcThreats do
+					frame.GcThreats[i]:Hide()
+				end
+			end
 		end
-		button:Show();
+		frame:Show();
 
 	else
-		button:Hide();
-		button.info=nil
+		frame:Hide();
+		frame.info=nil
 	end
 end
 function addon:DrawSlimButton(page,frame,progressing,bigscreen)
 	local mission=frame.info
 	if mission then
 		local missionID=mission.missionID
-		self:AddStandardDataToButton(page,frame,mission,missionID,bigscreen)
+		self:AddStandardDataToButton(false,frame,mission,missionID,bigscreen)
 		self:AddRewards(frame, mission.rewards, mission.numRewards);
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 			self:AddFollowersToButton(frame,mission,missionID,bigscreen)
@@ -2563,6 +2589,7 @@ function addon:DrawSlimButton(page,frame,progressing,bigscreen)
 	end
 end
 function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
+	print("Stdata",page)
 	if (bigscreen) then
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
@@ -2579,16 +2606,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	end
 
 	button.Title:SetWidth(0);
---[===[@non-debug@
 	button.Title:SetText(mission.name)
---@end-non-debug@]===]
-	--@debug@
-	if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
-		button.Title:SetText(mission.name:sub(1,15).."  " .. (mission.class or ""))
-	else
-		button.Title:SetText(mission.name)
-	end
-	--@end-debug@
 	button.Level:SetText(mission.level);
 	local seconds=self:GetMissionData(missionID,'improvedDurationSeconds')
 	local duration=SecondsToTime(seconds)
@@ -2605,29 +2623,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	else
 		button.LocBG:Hide();
 	end
-	if (mission.isRare) then
-		button.RareOverlay:Show();
-		button.RareText:Show();
-		button.IconBG:SetVertexColor(0, 0.012, 0.291, 0.4)
-	else
-		button.RareOverlay:Hide();
-		button.RareText:Hide();
-		button.IconBG:SetVertexColor(0, 0, 0, 0.4)
-	end
-	local showingItemLevel = false;
-	if ( mission.level == GARRISON_FOLLOWER_MAX_LEVEL and mission.iLevel > 0 ) then
-		button.ItemLevel:SetFormattedText(NUMBER_IN_PARENTHESES, mission.iLevel);
-		button.ItemLevel:Show();
-		showingItemLevel = true;
-	else
-		button.ItemLevel:Hide();
-	end
-	if ( showingItemLevel and mission.isRare ) then
-		button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -22);
-	else
-		button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
-	end
-
+	self:AddLevel(page,button,mission,missionID,bigscreen)
 	button:Enable();
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
 	local n=mission.numRewards
@@ -2645,70 +2641,81 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
 	end
 end
+function addon:AddLevel(page,button,mission,missionID,bigscreen)
+	button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
+	local level= (mission.level == GARRISON_FOLLOWER_MAX_LEVEL and mission.iLevel > 0) and mission.iLevel or mission.level
+	local quality=1
+	if level >=645 then
+		quality=4
+	elseif  level >=630 then
+		quality=3
+	elseif level>100 then
+		quality=2
+	end
+	button.Level:SetText(level)
+	button.Level:SetTextColor(self:GetQualityColor(quality))
+	button.ItemLevel:Hide();
+end
 function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 	local threatIndex=1
-	if (not GMF.MissionTab.MissionList.showInProgress) then
-		if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator (Only MP <= 1.8)
-			if (not button.Env) then
-				button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-				button.Env:SetWidth(20)
-				button.Env:SetHeight(20)
-				button.Env:SetPoint("BOTTOMLEFT",button,165,8)
-				button.GcThreats={}
-			end
-			button.Env.missionID=missionID
-			local party=button.party
-			if not mission.typeIcon then
-				mission.typeIcon=select(5,G.GetMissionInfo(missionID))
-			end
-			if mission.typeIcon then
-				button.Env.IsEnv=true
-				button.Env:Show()
-				button.Env.Icon:SetTexture(mission.typeIcon)
-				button.Env.texture=mission.typeIcon
-				button.Env.countered=party.isEnvMechanicCountered
-				if (party.isEnvMechanicCountered) then
-					button.Env.Border:SetVertexColor(C.Green())
-				else
-					button.Env.Border:SetVertexColor(C.Red())
-				end
-				button.Env.Description=mission.typeDesc
-				button.Env.Name=mission.type
-				button.Env:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
-				button.Env:SetScript("OnLeave",function() GameTooltip:Hide() end)
+	if (not button.Threats) then -- I am a good guy. If MP present, I dont make my own threat indicator (Only MP <= 1.8)
+		if (not button.Env) then
+			button.Env=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+			button.Env:SetWidth(20)
+			button.Env:SetHeight(20)
+			button.Env:SetPoint("BOTTOMLEFT",button,165,8)
+			button.GcThreats={}
+		end
+		button.Env.missionID=missionID
+		local party=button.party
+		if not mission.typeIcon then
+			mission.typeIcon=select(5,G.GetMissionInfo(missionID))
+		end
+		if mission.typeIcon then
+			button.Env.IsEnv=true
+			button.Env:Show()
+			button.Env.Icon:SetTexture(mission.typeIcon)
+			button.Env.texture=mission.typeIcon
+			button.Env.countered=party.isEnvMechanicCountered
+			if (party.isEnvMechanicCountered) then
+				button.Env.Border:SetVertexColor(C.Green())
 			else
-				print("No typeIcon in",mission)
-				button.Env:SetScript("OnEnter",nil)
-				button.Env:Hide()
+				button.Env.Border:SetVertexColor(C.Red())
 			end
-			local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
-			local threats=self:GetParty(missionID,'threats')
-			for i,enemy in ipairs(enemies) do
-				for mechanicID, mechanic in pairs(enemy.mechanics) do
-					local th=button.GcThreats[threatIndex]
-					if (not th) then
-						th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
-						th:SetWidth(20)
-						th:SetHeight(20)
-						th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
-						button.GcThreats[threatIndex]=th
-					end
-					th.countered=self:SetThreatColor(th,threats[threatIndex])
-					th.Icon:SetTexture(mechanic.icon)
-					th.texture=mechanic.icon
-					th.Name=mechanic.name
-					th.Description=mechanic.description
-					th.missionID=missionID
-					--GarrisonMissionButton_CheckTooltipThreat(th,missionID,mechanicID,counteredThreats)
-					th:Show()
-					th:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
-					th:SetScript("OnLeave",function() GameTooltip:Hide() end)
-					threatIndex=threatIndex+1
+			button.Env.Description=mission.typeDesc
+			button.Env.Name=mission.type
+			button.Env:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
+			button.Env:SetScript("OnLeave",function() GameTooltip:Hide() end)
+		else
+			print("No typeIcon in",mission)
+			button.Env:SetScript("OnEnter",nil)
+			button.Env:Hide()
+		end
+		local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
+		local threats=self:GetParty(missionID,'threats')
+		for i,enemy in ipairs(enemies) do
+			for mechanicID, mechanic in pairs(enemy.mechanics) do
+				local th=button.GcThreats[threatIndex]
+				if (not th) then
+					th=CreateFrame("Frame",nil,button,"GarrisonAbilityCounterTemplate")
+					th:SetWidth(20)
+					th:SetHeight(20)
+					th:SetPoint("BOTTOMLEFT",button,165 + 35 * threatIndex,8)
+					button.GcThreats[threatIndex]=th
 				end
+				th.countered=self:SetThreatColor(th,threats[threatIndex])
+				th.Icon:SetTexture(mechanic.icon)
+				th.texture=mechanic.icon
+				th.Name=mechanic.name
+				th.Description=mechanic.description
+				th.missionID=missionID
+				--GarrisonMissionButton_CheckTooltipThreat(th,missionID,mechanicID,counteredThreats)
+				th:Show()
+				th:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
+				th:SetScript("OnLeave",function() GameTooltip:Hide() end)
+				threatIndex=threatIndex+1
 			end
 		end
-	else
-		if (button.Env) then button.Env:Hide() end
 	end
 	if (button.GcThreats) then
 		for i=threatIndex,#button.GcThreats do
@@ -2732,7 +2739,7 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	end
 	local panel=button.gcINDICATOR
 	local perc=select(4,G.GetPartyMissionInfo(missionID))
-	if button.party and button.party.perc then perc=button.party.perc end
+	if button.party and button.party.perc > perc then perc=button.party.perc end
 	if button.party.full then
 		panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
 		panel.Percent:SetTextColor(self:GetDifficultyColors(perc))
@@ -2873,28 +2880,44 @@ function addon:GarrisonMissionFrame_SelectTab(frame,tab)
 	end
 end
 function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
-	collectgarbage("step",200)
+	collectgarbage("step",300)
 	if frame.info then
-		if frame.info.inProgress and frame.lastID and frame.lastID == frame.info.missionID and frame.lastProgress then
+		if GMFMissions.showInProgress then
+			frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-25)
+		else
+			frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-5)
+			frame.Summary:ClearAllPoints()
+			frame.Summary:SetPoint("TOPLEFT",frame.Title,"BOTTOMLEFT",0,-5)
+		end
+		frame.MissionType:SetPoint("TOPLEFT",5,-2)
+		frame.MissionType:SetAlpha(0.5)
+		self:AddLevel(GMF,frame,frame.info,frame.info.missionID,ns.bigscreen)
+		if GMFMissions.showInProgress and frame.lastID and frame.lastID == frame.info.missionID and frame.lastProgress then
 			return
 		end
 		frame.lastID = frame.info.missionID
 		frame.lastProgress = frame.info.inProgress
 		frame.party=self:GetParty(frame.info.missionID)
-		self:DrawSingleButton(GMF,frame,false,ns.bigscreen)
+		if not GMFMissions.showInProgress then
+			self:MatchMaker(frame.info.missionID,frame.party)
+		end
+		--@debug@
+		print("Drawing",frame.info.name)
+		--@end-debug@
+		self:DrawSingleButton(GMF,frame,GMFMissions.showInProgress,ns.bigscreen)
 	end
 end
 
 function addon:HookedGMFMissions_update(frame)
 	for _,b in ipairs(frame.buttons) do
 		if b.info then
-			b.party=self:GetParty(b.info.missionID)
-			self:MatchMaker(b.info,b.party)
-			self:DrawSingleButton(GMF,b,false,ns.bigscreen)
+			--b.party=self:GetParty(b.info.missionID)
+			--self:MatchMaker(b.info,b.party)
+			--self:DrawSingleButton(GMF,b,false,ns.bigscreen)
 		end
 	end
 end
-addon:SafeSecureHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissions_update")
+--addon:SafeSecureHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissions_update")
 addon:SafeSecureHook("GarrisonMissionButton_SetRewards")
 addon:SafeRawHook("GarrisonMissionButton_OnEnter","ScriptGarrisonMissionButton_OnEnter")
 addon:SafeRawHook("GarrisonMissionPageFollowerFrame_OnEnter")

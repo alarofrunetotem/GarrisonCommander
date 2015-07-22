@@ -174,6 +174,7 @@ function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
 	addon:AddFollowersToTooltip(missionID,LE_FOLLOWER_TYPE_SHIPYARD_6_2)
 --@debug@
 	g:AddDoubleLine("MissionID:",missionID)
+	g:AddDoubleLine("Class",mission.class)
 --@end-debug@
 	g:Show()
 	if g:GetWidth() < GarrisonShipyardMapMissionTooltip:GetWidth() then

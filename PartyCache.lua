@@ -216,22 +216,18 @@ function addon:GetParty(missionID,key,default)
 --@end-debug@
 	end
 	if not party then return default end
-	if #party.members==0 and G.GetNumFollowersOnMission(missionID)>0 then
-		if not party.perc or party.perc < 1 then
-			party.perc=G.GetMissionSuccessChance(missionID)
-		end
+	if #party.members==0 and self:GetMissionData(missionID,'inProgress') then
+		party.perc=G.GetMissionSuccessChance(missionID)
 		party.full=true
-		--Running Mission, taking followers from mission data
 		local followers=self:GetMissionData(missionID,'followers')
---@debug@
-		print(followers)
---@end-debug@
-		--addPartyMissionInfo(party,missionID)
 		if followers then
 			for i=1,#followers do
 				party.members[i]=followers[i]
 			end
 		end
+		--@debug@
+		print(party.missionID,"InProgress party",party,party.full)
+		--@end-debug@
 	end
 	if key then
 		return party[key] or default

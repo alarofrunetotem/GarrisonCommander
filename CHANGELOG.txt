@@ -4,6 +4,8 @@
 Fix: Restored GarrisonMissionManager compatibility (sorry guys)
 Feature: Shipyard map enhanced with success chance. Chance is show as a number, and the border around it says if you have oil enough (green good, red not enough)
 Feature: Enhanced Shipyard map tooltip
+Feature: For level 100 mission itemLevel is now shown instead of level
+Feature: Mission level are now colored based on quality
 
 
 * *2.6.8*
