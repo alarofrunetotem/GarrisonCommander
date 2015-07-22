@@ -95,6 +95,8 @@ function module:Events(on)
 end
 function module:CloseReport()
 	if report then pcall(report.Close,report) report=nil end
+	addon:RefreshParties()
+	addon:RefreshMissions()
 end
 function module:MissionComplete(this,button)
 

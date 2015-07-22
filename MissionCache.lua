@@ -41,7 +41,6 @@ end
 function module:GetMission(id,noretry)
 	local mission
 	if index[id] then
-		print(id,index[id])
 		local type,ix=strsplit("@",index[id])
 		ix=tonumber(ix)
 		if type=="a" then
@@ -63,7 +62,6 @@ function module:GetMission(id,noretry)
 	return self:GetMission(id,true)
 end
 function module:AddExtraData(mission)
-	print(mission)
 	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 	mission.resources=0
 	mission.oil=0

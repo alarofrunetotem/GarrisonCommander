@@ -330,31 +330,31 @@ addon.Garrison_SortMissions_Original=_G.Garrison_SortMissions
 local Garrison_SortMissions=_G.Garrison_SortMissions
 _G.Garrison_SortMissions= function(missionsList)
 	if GMF:IsVisible() then
+		--@debug@
+		print("Sorting")
+		--@end-debug@
 		Garrison_SortMissions(missionsList)
 	end
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:RefreshParties()
 	table.sort(missionsList, sorters.Chance);
 end
 function addon.Garrison_SortMissions_Age(missionsList)
-	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:RefreshParties()
 	table.sort(missionsList, sorters.Age);
 end
 function addon.Garrison_SortMissions_Duration(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	addon:RefreshParties()
 	table.sort(missionsList, sorters.Duration);
 end
 function addon.Garrison_SortMissions_Followers(missionsList)
-	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
-	table.sort(missionsList, sorters.Followers);
-end
-function addon.Garrison_SortMissions_Xp(missionsList)
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missiaddon:RefreshParties()ison_SortMissions_Xp(missionsList)
+	addon:RefreshParties()
 	table.sort(missionsList, sorters.Xp);
 end
 function addon.Garrison_SortMissions_Class(missionsList)
-	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	--addon:RefreshParties()
 	table.sort(missionsList, sorters.Class);
 end
 function addon:ApplyMSORT(value)
@@ -597,7 +597,7 @@ function addon:SetThreatColor(obj,threat)
 end
 
 function addon:HookedGarrisonMissionButton_AddThreatsToTooltip(missionID)
-	if (ns.ns.GMC:IsShown()) then return end
+	if (ns.ns.GMC:IsVisible()) then return end
 	return self:RenderTooltip(missionID)
 end
 function addon:AddIconsToFollower(missionID,useful,followers,members,followerTypeID)
@@ -712,8 +712,11 @@ local function switch(flag)
 		end
 	end
 end
+function addon:RefreshParties()
+	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+end
 function addon:RefreshMissions(missionID)
-	if (GMF:IsShown()) then
+	if (GMF:IsVisible()) then
 		GarrisonMissionList_UpdateMissions()
 	end
 end
@@ -856,13 +859,17 @@ function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
 	print(event,missionID,...)
 --@end-debug@
 	self:RefreshFollowerStatus()
-	if (not GMF:IsShown()) then
+	if (not GMF:IsVisible()) then
 		-- Shipyard
 		return
 	end
 	wipe(chardb.ignored[missionID])
 	local party=self:GetParty(missionID)
 	wipe(party.members) -- I remove preset party, so PartyCache will refill it with the ones from the actual mission
+	if GMF:IsVisible() then
+		self:RefreshParties()
+		self:RefreshMissions()
+	end
 end
 ---
 --@param #string event GARRISON_MISSION_FINISHED
@@ -1052,7 +1059,7 @@ text=text.."</body></html>"
 		helpwindow:Show()
 		return
 	end
-	if (helpwindow:IsShown()) then helpwindow:Hide() else helpwindow:Show() end
+	if (helpwindow:IsVisible()) then helpwindow:Hide() else helpwindow:Show() end
 end
 function addon:Toggle(button)
 	local f=button.Toggle
@@ -1223,21 +1230,21 @@ function addon:ScriptTrace(hook,frame,...)
 --@end-debug@
 end
 function addon:IsProgressMissionPage()
-	return GMF:IsShown() and GMF.MissionTab and GMF.MissionTab.MissionList.showInProgress
+	return GMF:IsVisible() and GMF.MissionTab and GMF.MissionTab.MissionList.showInProgress
 end
 function addon:IsAvailableMissionPage()
-	return GMF:IsShown() and GMF.MissionTab:IsShown() and not GMF.MissionTab.MissionList.showInProgress
+	return GMF:IsVisible() and GMF.MissionTab:IsVisible() and not GMF.MissionTab.MissionList.showInProgress
 end
 function addon:IsFollowerList()
-	return GMF:IsShown() and GMFFollowers:IsShown()
+	return GMF:IsVisible() and GMFFollowers:IsVisible()
 end
 --GMFMissions.CompleteDialog
 function addon:IsRewardPage()
-	return GMF:IsShown() and GMFMissions.CompleteDialog:IsShown()
+	return GMF:IsVisible() and GMFMissions.CompleteDialog:IsVisible()
 
 end
 function addon:IsMissionPage()
-	return GMF:IsShown() and GMFMissionPage:IsShown()
+	return GMF:IsVisible() and GMFMissionPage:IsVisible()
 end
 ---
 function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
@@ -1439,9 +1446,9 @@ print(this.frame,this.frame:GetName())
 		lastTab=2
 	end
 	function addon:RenderFollowerPageMissionList(frame,followerID,force)
-		print(ns.bigscreen,GMFFollowers:IsShown())
+		print(ns.bigscreen,GMFFollowers:IsVisible())
 		if not ns.bigscreen then return end
-		if not GMFFollowers:IsShown() then return end
+		if not GMFFollowers:IsVisible() then return end
 		if (not ml) then
 			ml=AceGUI:Create("GMCLayer")
 			ml:SetTitle("Ninso")
@@ -1625,7 +1632,7 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 	-- Mission management
 	self:SafeHookScript(GMF.MissionComplete.NextMissionButton,"OnClick","OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton",true)
 	self:SafeHookScript(GMFMissions.CompleteDialog,"OnShow","RaiseCompleteDialog")
-	if (GMFMissions.CompleteDialog:IsShown()) then
+	if (GMFMissions.CompleteDialog:IsVisible()) then
 		self:RaiseCompleteDialog()
 	end
 	self:RefreshFollowerStatus()
@@ -2183,7 +2190,7 @@ end
 function addon:OpenLastTab()
 	lastTab=lastTab or PanelTemplates_GetSelectedTab(GMF)
 	if lastTab then
-		if ns.GMC:IsShown() then
+		if ns.GMC:IsVisible() then
 			ns.GMC:Hide()
 			GMF.tabMC:SetChecked(false)
 			if lastTab==2 then
@@ -2208,7 +2215,7 @@ function addon:OpenMissionsTab()
 	return self:OpenLastTab()
 end
 function addon:OpenMissionControlTab()
-	if (not ns.GMC:IsShown()) then
+	if (not ns.GMC:IsVisible()) then
 		lastTab=PanelTemplates_GetSelectedTab(GMF)
 		GMF.FollowerTab:Hide()
 		GMF.FollowerList:Hide()
@@ -2224,7 +2231,7 @@ function addon:OpenMissionControlTab()
 end
 function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(this,button)
 	local frame = GMF.MissionComplete
-	if (not frame:IsShown()) then
+	if (not frame:IsVisible()) then
 		self:Trigger("MSORT")
 		self:RefreshFollowerStatus()
 	end
@@ -2882,6 +2889,7 @@ function addon:HookedGMFMissions_update(frame)
 	for _,b in ipairs(frame.buttons) do
 		if b.info then
 			b.party=self:GetParty(b.info.missionID)
+			self:MatchMaker(b.info,b.party)
 			self:DrawSingleButton(GMF,b,false,ns.bigscreen)
 		end
 	end
