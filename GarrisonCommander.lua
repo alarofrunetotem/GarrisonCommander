@@ -338,9 +338,6 @@ addon.Garrison_SortMissions_Original=_G.Garrison_SortMissions
 local Garrison_SortMissions=_G.Garrison_SortMissions
 _G.Garrison_SortMissions= function(missionsList)
 	if GMF:IsVisible() then
-		--@debug@
-		print("Sorting")
-		--@end-debug@
 		Garrison_SortMissions(missionsList)
 	end
 end
@@ -1160,7 +1157,7 @@ function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 	return maxsize
 end
 
-function addon:Options()
+function addon:CreateHeader()
 	-- Main Garrison Commander Header
 	GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
 	local signature=me .. " " .. self.version
@@ -1248,7 +1245,7 @@ function addon:Options()
 		GCFBusyStatus=fs
 	end
 	self:Trigger("MOVEPANEL")
-	self.Options=function() end
+	self.CreateHeader=function() end
 end
 
 function addon:ScriptTrace(hook,frame,...)
@@ -1430,10 +1427,6 @@ function addon.ClonedGarrisonMissionMechanic_OnEnter(this)
 			local t=G.GetFollowersTraitsForMission(this.missionID)
 			for followerID,k in pairs(t) do
 				for i=1,#k do
-
---@debug@
-print(k[i].icon)
---@end-debug@
 					if k[i].icon==this.texture then
 						tip:AddDoubleLine(addon:GetFollowerData(followerID,'fullname'),this.Name)
 					end
@@ -1546,7 +1539,7 @@ print("Setup")
 	SIZEV=GMF:GetHeight()
 	self:CheckMP()
 	self:CheckGMM()
-	self:Options()
+	self:CreateHeader()
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabMC=tabMC
 	tabMC.tooltip="Open Garrison Commander Mission Control"
@@ -1592,6 +1585,12 @@ print("Setup")
 end
 
 function addon:AddMenu()
+--@debug@
+print("Adding Menu")
+--@end-debug@
+	if GCF.Menu then
+		return
+	end
 	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
@@ -1610,8 +1609,14 @@ function addon:AddMenu()
 	GCF.Menu=menu
 end
 function addon:RemoveMenu()
+--@debug@
+print("Removing menu")
+--@end-debug@
 	if (GCF.Menu) then
-		pcall(GCF.Menu.Release,GCF.Menu)
+		local rc,message=pcall(GCF.Menu.Release,GCF.Menu)
+		--@debug@
+		print("Removed menu",rc,message)
+		--@end-debug@
 		GCF.Menu=nil
 	end
 end
@@ -2589,7 +2594,6 @@ function addon:DrawSlimButton(page,frame,progressing,bigscreen)
 	end
 end
 function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
-	print("Stdata",page)
 	if (bigscreen) then
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
@@ -2598,6 +2602,15 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	end
 	button.MissionType:SetAtlas(mission.typeAtlas);
 	if page then return end
+	if (mission.isRare) then
+		button.RareOverlay:Show();
+		button.RareText:Show();
+		button.IconBG:SetVertexColor(0, 0.012, 0.291, 0.4)
+	else
+		button.RareOverlay:Hide();
+		button.RareText:Hide();
+		button.IconBG:SetVertexColor(0, 0, 0, 0.4)
+	end
 	if (mission.inProgress) then
 		button.Overlay:Show();
 		button.Summary:SetText(mission.timeLeft.." "..RED_FONT_COLOR_CODE..GARRISON_MISSION_IN_PROGRESS..FONT_COLOR_CODE_CLOSE);
@@ -2655,6 +2668,7 @@ function addon:AddLevel(page,button,mission,missionID,bigscreen)
 	button.Level:SetText(level)
 	button.Level:SetTextColor(self:GetQualityColor(quality))
 	button.ItemLevel:Hide();
+
 end
 function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 	local threatIndex=1
@@ -2881,6 +2895,7 @@ function addon:GarrisonMissionFrame_SelectTab(frame,tab)
 end
 function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 	collectgarbage("step",300)
+	if not GMF:IsVisible() then return end
 	if frame.info then
 		if GMFMissions.showInProgress then
 			frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-25)
@@ -2902,22 +2917,45 @@ function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 			self:MatchMaker(frame.info.missionID,frame.party)
 		end
 		--@debug@
-		print("Drawing",frame.info.name)
+		if not GMF:IsVisible() then print(debugstack()) end
 		--@end-debug@
 		self:DrawSingleButton(GMF,frame,GMFMissions.showInProgress,ns.bigscreen)
 	end
 end
 
-function addon:HookedGMFMissions_update(frame)
-	for _,b in ipairs(frame.buttons) do
-		if b.info then
-			--b.party=self:GetParty(b.info.missionID)
-			--self:MatchMaker(b.info,b.party)
-			--self:DrawSingleButton(GMF,b,false,ns.bigscreen)
+function addon:HookedGMFMissionsListScroll_update(frame)
+	if frame:GetParent().showInProgress then
+		self:HookedGarrisonMissionList_Update(frame,true)
+	else
+		self:HookedGarrisonMissionList_Update(frame,false)
+	end
+end
+do local lasttime=0
+function addon:HookedGarrisonMissionList_Update(t,...)
+	if not GMFMissions.showInProgress then
+		self.hooks.GarrisonMissionList_Update(t,...)
+		lasttime=0
+	else
+		local now=time()
+		local delay=120
+		if t then
+			lasttime=0
+		else
+			for _,mission in ipairs(GMFMissions.inProgressMissions) do
+				delay = min(mission.missionEndTime-now,delay)
+			end
+		end
+		if (now-lasttime) > ((delay>65) and 30 or 0) then
+			table.sort(GMFMissions.inProgressMissions,sorters.EndTime)
+			print("Aggiornamento")
+			self.hooks.GarrisonMissionList_Update(t,...)
+			lasttime=now
 		end
 	end
 end
---addon:SafeSecureHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissions_update")
+end
+--addon:SafeRawHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissionsListScroll_update")
+addon:SafeRawHook("GarrisonMissionList_Update")
 addon:SafeSecureHook("GarrisonMissionButton_SetRewards")
 addon:SafeRawHook("GarrisonMissionButton_OnEnter","ScriptGarrisonMissionButton_OnEnter")
 addon:SafeRawHook("GarrisonMissionPageFollowerFrame_OnEnter")

@@ -225,9 +225,6 @@ function addon:GetParty(missionID,key,default)
 				party.members[i]=followers[i]
 			end
 		end
-		--@debug@
-		print(party.missionID,"InProgress party",party,party.full)
-		--@end-debug@
 	end
 	if key then
 		return party[key] or default
