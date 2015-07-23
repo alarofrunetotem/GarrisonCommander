@@ -91,8 +91,13 @@ local colors={
 	[645]="Epic"
 }
 function addon:ShowUpgradeButtons(force)
+	if InCombatLockdown() then
+		print("SUB")
+		self:ScheduleLeaveCombatAction("ShowUpgradeButtons",force)
+		return
+	end
 	local gf=GMF.FollowerTab
-	if (not force and not gf:IsShown()) then return end
+	if (not force and not gf:IsVisible()) then return end
 	if (not gf.showUpgrades) then
 		gf.showUpgrades=self:GetFactory():Checkbox(gf.Model,self:GetToggle("UPG"),self:GetVarInfo("UPG"))
 		gf.showUpgrades:SetPoint("TOPLEFT")
