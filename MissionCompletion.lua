@@ -17,7 +17,7 @@ local generated
 local salvages={
 114120,114119,114116}
 local module=addon:NewSubClass('MissionCompletion') --#Module
-function module:GenerateMissionCompleteList(title)
+function module:GenerateMissionCompleteList(title,anchor)
 	local w=AceGUI:Create("GCMCList")
 --@debug@
 	title=format("%s %s %s",title,w.frame:GetName(),GetTime()*1000)
@@ -27,10 +27,10 @@ function module:GenerateMissionCompleteList(title)
 	--report:SetPoint("TOPLEFT",GMFMissions.CompleteDialog.BorderFrame)
 	--report:SetPoint("BOTTOMRIGHT",GMFMissions.CompleteDialog.BorderFrame)
 	w:ClearAllPoints()
-	w:SetPoint("TOP",GMF)
-	w:SetPoint("BOTTOM",GMF)
+	w:SetPoint("TOP",anchor)
+	w:SetPoint("BOTTOM",anchor)
 	w:SetWidth(500)
-	w:SetParent(GMF)
+	w:SetParent(anchor)
 	w.frame:SetFrameStrata("HIGH")
 	return w
 end
@@ -108,7 +108,7 @@ print(this,button,this.missionType)
 	if (missions and #missions > 0) then
 		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		GSFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
-		report=self:GenerateMissionCompleteList("Missions' results")
+		report=self:GenerateMissionCompleteList("Missions' results",followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF)
 		wipe(rewards.followerBase)
 		wipe(rewards.followerXP)
 		wipe(rewards.currencies)
