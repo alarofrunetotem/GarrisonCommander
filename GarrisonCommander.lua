@@ -2932,22 +2932,25 @@ function addon:HookedGMFMissionsListScroll_update(frame)
 end
 do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
+	collectgarbage('step',200)
 	if not GMFMissions.showInProgress then
 		self.hooks.GarrisonMissionList_Update(t,...)
 		lasttime=0
 	else
+		local missions=GMFMissions.inProgressMissions
+		if #missions<2 then return end
 		local now=time()
 		local delay=120
+		table.sort(missions,sorters.EndTime)
 		if t then
 			lasttime=0
 		else
-			for _,mission in ipairs(GMFMissions.inProgressMissions) do
-				delay = min(mission.missionEndTime-now,delay)
-			end
+			delay=missions[1].missionEndTime-now
 		end
 		if (now-lasttime) > ((delay>65) and 30 or 0) then
-			table.sort(GMFMissions.inProgressMissions,sorters.EndTime)
-			print("Aggiornamento")
+--@debug@
+			print("Aggiornamento",now,lasttime,delay,now-lasttime)
+--@end-debug@
 			self.hooks.GarrisonMissionList_Update(t,...)
 			lasttime=now
 		end
