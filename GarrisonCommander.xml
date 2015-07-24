@@ -54,7 +54,7 @@
 						<Anchor point="TOPRIGHT"  x="-30" y="-2"/>
 					</Anchors>
 				</FontString>
-				<FontString parentKey="Warning" inherits="QuestTitleFontBlackShadow" justifyH="LEFT" justifyV="TOP" text="Alpha Version" >
+				<FontString parentKey="Warning" inherits="QuestTitleFontBlackShadow" justifyH="LEFT" justifyV="TOP" text="" >
 					<Size x="300" y="80"/>
 					<Anchors>
 						<Anchor point="TOPLEFT"  x="30" y="-2"/>

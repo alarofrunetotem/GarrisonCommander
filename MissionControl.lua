@@ -190,7 +190,7 @@ do
 					tinsert(GMC.ml.Parties,party)
 					GMC.ml.widget:PushChild(mb,missionID)
 					mb:SetFullWidth(true)
-					mb:SetMission(self:GetMissionData(missionID),party,false,"Control")
+					mb:SetMission(self:GetMissionData(missionID),party,false,"control")
 					mb:SetCallback("OnClick",function(...)
 						module:GMCRunMission(missionID)
 						GMC.ml.widget:RemoveChild(missionID)

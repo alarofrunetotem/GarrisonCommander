@@ -1150,6 +1150,9 @@ function addon:CreateHeader()
 	GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
 	local signature=me .. " " .. self.version
 	GCF.Signature:SetText(signature)
+--@alpha@
+	GCF.Warning:SetText("Alpha Version")
+--@end-alpha@
 	-- Removing wood corner. I do it here to not derive an xml frame. This shoud play better with ui extensions
 	GCF.CloseButton:Hide()
 	for _,f in pairs({GCF:GetRegions()}) do
@@ -1445,12 +1448,6 @@ function addon:Setup(...)
 --@debug@
 print("Setup")
 --@end-debug@
---@alpha@
-	if (not db.alfa.v220) then
-		self:Popup(L["You are using an Alpha version of Garrison Commander. Please post bugs on Curse if you find them"],10)
-		db.alfa.v220=true
-	end
---@end-alpha@
 	SIZEV=GMF:GetHeight()
 	self:CheckMP()
 	self:CheckGMM()
@@ -2466,7 +2463,6 @@ function addon:DrawSingleButton(source,frame,progressing,bigscreen)
 	if type(source)=="table" then source="blizzard" end
 	frame:SetAlpha(1.0)
 	local mission=frame.info
-	tprint(mission.name,source)
 	if mission then
 		local missionID=mission.missionID
 		self:AddStandardDataToButton(source,frame,mission,missionID,bigscreen)
@@ -2565,16 +2561,15 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 	-- Mission Control wide is 832, left for buttons is 305 source = "Control"
 	-- Mission Contro narrow is 385 almost no space left source ="Control"
 	-- Follower page is 267 2 rows here is mandatory source = "Followers"
-	tprint("AddStandardData for source",source)
 	button.Summary:Show()
 	if source=="control" then
 		local extra=80*(button.info.numRewards-1) +  70 * (button.info.numFollowers-1)
 		local allowed=ns.bigscreen and 305- extra or 0
 		local needed=button.Title:GetStringWidth()+5+button.Summary:GetStringWidth()
 		if (needed > allowed) then
-			button.Title:SetPoint("TOPLEFT",button,"TOPLEFT",160,-10)
+			button.Title:SetPoint("TOPLEFT",button,"TOPLEFT",150,ns.bigscreen and -15 or -5)
 			button.Summary:ClearAllPoints()
-			button.Summary:SetPoint("TOPLEFT",button.Title,"BOTTOMLEFT",0,-5)
+			button.Summary:SetPoint("TOPLEFT",button.Title,"BOTTOMLEFT",0,-15)
 			return
 		end
 	elseif source=="followers" then
