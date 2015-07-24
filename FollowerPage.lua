@@ -92,7 +92,6 @@ local colors={
 }
 function addon:ShowUpgradeButtons(force)
 	if InCombatLockdown() then
-		print("SUB")
 		self:ScheduleLeaveCombatAction("ShowUpgradeButtons",force)
 		return
 	end
@@ -219,12 +218,14 @@ print("Load")
 --@end-debug@
 	this:ClearAllPoints()
 	this:SetParent(GarrisonThreatCountersFrame:GetParent())
-	this:SetPoint("BOTTOMLEFT",185,6)
+	this:SetPoint("BOTTOMLEFT",185,0)
 	this:Show()
 	this.tooltipString = tooltipString;
-	this.choice=CreateFrame('Frame',this:GetName()..tostring(GetTime()*1000),this,"UIDropDownMenuTemplate")
-	this.choice.button=_G[this.choice:GetName()..'Button']
-	this.choice:SetPoint("TOPLEFT",-192,0)
+	if not this.choice then
+		this.choice=CreateFrame('Frame',this:GetName()..tostring(GetTime()*1000),this,"UIDropDownMenuTemplate")
+		this.choice.button=_G[this.choice:GetName()..'Button']
+		this.choice:SetPoint("TOPLEFT",-192,0)
+	end
 	addon:FillCounters(this,1)
 	this.TraitsList[1]:SetScript("OnEnter",_G.GarrisonTraitCounter_OnEnter)
 	--this.TraitsList[1]:SetScript("OnEnter",pp)
