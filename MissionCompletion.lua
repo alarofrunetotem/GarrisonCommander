@@ -203,7 +203,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 				currentMission.state=0
 				currentMission.goldMultiplier=currentMission.goldMultiplier or 1
 				currentMission.xp=select(2,G.GetMissionInfo(currentMission.missionID))
-				report:AddMissionButton(currentMission,addon:GetParty(currentMission.missionID),currentMission.successChance)
+				report:AddMissionButton(currentMission,addon:GetParty(currentMission.missionID),currentMission.successChance,"Report")
 			end
 			if (step==0) then
 				--@debug@

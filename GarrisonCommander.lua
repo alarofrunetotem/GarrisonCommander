@@ -28,9 +28,7 @@ local addon=addon --#self
 local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 ns.bigscreen=true
--- Blizzard functions override support
-local orig=orig --#originals
-local over=over --#overridden
+local tprint=print
 local backdrop = {
 		--bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
 		bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
@@ -1042,16 +1040,6 @@ You can switch between MP and GC interface for missions checking and unchecking 
 </p>
 ]]
 end
-if (MPGoodGuy) then
-text=text..[[
-<p><br/></p>
-<h3>Master Plan 0.18 Detected</h3>
-<p>This the last known version of Master Plan which leaves Blizzard UI available to other addons<br/>
-You loose Garrison Commander Active Mission page, but the one provided by MP is good enough.<br/>
-In order to see enhanced tooltips you need to hover on extra button.
-</p>
-]]
-end
 if (GMM) then
 text=text..[[
 <p><br/></p>
@@ -1066,7 +1054,7 @@ text=text.."</body></html>"
 		--html:SetTextColor('h1',C.Red())
 		--html:SetTextColor('h2',C.Orange())
 		helpwindow:SetWidth(800)
-		helpwindow:SetHeight(590 + ((MP or MPGoodGuy) and 160 or 0) + (GMM and 120 or 0))
+		helpwindow:SetHeight(590 + (MP and 160 or 0) + (GMM and 120 or 0))
 		helpwindow:SetPoint("TOPRIGHT",button,"TOPLEFT",0,0)
 		html:ClearAllPoints()
 		html:SetWidth(helpwindow:GetWidth()-20)
@@ -1341,79 +1329,6 @@ print("Click")
 	end
 end
 -- Shamelessly stolen from Blizzard Code
-local fakepage={newMissionIDs={}}
-function addon:BuildMissionButton(button,gmc,...)
-	if true then return self:DrawSingleButton(fakepage,button,false,false) end
-	local mission=button.info
-	if (not mission or not mission.name) then
-		if (button.missionID) then
-			mission=self:GetMissionData(button.missionID)
-		end
-	end
-	button.Title:SetWidth(0);
-	button.Title:SetText(mission.name);
-	button.Level:SetText(mission.level);
-	if ( mission.durationSeconds >= GARRISON_LONG_MISSION_TIME ) then
-		local duration = format(GARRISON_LONG_MISSION_TIME_FORMAT, mission.duration);
-		button.Summary:SetFormattedText(PARENS_TEMPLATE, duration);
-	else
-		button.Summary:SetFormattedText(PARENS_TEMPLATE, mission.duration);
-	end
-	local tw=button:GetWidth() -165
-	if ( button.Title:GetWidth() + button.Summary:GetWidth() + 8 < tw - mission.numRewards * 65 ) then
-		button.Title:SetPoint("LEFT", 165, 0);
-		button.Summary:ClearAllPoints();
-		button.Summary:SetPoint("BOTTOMLEFT", button.Title, "BOTTOMRIGHT", 8, 0);
-	else
-		button.Title:SetPoint("LEFT", 165, 10);
-		button.Title:SetWidth(tw - mission.numRewards * 65);
-		button.Summary:ClearAllPoints();
-		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
-	end
-	if (not mission) then return end
-	if gmc then button.Title:SetPoint("LEFT",70,25) end
-	if ( mission.locPrefix ) then
-		button.LocBG:Show();
-		button.LocBG:SetAtlas(mission.locPrefix.."-List");
-	else
-		button.LocBG:Hide();
-	end
-	if (mission.isRare) then
-		button.RareOverlay:Show();
-		button.RareText:Show();
-		button.IconBG:SetVertexColor(0, 0.012, 0.291, 0.4)
-	else
-		button.RareOverlay:Hide();
-		button.RareText:Hide();
-		button.IconBG:SetVertexColor(0, 0, 0, 0.4)
-	end
-	local showingItemLevel = false;
-	if ( mission.level == GARRISON_FOLLOWER_MAX_LEVEL and mission.iLevel > 0 ) then
-		button.ItemLevel:SetFormattedText(NUMBER_IN_PARENTHESES, mission.iLevel);
-		button.ItemLevel:Show();
-		showingItemLevel = true;
-	else
-		button.ItemLevel:Hide();
-	end
-	if ( showingItemLevel and mission.isRare ) then
-		button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -22);
-	else
-		button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
-	end
-
-	--button:Enable();
-	if (mission.inProgress) then
-		button.Overlay:Show();
-		button.Summary:SetText(mission.timeLeft.." "..RED_FONT_COLOR_CODE..GARRISON_MISSION_IN_PROGRESS..FONT_COLOR_CODE_CLOSE);
-	else
-		button.Overlay:Hide();
-	end
-	button.MissionType:SetAtlas(mission.typeAtlas);
-	GarrisonMissionButton_SetRewards(button,mission.rewards, mission.numRewards);
-	button:Show();
-
-end
----
 -- Appears when hovering on menaces in mission button
 function addon.ClonedGarrisonMissionMechanic_OnEnter(this)
 	local tip=GameTooltip
@@ -1517,7 +1432,7 @@ print(this.frame,this.frame:GetName())
 				mb:SetScale(0.6)
 				ml:PushChild(mb,missionID)
 				mb:SetFullWidth(true)
-				mb:SetMission(mission,party)
+				mb:SetMission(mission,party,false,"followers")
 				mb:SetCallback("OnClick",MissionOnClick)
 			end
 		end
@@ -2126,11 +2041,11 @@ end
 function addon:BuildExtraButton(button,bigscreen)
 
 end
-function addon:OnShow_FollowerPage(page)
+function addon:OnShow_FollowerPage(frame)
 	self:ShowUpgradeButtons()
 	if not GCFMissions then return end
 	if type(GCFMissions.Header.info)=="table" then
-		self:HookedGarrisonFollowerPage_ShowFollower(page,GCFMissions.Header.info.followerID,true)
+		self:HookedGarrisonFollowerPage_ShowFollower(frame,GCFMissions.Header.info.followerID,true)
 --		local s =self:GetScroller("GFCMissions.Header")
 --		self:cutePrint(s,GCFMissions.Header)
 	end
@@ -2532,26 +2447,33 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 --@debug@
 	GameTooltip:AddDoubleLine("MissionID",this.info.missionID)
 	GameTooltip:AddDoubleLine("Class",this.info.class)
+	GameTooltip:AddDoubleLine("TitleLen",this.Title:GetStringWidth())
+	GameTooltip:AddDoubleLine("SummaryLen",this.Summary:GetStringWidth())
+	GameTooltip:AddDoubleLine("Reward",this.Rewards[1]:GetWidth())
+	GameTooltip:AddDoubleLine("Button",this:GetWidth())
+	GameTooltip:AddDoubleLine("Button Scale",this:GetScale())
 --@end-debug@
 	GameTooltip:Show();
 end
 ---@function
 -- Main mission button draw routine.
--- @param page GarrisonMissionFrameMissions or nil.
+-- @param source GarrisonMissionFrameMissions or nil.
 -- @param button scrolllist element
 -- @param progressing true if at second iteration of progress page
 -- @param bigscreen enlarge button or not
 
-function addon:DrawSingleButton(page,frame,progressing,bigscreen)
+function addon:DrawSingleButton(source,frame,progressing,bigscreen)
+	if type(source)=="table" then source="blizzard" end
 	frame:SetAlpha(1.0)
 	local mission=frame.info
+	tprint(mission.name,source)
 	if mission then
 		local missionID=mission.missionID
-		self:AddStandardDataToButton(page,frame,mission,missionID,bigscreen)
+		self:AddStandardDataToButton(source,frame,mission,missionID,bigscreen)
 		self:AddIndicatorToButton(frame,mission,missionID,bigscreen)
 		self:AddRewards(frame, mission.rewards, mission.numRewards);
 		self:AddFollowersToButton(frame,mission,missionID,bigscreen)
-		if page and not self:IsRewardPage() and not progressing then
+		if source=="blizzard" and not self:IsRewardPage() and not progressing then
 			self:AddThreatsToButton(frame,mission,missionID,bigscreen)
 		end
 		if progressing then
@@ -2571,7 +2493,8 @@ function addon:DrawSingleButton(page,frame,progressing,bigscreen)
 		frame.info=nil
 	end
 end
-function addon:DrawSlimButton(page,frame,progressing,bigscreen)
+function addon:DrawSlimButton(source,frame,progressing,bigscreen)
+	source=source or "Followers"
 	local mission=frame.info
 	if mission then
 		local missionID=mission.missionID
@@ -2593,7 +2516,7 @@ function addon:DrawSlimButton(page,frame,progressing,bigscreen)
 		frame.info=nil
 	end
 end
-function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
+function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen)
 	if (bigscreen) then
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 		local width=GMF.MissionTab.MissionList.showInProgress and BIGBUTTON or SMALLBUTTON
@@ -2601,7 +2524,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
 	button.MissionType:SetAtlas(mission.typeAtlas);
-	if page then return end
+	if source=="blizzard" then return end
 	if (mission.isRare) then
 		button.RareOverlay:Show();
 		button.RareText:Show();
@@ -2619,8 +2542,7 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	end
 
 	button.Title:SetWidth(0);
-	button.Title:SetText(mission.name)
-	button.Level:SetText(mission.level);
+	button.Title:SetText(mission.name.. "addstd")
 	local seconds=self:GetMissionData(missionID,'improvedDurationSeconds')
 	local duration=SecondsToTime(seconds)
 	if ( seconds >= GARRISON_LONG_MISSION_TIME ) then
@@ -2636,25 +2558,46 @@ function addon:AddStandardDataToButton(page,button,mission,missionID,bigscreen)
 	else
 		button.LocBG:Hide();
 	end
-	self:AddLevel(page,button,mission,missionID,bigscreen)
+	self:AddLevel(source,button,mission,missionID,bigscreen)
 	button:Enable();
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
-	local n=mission.numRewards
-	local w=button:GetWidth()-175 -- 655 for standard 830 button
-	if button:GetWidth()<1000 then n=n+mission.numFollowers end
-	--print(format("%d %d %d %d",w,button.Title:GetWidth() + button.Summary:GetWidth() + 8,n,w - n * 65))
-	if ( button.Title:GetWidth() + button.Summary:GetWidth() + 8 < w - n * 65 ) then
-		button.Title:SetPoint("LEFT", 165, 0);
-		button.Summary:ClearAllPoints();
-		button.Summary:SetPoint("BOTTOMLEFT", button.Title, "BOTTOMRIGHT", 8, 0);
-	else
-		button.Title:SetPoint("LEFT", 165, 10);
-		button.Title:SetWidth(w - n * 65);
-		button.Summary:ClearAllPoints();
-		button.Summary:SetPoint("TOPLEFT", button.Title, "BOTTOMLEFT", 0, -4);
+	-- From here on, I am in my own buttons context
+	-- Mission Control wide is 832, left for buttons is 305 source = "Control"
+	-- Mission Contro narrow is 385 almost no space left source ="Control"
+	-- Follower page is 267 2 rows here is mandatory source = "Followers"
+	tprint("AddStandardData for source",source)
+	button.Summary:Show()
+	if source=="control" then
+		local extra=80*(button.info.numRewards-1) +  70 * (button.info.numFollowers-1)
+		local allowed=ns.bigscreen and 305- extra or 0
+		local needed=button.Title:GetStringWidth()+5+button.Summary:GetStringWidth()
+		if (needed > allowed) then
+			button.Title:SetPoint("TOPLEFT",button,"TOPLEFT",160,-10)
+			button.Summary:ClearAllPoints()
+			button.Summary:SetPoint("TOPLEFT",button.Title,"BOTTOMLEFT",0,-5)
+			return
+		end
+	elseif source=="followers" then
+		button.Title:SetPoint("TOPLEFT",button,"TOPLEFT",155,-5)
+		button.Summary:Hide()
+		return
+	elseif source=="report" then
+		if GMF:IsVisible() then
+			local extra=80*(button.info.numRewards-1) +  70 * (button.info.numFollowers-1)
+			local allowed=350-  extra
+			local needed=button.Title:GetStringWidth()+5+button.Summary:GetStringWidth()
+			if (needed > allowed) then
+				button.Title:SetPoint("TOPLEFT",button,"TOPLEFT",160,-10)
+				button.Summary:ClearAllPoints()
+				button.Summary:SetPoint("TOPLEFT",button.Title,"BOTTOMLEFT",0,-5)
+				return
+			end
+		end
 	end
+	button.Title:SetPoint("TOPLEFT",button,"TOPLEFT",160,-30)
+
 end
-function addon:AddLevel(page,button,mission,missionID,bigscreen)
+function addon:AddLevel(source,button,mission,missionID,bigscreen)
 	button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
 	local level= (mission.level == GARRISON_FOLLOWER_MAX_LEVEL and mission.iLevel > 0) and mission.iLevel or mission.level
 	local quality=1
@@ -2900,9 +2843,17 @@ function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 		if GMFMissions.showInProgress then
 			frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-25)
 		else
-			frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-5)
-			frame.Summary:ClearAllPoints()
-			frame.Summary:SetPoint("TOPLEFT",frame.Title,"BOTTOMLEFT",0,-5)
+			local extra=80*(numRewards-1)
+			if not ns.bigscreen then extra = extra + 70 * (frame.info.numFollowers-1) end
+			local allowed=ns.bigscreen and 350- extra or 480 - extra
+			local needed=frame.Title:GetStringWidth()+5+frame.Summary:GetStringWidth()
+			if (needed > allowed) then
+				frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-5)
+				frame.Summary:ClearAllPoints()
+				frame.Summary:SetPoint("TOPLEFT",frame.Title,"BOTTOMLEFT",0,-5)
+			else
+				frame.Title:SetPoint("TOPLEFT",frame,"TOPLEFT",160,-15)
+			end
 		end
 		frame.MissionType:SetPoint("TOPLEFT",5,-2)
 		frame.MissionType:SetAlpha(0.5)
@@ -2938,7 +2889,6 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 		lasttime=0
 	else
 		local missions=GMFMissions.inProgressMissions
-		if #missions<2 then return end
 		local now=time()
 		local delay=120
 		table.sort(missions,sorters.EndTime)
