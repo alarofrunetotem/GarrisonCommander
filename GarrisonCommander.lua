@@ -395,8 +395,11 @@ print("Initialize")
 	db.abilities=nil -- Removed in 2.6.9
 	db.lifespan=nil -- Removed in 2.6.9
 	db.traits=nil -- Removed in 2.6.9
-	dbGAC.namespaces.missionscache=nil  -- Removed in 2.6.9
-	dbGAC.global.types=nil  -- Removed in 2.6.9
+	db.types=nil -- Removed in 2.6.9
+	if type(dbGAC)== "table " and type(dbGAC.namespaces)=="table" then
+		dbGAC.namespaces.missionscache=nil  -- Removed in 2.6.9
+		dbGAC.namespaces=nil
+	end
 	self:AddLabel("Appearance")
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
 	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
