@@ -89,6 +89,7 @@ function module:Events(on)
 		self:RegisterEvent("GARRISON_MISSION_BONUS_ROLL_COMPLETE","MissionAutoComplete")
 		self:RegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE","MissionAutoComplete")
 		self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","MissionAutoComplete")
+		self:RegisterEvent("GARRISON_FOLLOWER_REMOVED","MissionAutoComplete")
 	else
 		self:UnregisterAllEvents()
 	end
@@ -173,6 +174,9 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 			rewards.items[format("%d:%s",0,ID)]=1
 		end
 		return
+	-- GARRISON_FOLLOWER_REMOVED
+	elseif (event=="GARRISON_FOLLOWER_REMOVED") then
+		-- gestire la distruzione di un follower... senza il follower
 	-- GARRISON_MISSION_COMPLETE_RESPONSE: missionID, requestCompleted, succeeded
 	elseif (event=="GARRISON_MISSION_COMPLETE_RESPONSE") then
 		if (not arg1) then

@@ -1,5 +1,11 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.11*
+Fix: When loaded in a particular order and with GarrisonCommander-Broker, was running partially broken
+Fix: Clash with MP in fleet map, slightly moved GC frame
+Fix: Sorting on xp was broken
+Fix: Mission title in Mission Control had a debug info attached
+
 * *2.6.9*
 Fix: Restored GarrisonMissionManager compatibility (sorry guys)
 Feature: Shipyard map enhanced with success chance. Chance is show as a number, and the border around it says if you have oil enough (green good, red not enough)

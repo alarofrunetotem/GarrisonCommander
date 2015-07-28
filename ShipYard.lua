@@ -19,12 +19,6 @@ local module=addon:NewSubClass('ShipYard') --#Module
 local GameTooltip=GameTooltip
 local GarrisonShipyardMapMissionTooltip=GarrisonShipyardMapMissionTooltip
 
-function sprint(nome,this,...)
-
---@debug@
-print(nome,this:GetName(),...)
---@end-debug@
-end
 function module:Test()
 
 --@debug@
@@ -32,6 +26,8 @@ print("test")
 --@end-debug@
 end
 function module:OnInitialize()
+	--GARRISON_SHIPYARD_NPC_OPEN
+	--GARRISON_SHIPYARD_NPC_CLOSE
 	self:SafeSecureHook("GarrisonFollowerButton_UpdateCounters")
 	self:SafeSecureHook(GSF,"OnClickMission","HookedGSF_OnClickMission")
 	self:SafeSecureHook("GarrisonShipyardMapMission_OnEnter")
@@ -73,9 +69,10 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		if mission.inProgress then return end
 		i=i+1
 		addendum=CreateFrame("Frame",nil,frame)
-		addendum:SetPoint("TOPLEFT",frame,"TOPRIGHT",-15,0)
 		addendum:SetFrameStrata("MEDIUM")
 		addendum:SetFrameLevel(GSF:GetFrameLevel()+5)
+		addendum:SetPoint("TOPLEFT",frame,"TOPRIGHT",-10,-15)
+
 		AddBackdrop(addendum)
 		addendum:SetBackdropColor(0,0,0,0.5)
 		addendum:SetWidth(50)
@@ -141,10 +138,10 @@ end
 
 
 function module:Setup(this,...)
-
 --@debug@
 print("Doing one time initialization for",this:GetName(),...)
 --@end-debug@
+	addon:CheckMP()
 	self:SafeSecureHookScript("GarrisonShipyardFrame","OnShow")
 	GSF:EnableMouse(true)
 	GSF:SetMovable(true)

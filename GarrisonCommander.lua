@@ -352,7 +352,10 @@ function addon.Garrison_SortMissions_Duration(missionsList)
 	table.sort(missionsList, sorters.Duration);
 end
 function addon.Garrison_SortMissions_Followers(missionsList)
-	--addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missiaddon:RefreshParties()ison_SortMissions_Xp(missionsList)
+	addon:RefreshParties()
+	table.sort(missionsList, sorters.Followers);
+end
+function addon.Garrison_SortMissions_Xp(missionsList)
 	addon:RefreshParties()
 	table.sort(missionsList, sorters.Xp);
 end
@@ -378,7 +381,6 @@ print("Initialize")
 --@end-debug@
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
-	self:SafeRegisterEvent("GARRISON_MISSION_NPC_OPENED")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
 	for _,b in ipairs(GMF.MissionTab.MissionList.listScroll.buttons) do
 		local scale=0.8
@@ -450,7 +452,7 @@ print("Initialize")
 	assert("stringa"==nil or true)
 	assert(pcall(format,"%03d %03d",tonumber(1/0) or 1,tonumber(0/0) or 2))
 --@end-debug@
-	--self:SafeSecureHookScript("GarrisonMissionFrame","OnShow","Setup")
+	self:SafeSecureHookScript("GarrisonMissionFrame","OnShow","Setup")
 	return true
 end
 function addon:showdata(fullargs,action,missionid)
@@ -469,20 +471,9 @@ end
 
 function addon:CheckMP()
 	if (IsAddOnLoaded("MasterPlan")) then
-		if (GetAddOnMetadata("MasterPlan","Version")=="0.18") then
-		-- Last well behavioured version
-			MPGoodGuy=true
-			return
-		end
-		if GetAddOnMetadata("MasterPlan","Version")>="0.23" then
-			-- New compatible version
-			self:AddToggle("CKMP",true,L["Use GC Interface"],L["GCMPSWITCH"])
-			MPGoodGuy=true
-			MPSwitch=true
-		end
 		MP=true
+		ns.MP=true
 		MPSwitch=true
-		self:AddToggle("CKMP",true,L["Use GC Interface"],L["GCMPSWITCH"])
 	end
 end
 function addon:CheckGMM()
@@ -844,21 +835,7 @@ function addon:WipeMission(missionID)
 	--collectgarbage("step")
 end
 
----
---@param #string event GARRISON_MISSION_NPC_OPENED
--- Fires after GarrisonMissionFrame OnShow. Pretty useless
-local firstone=true
-function addon:EventGARRISON_MISSION_NPC_OPENED(event,...)
---@debug@
-print("NPC OPENED")
---@end-debug@	if (GCF) then GCF:Show() end
-	if firstone then
-		firstone=nil
-		self:Setup()
-	else
-		self:ScriptGarrisonMissionFrame_OnShow()
-	end
-end
+
 function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
 --@debug@
 print("NPC CLOSED")
@@ -1453,6 +1430,7 @@ print("Setup")
 --@end-debug@
 	SIZEV=GMF:GetHeight()
 	self:CheckMP()
+	if MP then self:AddToggle("CKMP",true,L["Use GC Interface"],L["GCMPSWITCH"]) end
 	self:CheckGMM()
 	self:CreateHeader()
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
@@ -2541,7 +2519,7 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 	end
 
 	button.Title:SetWidth(0);
-	button.Title:SetText(mission.name.. "addstd")
+	button.Title:SetText(mission.name)
 	local seconds=self:GetMissionData(missionID,'improvedDurationSeconds')
 	local duration=SecondsToTime(seconds)
 	if ( seconds >= GARRISON_LONG_MISSION_TIME ) then
