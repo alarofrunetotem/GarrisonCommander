@@ -1528,7 +1528,6 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 	print("GMF OnShow")
 --@end-debug@
 	self:GrowPanel()
-	self:Unhook(GMF,"OnShow")
 	if (self:GetBoolean("PIN")) then
 		GCF:SetHeight(baseHeight)
 		self:AddMenu()
