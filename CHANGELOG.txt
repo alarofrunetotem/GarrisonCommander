@@ -1,5 +1,9 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.12*
+Fix: Colorizing in broker at last wotking as intended
+Fix: Anticipating a fixe for a 6.2.1 only bug
+
 * *2.6.11*
 Fix: When loaded in a particular order and with GarrisonCommander-Broker, was running partially broken
 Fix: Clash with MP in fleet map, slightly moved GC frame

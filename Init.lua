@@ -13,6 +13,7 @@ local tostringall=tostringall
 local tostring=tostring
 local tonumber=tonumber
 local type=type
+print("init loaded")
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
 LoadAddOn("LibDebug")

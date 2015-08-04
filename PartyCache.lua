@@ -227,6 +227,7 @@ function addon:GetParty(missionID,key,default)
 		end
 	end
 	if key then
+		if type(default)=="number" and type(party[key])~="number" then return default end
 		return party[key] or default
 	else
 		return party

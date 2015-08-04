@@ -263,6 +263,7 @@ print("Could not find info for mission",missionID,G.GetMissionName(missionID))
 		return mission.basePerc or default
 	else
 		--AddExtraData(mission)
+		if type(default)=="number" and type(mission[key])~="number" then return default end
 		return mission[key] or default
 	end
 end
