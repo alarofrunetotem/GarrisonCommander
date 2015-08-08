@@ -432,6 +432,7 @@ print("Initialize")
 	self:AddToggle("IXP",true,L["Show xp to next level"],L["When checked, show on each follower button missing xp to next level"])
 	self:AddToggle("UPG",true,L["Show upgrade options"],L["Only meaningful upgrades are shown"])
 	self:AddToggle("NOCONFIRM",true,L["Don't ask for confirmation"],L["If checked, clicking an upgrade icon will consume the item and upgrade the follower\n|cFFFF0000NO QUESTION ASKED|r"])
+	self:AddToggle("SWAPBUTTONS",false,L["Swap upgrades position"],L["IF checked, shows armors on the left and weapons on the right "])
 	self:AddLabel("Buildings Panel")
 	self:AddToggle("HF",false,L["Hide followers"],L["Do not show follower icon on plots"])
 --@debug@

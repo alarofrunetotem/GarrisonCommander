@@ -114,14 +114,23 @@ function addon:ShowUpgradeButtons(force)
 			addon:SetBoolean("NOCONFIRM",this:GetChecked())
 		end)
 	end
+	if (not gf.swapButtons) then
+		gf.noConfirm=self:GetFactory():Checkbox(gf.Model,self:GetToggle("SWAPBUTTONS"),self:GetVarInfo("SWAPBUTTONS"))
+		gf.noConfirm:SetPoint("TOPLEFT",0,-40)
+		gf.noConfirm:Show()
+		gf.noConfirm:SetScript("OnClick",function(this)
+			addon:SetBoolean("SWAPBUTTONS",this:GetChecked())
+			addon:ShowUpgradeButtons()
+		end)
+	end
 	if not gf.upgradeButtons then gf.upgradeButtons ={} end
 	--if not gf.upgradeFrame then gf.upgradeFrame=CreateFrame("Frame",nil,gf.model) end
 	local b=gf.upgradeButtons
 	local upgrades=self:GetUpgrades()
-	local axpos=243
-	local wxpos=7
-	local wypos=-135
-	local aypos=-135
+	local axpos=self:GetBoolean("SWAPBUTTONS") and 7 or 243
+	local wxpos=self:GetBoolean("SWAPBUTTONS") and 243 or 7
+	local wypos=-155
+	local aypos=-155
 	local used=1
 	if not gf.followerID then
 		return self:DelayedRefresh(0.1)

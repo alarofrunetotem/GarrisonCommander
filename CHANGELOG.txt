@@ -1,7 +1,11 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.13*
+Fix: Message: Interface\AddOns\GarrisonCommander-Broker\ldb.lua:414: attempt to perform arithmetic on local 'r2' (a nil value) in GC-Broker
+Feature: In follower page, armor and weapon upgrades can be swapped
+
 * *2.6.12*
-Fix: Colorizing in broker at last wotking as intended
+Fix: Colorizing in broker at last working as intended
 Fix: Anticipating a fixe for a 6.2.1 only bug
 
 * *2.6.11*

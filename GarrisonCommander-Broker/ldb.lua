@@ -47,7 +47,6 @@ local NONE=C(NONE,"Red")
 local DONE=C(DONE,"Green")
 local NEED=C(NEED,"Red")
 local IsQuestFlaggedCompleted=IsQuestFlaggedCompleted
-
 local CAPACITANCE_SHIPMENT_COUNT=CAPACITANCE_SHIPMENT_COUNT -- "%d of %d Work Orders Available";
 local CAPACITANCE_SHIPMENT_READY=CAPACITANCE_SHIPMENT_READY -- "Work Order ready for pickup!";
 local CAPACITANCE_START_WORK_ORDER=CAPACITANCE_START_WORK_ORDER -- "Start Work Order";
@@ -70,7 +69,24 @@ local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local dbversion=1
 local frequency=5
 local ldbtimer=nil
-
+local ColorStrings={
+'00FF00', -- 0
+'33FF00', -- 1
+'66FF00', -- 2
+'99FF00', -- 3
+'CCFF00', -- 4
+'FFFF00', -- 5
+'FFCC00', -- 6
+'FF9900', -- 7
+'FF6500', -- 8
+'FF3200', -- 9
+'FF0000' -- 10
+}
+local ColorValues={}
+for i=1,#ColorStrings do
+	local c=ColorStrings[i]
+	ColorValues[i]={tonumber(c:sub(1,2),16)/255,tonumber(c:sub(3,4),16)/255,tonumber(c:sub(5,6),16)/255}
+end
 local spellids={
 	[158754]='herb',
 	[158745]='mine',
@@ -334,6 +350,7 @@ function addon:OnInitialized()
 	self:RegisterEvent("GARRISON_MISSION_STARTED")
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	self:RegisterEvent("SHIPMENT_CRAFTER_CLOSED")
 	self:RegisterEvent("SHIPMENT_CRAFTER_INFO")
 	self:RegisterEvent("SHOW_LOOT_TOAST")
 	--self:RegisterEvent("QUEST_AUTOCOMPLETE",print)
@@ -357,7 +374,10 @@ function addon:ApplyFREQUENCY(value)
 end
 function addon:SHIPMENT_CRAFTER_INFO(...)
 	self:WorkUpdate(...)
-
+end
+function addon:SHIPMENT_CRAFTER_CLOSED(...)
+	self:CountEmpty()
+	workobj:Update()
 end
 function addon:SHOW_LOOT_TOAST(event,typeIdentifier, itemLink, quantity, specID, sex, isPersonal, lootSource)
 	if (isPersonal and lootSource==10) then -- GARRISON_CACHE
@@ -401,7 +421,12 @@ function addon:OnEnabled()
 	self:ScheduleTimer("DelayedInit",5)
 end
 function addon:Gradient(perc)
-	return self:ColorGradient(perc,1,0,0,1,1,0,0,1,0)
+	local rc,r,g,b=pcall(self.ColorGradient,self,perc,1,0,0,1,1,0,0,1,0)
+	if (rc) then
+		return r,g,b
+	else
+		return 0,1,0
+	end
 end
 
 function addon:ColorGradient(perc, ...)
@@ -495,10 +520,9 @@ end
 function cacheobj:OnTooltipShow()
 	self:AddLine(GARRISON_CACHE)
 	for k,v in kpairs(addon.db.realm.caches) do
-		local m=addon.db.realm.cachesize[k] or 500
-		local resources=math.min(m,math.floor((time()-v)*(1/600)))
-		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),format("%d/%d",resources,m),nil,nil,nil,
-		addon:ColorGradient(resources/m,0,1,0,1,1,0,1,0,0))
+		local t=addon.db.realm.cachesize[k] or 500
+		local n=math.min(t,math.floor((time()-v)*(1/600)))
+		self:AddDoubleLine(k==ns.me and C(k,"green") or C(k,"Orange"),format("%d/%d",n,t),nil,nil,nil,addon:moreIsGood(n,t,true)) -- uses more because n is not the "missing" part
 	end
 	self:AddLine(me,C.Silver())
 end
@@ -676,14 +700,24 @@ function dataobj:OldUpdate()
 	end
 	self.text=format("%s: %s (Tot: |cff00ff00%d|r) %s: %s",READY,ready,completed,NEXT,prox)
 end-- Resources rate: 144 a day
-function addon:moreIsGood(n,t)
+local function convert(perc,numeric)
+	perc=max(0,min(10,perc))
+	if numeric then
+		return unpack(ColorValues[perc+1])
+	else
+		return ColorStrings[perc+1]
+	end
+end
+function addon:lessIsGood(n,t,numeric)
 	-- t = total
 	-- n = counted
-	local perc= math.floor(1/t*(t-n)*10)/10
-	--return 1/t*w
-	return addon:ColorToString(addon:ColorGradient(perc,1,0,0,1,1,0,0,1,0)),perc
+	return convert(math.floor(10/t*(t-n)),numeric)
 end
-
+function addon:moreIsGood(n,t,numeric)
+	-- t = total
+	-- n = counted
+	return convert(math.floor(10/t*n),numeric)
+end
 --@debug@
 local function highdebug(tb)
 	for k,v in pairs(tb) do
