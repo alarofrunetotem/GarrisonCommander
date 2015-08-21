@@ -2872,7 +2872,11 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 		if t then
 			lasttime=0
 		else
-			delay=missions[1].missionEndTime-now
+			if (missions[1]) then
+				delay=missions[1].missionEndTime-now
+			else
+				delay=0
+			end
 		end
 		if (now-lasttime) > ((delay>65) and 30 or 0) then
 --@debug@
