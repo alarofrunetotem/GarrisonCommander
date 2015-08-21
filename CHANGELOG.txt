@@ -1,5 +1,9 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.14*
+Fix: Rare error when zoning in and out of Garrison
+Fix: In follower page, swap button conflicted with confirm upgrade button
+
 * *2.6.13*
 Fix: Message: Interface\AddOns\GarrisonCommander-Broker\ldb.lua:414: attempt to perform arithmetic on local 'r2' (a nil value) in GC-Broker
 Feature: In follower page, armor and weapon upgrades can be swapped

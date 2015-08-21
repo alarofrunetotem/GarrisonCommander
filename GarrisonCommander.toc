@@ -13,7 +13,7 @@
 ## Notes-zhCN: 發送所有的追隨者與點擊多任務
 ## Author: Alar of Daggerspine
 ## Version: @project-version@ 6.2.0
-## X-Version: 2.6.13
+## X-Version: 2.6.14
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
