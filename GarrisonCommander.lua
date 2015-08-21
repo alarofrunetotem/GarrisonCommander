@@ -426,12 +426,12 @@ print("Initialize")
 	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when maximise result is enabled. Default is 80%"])
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
 	self:AddLabel("Followers Panel")
-	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown for follower"],nil,1)
-	self:AddSlider("MINPERC",50,0,100,L["Minimun chance success under which ignore missions"],nil,5)
-	self:AddToggle("ILV",true,L["Show weapon/armor level"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
-	self:AddToggle("IXP",true,L["Show xp to next level"],L["When checked, show on each follower button missing xp to next level"])
-	self:AddToggle("UPG",true,L["Show upgrade options"],L["Only meaningful upgrades are shown"])
-	self:AddToggle("NOCONFIRM",true,L["Don't ask for confirmation"],L["If checked, clicking an upgrade icon will consume the item and upgrade the follower\n|cFFFF0000NO QUESTION ASKED|r"])
+	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown"],L["Mission shown for follower"],1)
+	self:AddSlider("MINPERC",50,0,100,L["Minimun chance"],L["Minimun chance success under which ignore missions"],5)
+	self:AddToggle("ILV",true,L["Show itemlevel"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
+	self:AddToggle("IXP",true,L["Show xp"],L["When checked, show on each follower button missing xp to next level"])
+	self:AddToggle("UPG",true,L["Show upgrades"],L["Only meaningful upgrades are shown"])
+	self:AddToggle("NOCONFIRM",true,L["Don't ask confirmation"],L["If checked, clicking an upgrade icon will consume the item and upgrade the follower\n|cFFFF0000NO QUESTION ASKED|r"])
 	self:AddToggle("SWAPBUTTONS",false,L["Swap upgrades position"],L["IF checked, shows armors on the left and weapons on the right "])
 	self:AddLabel("Buildings Panel")
 	self:AddToggle("HF",false,L["Hide followers"],L["Do not show follower icon on plots"])
@@ -532,6 +532,8 @@ end
 function addon:ApplyMAXMISSIONS(value)
 	MAXMISSIONS=value
 	BUSY_MESSAGE=format(BUSY_MESSAGE_FORMAT,MAXMISSIONS,MINPERC)
+	if ns.bigscreen and GMF.FollowerTab:IsVisible() then
+	end
 end
 function addon:ApplyMINPERC(value)
 	MINPERC=value
@@ -603,7 +605,7 @@ function addon:SetThreatColor(obj,threat)
 end
 
 function addon:HookedGarrisonMissionButton_AddThreatsToTooltip(missionID)
-	if (ns.ns.GMC:IsVisible()) then return end
+	if (ns.GMF.MissionControlTab:IsVisible()) then return end
 	return self:RenderTooltip(missionID)
 end
 function addon:AddIconsToFollower(missionID,useful,followers,members,followerTypeID)
@@ -1080,6 +1082,9 @@ function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 	if (info) then
 		local data={option=info}
 		local widget
+--@debug@
+	print("Adding option",flag,info.type,info)
+--@end-debug@
 		if (info.type=="toggle") then
 			widget=AceGUI:Create("CheckBox")
 			local value=self:GetBoolean(flag)
@@ -1097,6 +1102,16 @@ function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 		elseif (info.type=="execute") then
 			widget=AceGUI:Create("Button")
 			widget:SetText(info.name)
+			widget:SetWidth(maxsize)
+			widget:SetCallback("OnClick",function(widget,event,value)
+				self[info.func](self,data,value)
+			end)
+		elseif (info.type=="range") then
+			local value=self:GetNumber(flag)
+			widget=AceGUI:Create("Slider")
+			widget:SetLabel(info.name)
+			widget:SetValue(value)
+			widget:SetSliderValues(info.min,info.max,info.step)
 			widget:SetWidth(maxsize)
 			widget:SetCallback("OnClick",function(widget,event,value)
 				self[info.func](self,data,value)
@@ -1477,7 +1492,12 @@ print("Setup")
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
-
+function addon:RefreshMenu()
+	if not self.currentmenu or not self.currentmenu:IsVisible() then
+		self:RemoveMenu()
+		self:AddMenu()
+	end
+end
 function addon:AddMenu()
 --@debug@
 print("Adding Menu")
@@ -1485,7 +1505,17 @@ print("Adding Menu")
 	if GCF.Menu then
 		return
 	end
-	local menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
+	local menu,size
+	if GMF.MissionTab:IsVisible() then
+		self.currentmenu=GMF.MissionTab
+		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','NOFILL','MSORT','MAXRES','USEFUL')
+	elseif GMF.FollowerTab:IsVisible() then
+		self.currentmenu=GMF.FollowerTab
+		menu,size=self:CreateOptionsLayer('BIGSCREEN',ns.bigscreen and 'MAXMISSIONS' or nil,ns.bigscreen and 'MINPERC' or nil,'ILV','IXP','UPG','NOCONFIRM','SWAPBUTTONS')
+	elseif GMF.MissionControlTab:IsVisible() then
+		self.currentmenu=GMF.MissionControlTab
+		menu,size=self:CreateOptionsLayer('BIGSCREEN')
+	end
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
 	self:AddOptionToOptionsLayer(menu,'TRC')
@@ -2115,8 +2145,8 @@ end
 function addon:OpenLastTab()
 	lastTab=lastTab or PanelTemplates_GetSelectedTab(GMF)
 	if lastTab then
-		if ns.GMC:IsVisible() then
-			ns.GMC:Hide()
+		if GMF.MissionControlTab:IsVisible() then
+			GMF.MissionControlTab:Hide()
 			GMF.tabMC:SetChecked(false)
 			if lastTab==2 then
 				GMF.FollowerTab:Show()
@@ -2140,19 +2170,20 @@ function addon:OpenMissionsTab()
 	return self:OpenLastTab()
 end
 function addon:OpenMissionControlTab()
-	if (not ns.GMC:IsVisible()) then
+	if (not GMF.MissionControlTab:IsVisible()) then
 		lastTab=PanelTemplates_GetSelectedTab(GMF)
 		GMF.FollowerTab:Hide()
 		GMF.FollowerList:Hide()
 		GMF.MissionTab:Hide()
 		GMF.TitleText:SetText(L["Garrison Commander Mission Control"])
-		ns.GMC:Show()
-		ns.GMC.startButton:Click()
+		GMF.MissionControlTab:Show()
+		GMF.MissionControlTab.startButton:Click()
 		GMF.tabMC:SetChecked(true)
 	else
 		GMF.tabMC:SetChecked(false)
 		self:OpenLastTab()
 	end
+	self:RefreshMenu()
 end
 function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(this,button)
 	local frame = GMF.MissionComplete
@@ -2790,6 +2821,7 @@ function addon:HookedGarrisonMissionList_SetTab(tab)
 	for i=1,#GMFMissionListButtons do
 		GMFMissionListButtons.lastMissionID=nil
 	end
+	self:RefreshMenu()
 	if (HD) then addon:ResetSinks() end
 end
 function addon:HookedClickOnTabs(tab)
@@ -2797,6 +2829,9 @@ function addon:HookedClickOnTabs(tab)
 	print(tab)
 --@end-debug@
 	lastTab=tab
+	if GCF then
+		self:RefreshMenu()
+	end
 end
 function addon:GarrisonMissionFrame_SelectTab(frame,tab)
 --@debug@
@@ -2810,8 +2845,9 @@ function addon:GarrisonMissionFrame_SelectTab(frame,tab)
 	if (HD) then addon:ResetSinks() end
 	if GMF.tabMC then
 		GMF.tabMC:SetChecked(false)
-		ns.GMC:Hide()
+		GMF.MissionControlTab:Hide()
 	end
+	self:RefreshMenu()
 end
 function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 	collectgarbage("step",300)

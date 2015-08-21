@@ -11,7 +11,6 @@ local factory=addon:GetFactory()
 local aMissions={}
 local chardb
 local db
-local GMC
 local GMF=GarrisonMissionFrame
 local GMCUsedFollowers={}
 local wipe=wipe
@@ -100,6 +99,7 @@ function module:GMCRunMission(missionID,start)
 --@debug@
 	print("Asked to start mission",missionID)
 --@end-debug@
+	local GMC=GMF.MissionControlTab
 	if (start) then
 		G.StartMission(missionID)
 		PlaySound("UI_Garrison_CommandTable_MissionStart")
@@ -137,6 +137,7 @@ do
 	local currentMission=0
 	local x=0
 	function module:GMCCalculateMissions(this,elapsed)
+		local GMC=GMF.MissionControlTab
 		db.news.MissionControl=true
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
@@ -204,6 +205,7 @@ do
 end
 
 function module:GMC_OnClick_Run(this,button)
+	local GMC=GMF.MissionControlTab
 	this:Disable()
 	GMC.logoutButton:Disable()
 	do
@@ -224,7 +226,7 @@ function module:GMC_OnClick_Run(this,button)
 	end
 end
 function module:GMC_OnClick_Start(this,button)
-
+	local GMC=GMF.MissionControlTab
 --@debug@
 print(C("-------------------------------------------------","Yellow"))
 --@end-debug@
@@ -256,6 +258,7 @@ print(C("-------------------------------------------------","Yellow"))
 end
 local chestTexture
 local function drawItemButtons()
+	local GMC=GMF.MissionControlTab
 	local scale=1.1
 	local h=37 -- itemButtonTemplate standard size
 	local gap=5
@@ -404,8 +407,8 @@ function module:OnInitialized()
 	db=addon.db.global
 	chardb=addon.privatedb.profile
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
-	GMC = CreateFrame('FRAME', 'GMCOptions', GMF)
-	ns.GMC=GMC
+	local GMC = CreateFrame('FRAME', nil, GMF)
+	GMF.MissionControlTab=GMC
 	settings=chardb.missionControl
 	tOrder=settings.rewardOrder
 	if settings.version < 2 then
@@ -494,7 +497,7 @@ function module:OnInitialized()
 	return GMC
 end
 function module:GMCBuildChance()
-	_G['GMC']=GMC
+	local GMC=GMF.MissionControlTab
 	--Chance
 	GMC.cf = CreateFrame('FRAME', nil, GMC)
 	GMC.cf:SetSize(256, 150)
@@ -546,6 +549,7 @@ function module:GMCBuildChance()
 	return GMC.cf
 end
 local function timeslidechange(this,value)
+	local GMC=GMF.MissionControlTab
 	local value = math.floor(value)
 	if (this.max) then
 		settings.maxDuration = max(value,settings.minDuration)
@@ -561,6 +565,7 @@ local function timeslidechange(this,value)
 end
 function module:GMCBuildDuration()
 	-- Duration
+	local GMC=GMF.MissionControlTab
 	GMC.tf = CreateFrame('FRAME', nil, GMC)
 	GMC.tf:SetSize(256, 180)
 	GMC.tf:SetPoint('LEFT', 80, 120)
@@ -604,6 +609,7 @@ function module:GMCBuildDuration()
 end
 function module:GMCBuildRewards()
 	--Allowed rewards
+	local GMC=GMF.MissionControlTab
 	GMC.aif = CreateFrame('FRAME', nil, GMC)
 	GMC.itf = GMC.aif:CreateFontString()
 	GMC.itf:SetFontObject('GameFontNormalHuge')
@@ -616,25 +622,8 @@ function module:GMCBuildRewards()
 end
 
 function module:GMCBuildMissionList()
-		-- Mission list on follower panels
---		local ml=CreateFrame("Frame",nil,GMC)
---		addBackdrop(ml)
---		ml:Show()
---		ml.Missions={}
---		ml.Parties={}
---		GMC.ml=ml
---		local fs=ml:CreateFontString(nil, "BACKGROUND", "GameFontNormalHugeBlack")
---		fs:SetPoint("TOPLEFT",0,-5)
---		fs:SetPoint("TOPRIGHT",0,-5)
---		fs:SetText(READY)
---		fs:SetTextColor(C.Green())
---		fs:SetHeight(30)
---		fs:SetJustifyV("CENTER")
---		fs:Show()
---		GMC.progressText=fs
---		GMC.ml.Header=fs
---		return GMC.ml
 	local ml={widget=AceGUI:Create("GMCLayer"),Parties={}}
+	local GMC=GMF.MissionControlTab
 	ml.widget:SetTitle(READY)
 	ml.widget:SetTitleColor(C.Green())
 	ml.widget:SetTitleHeight(40)
