@@ -21,3 +21,4 @@ ignore:
 - .project
 - Debug.lua
 - info.txt
+- wowhead.sh
