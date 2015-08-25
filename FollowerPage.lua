@@ -90,47 +90,34 @@ local colors={
 	[630]="Rare",
 	[645]="Epic"
 }
+function addon:ApplyUPG(value)
+	self:ShowUpgradeButtons()
+end
+function addon:ApplySWAPBUTTONS(value)
+	self:ShowUpgradeButtons()
+end
 function addon:ShowUpgradeButtons(force)
 	if InCombatLockdown() then
 		self:ScheduleLeaveCombatAction("ShowUpgradeButtons",force)
 		return
 	end
 	local gf=GMF.FollowerTab
+	if not self:GetBoolean("UPG") then
+		local b=gf.upgradeButtons
+		for i=1,#b	 do
+			b[i]:Hide()
+		end
+		return
+	end
 	if (not force and not gf:IsVisible()) then return end
-	if (not gf.showUpgrades) then
-		gf.showUpgrades=self:GetFactory():Checkbox(gf.Model,self:GetToggle("UPG"),self:GetVarInfo("UPG"))
-		gf.showUpgrades:SetPoint("TOPLEFT")
-		gf.showUpgrades:Show()
-		gf.showUpgrades:SetScript("OnClick",function(this)
-			addon:SetBoolean("UPG",this:GetChecked())
-			addon:ShowUpgradeButtons()
-		end)
-	end
-	if (not gf.noConfirm) then
-		gf.noConfirm=self:GetFactory():Checkbox(gf.Model,self:GetToggle("NOCONFIRM"),self:GetVarInfo("NOCONFIRM"))
-		gf.noConfirm:SetPoint("TOPLEFT",0,-20)
-		gf.noConfirm:Show()
-		gf.noConfirm:SetScript("OnClick",function(this)
-			addon:SetBoolean("NOCONFIRM",this:GetChecked())
-		end)
-	end
-	if (not gf.swapButtons) then
-		gf.swapButtons=self:GetFactory():Checkbox(gf.Model,self:GetToggle("SWAPBUTTONS"),self:GetVarInfo("SWAPBUTTONS"))
-		gf.swapButtons:SetPoint("TOPLEFT",0,-40)
-		gf.swapButtons:Show()
-		gf.swapButtons:SetScript("OnClick",function(this)
-			addon:SetBoolean("SWAPBUTTONS",this:GetChecked())
-			addon:ShowUpgradeButtons()
-		end)
-	end
 	if not gf.upgradeButtons then gf.upgradeButtons ={} end
 	--if not gf.upgradeFrame then gf.upgradeFrame=CreateFrame("Frame",nil,gf.model) end
 	local b=gf.upgradeButtons
 	local upgrades=self:GetUpgrades()
 	local axpos=self:GetBoolean("SWAPBUTTONS") and 7 or 243
 	local wxpos=self:GetBoolean("SWAPBUTTONS") and 243 or 7
-	local wypos=-155
-	local aypos=-155
+	local wypos=-85
+	local aypos=-85
 	local used=1
 	if not gf.followerID then
 		return self:DelayedRefresh(0.1)

@@ -110,10 +110,13 @@ local backdrop = {
 		edgeSize=16,
 		insets={bottom=3,left=3,right=3,top=3}
 }
-function ns.AddBackdrop(frame)
+function ns.AddBackdrop(frame,r,g,b)
+	r=r or 1
+	g=g or 0
+	b=b or 0
 	frame:SetBackdrop(backdrop)
 	frame:SetBackdropColor(1,1,1,0)
-	frame:SetBackdropBorderColor(1,0,0,1)
+	frame:SetBackdropBorderColor(r,g,b,1)
 end
 -- my implementation of tonumber which accounts for nan and inf
 ---@function [parent=#ns] tonumber
@@ -227,9 +230,15 @@ local items={
 }
 local itemcaches={
 [118529]=655,--Cache of Highmaul Treasures,
+[118530]=670,--Cache of Highmaul Treasures,
+[118531]=685,--Cache of Highmaul Treasures,
 [122484]=670, --Blackrock Foundry Spoils,
+[122485]=685, --Blackrock Foundry Spoils,
+[122486]=700, --Blackrock Foundry Spoils,
+[127853]=690,--Iron Fleet Treasure Chest
+[127854]=705,--Iron Fleet Treasure Chest
+[127855]=720,--Iron Fleet Treasure Chest
 [128391]=685,--Iron Fleet Treasure Chest
-[122486]=700, --Blackrock Foundry Spoils
 [120301]=600, -- Folower Generic armor upgrade
 [120302]=600, -- Folower Generic weapon upgrade
 

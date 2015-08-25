@@ -105,6 +105,8 @@ function module:AddExtraData(mission)
 						mission.followerUpgrade=itemRarity
 					elseif itemLevel > 500 and itemMinLevel >=90 then
 						mission.itemLevel=itemLevel
+					elseif itemLevel >=655 then
+						mission.itemLevel=itemLevel
 					else
 						mission.others=mission.others+v.quantity
 					end
@@ -305,13 +307,15 @@ function addon:AddExtraData(mission)
 				if itemTexture:lower()==rushOrders then
 					mission.rush=mission.rush+v.quantity
 				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
-					itemLevel=addon:GetTrueLevel(v.itemID,itemLevel)
 					if (addon:IsFollowerUpgrade(v.itemID)) then
 						mission.followerUpgrade=itemRarity
-					elseif itemLevel > 500 and itemMinLevel >=90 then
-						mission.itemLevel=itemLevel
 					else
-						mission.others=mission.others+v.quantity
+						itemLevel=addon:GetTrueLevel(v.itemID,itemLevel)
+						if itemLevel > 500  then
+							mission.itemLevel=itemLevel
+						else
+							mission.others=mission.others+v.quantity
+						end
 					end
 				else
 					mission.others=mission.others+v.quantity

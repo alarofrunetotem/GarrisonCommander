@@ -1,5 +1,12 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.6.15*
+Feature: Item rewards in Mission Control can be filtered on level
+Feature: All header menu are now context sensitive
+Feature: Header added to Shipyard
+Feature: One click ship upgrade
+
+
 * *2.6.14*
 Fix: Rare error when zoning in and out of Garrison
 Fix: In follower page, swap button conflicted with confirm upgrade button

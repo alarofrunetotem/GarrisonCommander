@@ -18,6 +18,19 @@ local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local module=addon:NewSubClass('ShipYard') --#Module
 local GameTooltip=GameTooltip
 local GarrisonShipyardMapMissionTooltip=GarrisonShipyardMapMissionTooltip
+local GCS
+local shipEnhancement={
+	127882,
+	127883,
+	127884,
+	127663,
+	125787,
+	127662,
+	127880,
+	127881,
+	127894,
+	127886
+}
 
 function module:Test()
 
@@ -51,9 +64,16 @@ print(ref)
 	self:SafeHookScript(GSF.MissionTab.MissionList.CompleteDialog,"OnShow",true)
 	self:SafeHookScript(GSF.MissionTab,"OnShow",true)
 	self:SafeHookScript(GSF.FollowerTab,"OnShow",true)
+	self:SafeRegisterEvent("GARRISON_SHIPYARD_NPC_CLOSED")
 	--GarrisonShipyardFrameFollowersListScrollFrameButton1
 	--GarrisonShipyardMapMission1
---@end-debug@
+	addon:AddLabel(L["Shipyard Appearance"])
+	addon:AddToggle("SHIPMOVEPANEL",true,L["Unlock Panel"],L["Makes shipyard panel movable"])
+	--addon:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
+	addon:AddToggle("SHIPPIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
+end
+function module:GetMain()
+	return GSF
 end
 ---
 --Invoked on every mission display, only for available missions
@@ -143,13 +163,23 @@ print("Doing one time initialization for",this:GetName(),...)
 --@end-debug@
 	addon:CheckMP()
 	self:SafeSecureHookScript("GarrisonShipyardFrame","OnShow")
-	GSF:EnableMouse(true)
-	GSF:SetMovable(true)
-	GSF:RegisterForDrag("LeftButton")
-	GSF:SetScript("OnDragStart",function(frame)if (self:GetBoolean("MOVEPANEL")) then frame:StartMoving() end end)
-	GSF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
+	self:SafeSecureHookScript(GSF.FollowerTab,"OnShow","FollowerOnShow")
+	--GSF:EnableMouse(true)
+	--GSF:SetMovable(true)
+	--GSF:RegisterForDrag("LeftButton")
+	--GSF:SetScript("OnDragStart",function(frame)if (self:GetBoolean("MOVEPANEL")) then frame:StartMoving() end end)
+	--GSF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
+	GCS=addon:CreateHeader(self)
+	self:ScriptGarrisonShipyardFrame_OnShow()
+	self:SafeHookScript(GSF,"OnShow")
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
+	GCS:Show()
+	GCS:SetWidth(GSF:GetWidth())
+	GSF:ClearAllPoints()
+	GSF:SetPoint("TOPLEFT",GCS,"BOTTOMLEFT",0,23)
+	GSF:SetPoint("TOPRIGHT",GCS,"BOTTOMRIGHT",0,23)
+	self:RefreshMenu()
 
 --@debug@
 print("Doing all time initialization")
@@ -178,10 +208,116 @@ function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
 		g:SetWidth(GarrisonShipyardMapMissionTooltip:GetWidth())
 	end
 end
+function addon:EventGARRISON_SHIPYARD_NPC_CLOSED(event,...)
+--@debug@
+print("NPC CLOSED")
+--@end-debug@
+	if (GCS) then
+		self:RemoveMenu()
+		GCS:Hide()
+	end
+end
+function module:RefreshMenu()
+	if not GCS then return end  -- This could be called befaur header is built
+	if not self.currentmenu or not self.currentmenu:IsVisible() then
+		self:RemoveMenu()
+		self:AddMenu()
+	end
+end
+function module:AddMenu()
+--@debug@
+print("Adding Menu",GCS.Menu,GSF.MissionTab:IsVisible(),GSF.FollowerTab:IsVisible())
+--@end-debug@
+	if GCS.Menu then
+		return
+	end
+	local menu,size
+
+	if GSF.MissionTab:IsVisible() then
+		self.currentmenu=GSF.MissionTab
+		menu,size=self:CreateOptionsLayer('SHIPMOVEPANEL')
+	elseif GSF.FollowerTab:IsVisible() then
+		self.currentmenu=GSF.FollowerTab
+		menu,size=self:CreateOptionsLayer('SHIPMOVEPANEL')
+	--elseif GSF.MissionControlTab:IsVisible() then
+	--	self.currentmenu=GSF.MissionControlTab
+	--	menu,size=self:CreateOptionsLayer('BIGSCREEN','GCSKIPRARE','GCSKIPEPIC')
+	end
+--@debug@
+	self:AddOptionToOptionsLayer(menu,'DBG')
+	self:AddOptionToOptionsLayer(menu,'TRC')
+--@end-debug@
+	local frame=menu.frame
+	frame:Show()
+	frame:SetParent(GCS)
+	frame:SetFrameStrata(GCS:GetFrameStrata())
+	frame:SetFrameLevel(GCS:GetFrameLevel()+2)
+	menu:ClearAllPoints()
+	menu:SetPoint("TOPLEFT",GCS,"TOPLEFT",25,-18)
+	menu:SetWidth(GCS:GetWidth()-50)
+	menu:SetHeight(GCS:GetHeight()-50)
+	menu:DoLayout()
+	GCS.Menu=menu
+end
+function module:RemoveMenu()
+--@debug@
+print("Removing menu")
+--@end-debug@
+	if (GCS.Menu) then
+		local rc,message=pcall(GCS.Menu.Release,GCS.Menu)
+		--@debug@
+		print("Removed menu",rc,message)
+		--@end-debug@
+		GCS.Menu=nil
+	end
+end
+
 function module:OpenLastTab()
 --@debug@
 print("Should restore tab")
 --@end-debug@
+end
+function module:FollowerOnShow()
+	self:ShowEnhancements()
+end
+function module:ShowEnhancements()
+	local f=GarrisonShipyardFrame.FollowerTab
+	local u
+	if not f.upgrades then
+		f.upgrades=CreateFrame("Frame","UPG",f)
+		f.upgrades.items={}
+		u=f.upgrades
+		u:ClearAllPoints()
+		u:SetPoint("TOPLEFT",10,-100)
+		u:SetPoint("BOTTOMLEFT",0,0)
+		u:SetWidth(50)
+	end
+	u=f.upgrades
+	for i,itemID in pairs(shipEnhancement) do
+		local e
+		if  not  u.items[i] then
+			u.items[i]=CreateFrame("Button","But"..i,u,"GarrisonCommanderUpgradeButton,SecureActionButtonTemplate")
+			e=u.items[i]
+			e.itemID=itemID
+			e.Icon:SetSize(40,40)
+			e:SetPoint("TOPLEFT",0,-45*(i-1))
+			GarrisonMissionFrame_SetItemRewardDetails(e)
+			e:EnableMouse(true)
+			e:RegisterForClicks("LeftButtonDown")
+			e:SetAttribute("type","item")
+			e:SetAttribute("item",select(2,GetItemInfo(itemID)))
+			--@debug@
+			print('Filling ',itemID,GetItemInfo(itemID))
+			--@end-debug@
+		end
+		e=u.items[i]
+		local qt=GetItemCount(itemID)
+		e.Quantity:SetText(qt)
+		e.Quantity:Show()
+		e.Icon:SetDesaturated(qt==0)
+		e:Show()
+	end
+	u:Show()
 end
 --[[ Follower
 displayHeight = 0.25

@@ -42,6 +42,7 @@ function module:GMCCreateMissionList(workList)
 	--First get rid of unwanted rewards and missions that are too long
 	local settings=self.privatedb.profile.missionControl
 	local ar=settings.allowedRewards
+	local minlevel=addon:GetNumber('GCMINLEVEL')
 	wipe(workList)
 	for _,missionID in self:GetMissionIterator() do
 		local discarded=false
@@ -59,7 +60,7 @@ print(missionID,"discarded due to len",durationSeconds /3600)
 --@end-debug@
 				break
 			end -- Mission too long, out of here
-			if (self:GetMissionData(missionID,'isRare') and settings.skipRare) then
+			if self:GetMissionData(missionID,'isRare') and addon:GetBoolean('GCSKIPRARE') then
 
 --@debug@
 print(missionID,"discarded due to rarity")
@@ -73,6 +74,15 @@ print(missionID,"discarded due to class == ", class)
 --@end-debug@
 				discarded=true
 				break
+			end
+			if class=="itemLevel" then
+				if self:GetMissionData(missionID,'itemLevel') < minlevel then
+--@debug@
+print(missionID,"discarded due to ilevel == ", self:GetMissionData(missionID,'itemLevel'))
+--@end-debug@
+					discarded=true
+					break
+				end
 			end
 			if (not discarded) then
 				tinsert(workList,missionID)
@@ -90,6 +100,12 @@ print(missionID,"discarded due to class == ", class)
 		end
 	end
 	table.sort(workList,msort)
+--@debug@
+	for i=1,#workList do
+		local id=workList[i]
+		print(self:GetMissionData(id,'name'),self:GetMissionData(id,'class'),self:GetMissionData(id,self:GetMissionData(id,'class')))
+	end
+--@end-debug@
 end
 --- This routine can be called both as coroutin and as a standard one
 -- In standard version, delay between group building and submitting is done via a self schedule
@@ -175,7 +191,7 @@ do
 					minimumChance=tonumber(settings.rewardChance[class]) or 100
 				end
 				local party={members={},perc=0}
-				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
+				self:MCMatchMaker(missionID,party,addon:GetBoolean('GCSKIPEPIC'),minimumChance)
 --@debug@
 				print(missionID,"  Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
 --@end-debug@
@@ -469,32 +485,47 @@ function module:OnInitialized()
 	GMC.logoutButton:SetWidth(ns.bigscreen and 148 or 90)
 	GMC.logoutButton:SetScript("OnClick",function() GMF:Hide() Logout() end )
 	GMC.logoutButton:SetPoint('TOP',0,25)
-	GMC.skipRare=factory:Checkbox(GMC,settings.skipRare,L["Ignore rare missions"])
-	GMC.skipRare:SetPoint("TOPLEFT",chance,"BOTTOMLEFT",40,-50)
-	GMC.skipRare:SetScript("OnClick",function(this)
-		settings.skipRare=this:GetChecked()
-		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
-	end)
+	addon:AddLabel(L["Mission Control"])
+	addon:AddToggle("GCSKIPRARE",settings.skipRare,L["Ignore rare missions"],L["When checked, Mission Control ignores mission marked as rare"])
+	addon:AddToggle("GCSKIPEPIC",settings.skipRare,L["Ignore epic followers"],L["When checked, Mission Control ignores mission marked as rare"])
+	addon:AddSlider("GCMINLEVEL",600,540,715,L["Minimum Item Level"],L["For missions rewarding PC equipment, request this mimimum item level in rewards (not applied in real time)"],5)
 	local warning=GMC:CreateFontString(nil,"ARTWORK","CombatTextFont")
 	warning:SetText(L["Epic followers are NOT sent alone on xp only missions"])
 	warning:SetPoint("TOPLEFT",GMC,"TOPLEFT",0,-25)
 	warning:SetPoint("TOPRIGHT",GMC,"TOPRIGHT",0,-25)
 	warning:SetJustifyH("CENTER")
 	warning:SetTextColor(C.Orange())
-	if (settings.skipEpic) then warning:Show() else warning:Hide() end
-	GMC.skipEpic=factory:Checkbox(GMC,settings.skipEpic,L["Ignore epic for xp missions."])
-	GMC.skipEpic:SetPoint("TOPLEFT",GMC.skipRare,"BOTTOMLEFT",0,-10)
-	GMC.skipEpic:SetScript("OnClick",function(this)
-		settings.skipEpic=this:GetChecked()
-		if (settings.skipEpic) then warning:Show() else warning:Hide() end
-		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
-	end)
+	GMC.warning=warning
+	if addon:GetBoolean('GCSKIPRARE') then warning:Show() else warning:Hide() end
 	GMC.Credits=GMC:CreateFontString(nil,"ARTWORK","QuestFont_Shadow_Small")
 	GMC.Credits:SetWidth(0)
 	GMC.Credits:SetFormattedText(C(L["Original concept and interface by %s"],'Yellow'),C("Motig","Red") )
 	GMC.Credits:SetJustifyH("LEFT")
-	GMC.Credits:SetPoint("BOTTOMLEFT",25,25)
+	GMC.Credits:SetPoint("BOTTOMLEFT",50,5)
 	return GMC
+end
+local refreshTimer
+function module:Refresh()
+	if GMF.MissionControlTab.startButton:IsEnabled() then
+		self:GMC_OnClick_Start(GMF.MissionControlTab.startButton,"LeftUp")
+	else
+		if refreshTimer then
+			self:CancelTimer(refreshTimer)
+			refreshTimer=nil
+		end
+		refreshTimer=self:ScheduleTimer("Refresh",1)
+	end
+end
+function addon:ApplyGCSKIPRARE(value)
+	module:Refresh()
+end
+function addon:ApplyGCMINLEVEL(value)
+	module:Refresh()
+end
+function addon:ApplyGCSKIPEPIC(value)
+	local warning=GMF.MissionControlTab.warning
+	if addon:GetBoolean('GCSKIPRARE') then warning:Show() else warning:Hide() end
+	module:Refresh()
 end
 function module:GMCBuildChance()
 	local GMC=GMF.MissionControlTab
