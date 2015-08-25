@@ -1174,7 +1174,10 @@ function addon:CreateHeader(module)
 	local main=module:GetMain()
 	GCF:SetFrameStrata(main:GetFrameStrata())
 	GCF:SetFrameLevel(main:GetFrameLevel()-2)
-	if (not ns.bigscreen and not module) then GCF:SetHeight(190) end
+	if (not ns.bigscreen and module == self) then GCF:SetHeight(130) end
+--@debug@
+print(GCF:GetHeight())
+--@end-debug@
 	baseHeight=GCF:GetHeight()
 	minHeight=47
 	GCF.CloseButton:SetScript("OnClick",nil)
