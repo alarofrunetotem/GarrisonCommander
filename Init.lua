@@ -110,6 +110,9 @@ local backdrop = {
 		edgeSize=16,
 		insets={bottom=3,left=3,right=3,top=3}
 }
+---@function [parent=#ns] AddBackdrop
+--@param object frame Frame to add backdrop to
+--@param int r,g,b optional color
 function ns.AddBackdrop(frame,r,g,b)
 	r=r or 1
 	g=g or 0

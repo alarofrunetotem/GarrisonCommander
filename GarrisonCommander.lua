@@ -825,7 +825,9 @@ function addon:CreatePrivateDb()
 					maxDuration = 24,
 					epicExp = false,
 					skipRare=true,
-					skipEpic=not addon:HasSalvageYard()
+					skipEpic=not addon:HasSalvageYard(),
+					minLevel=540,
+					minUpgrade=600
 				}
 			}
 		},
@@ -1574,7 +1576,7 @@ print("Adding Menu")
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
-		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCSKIPRARE','GCSKIPEPIC','GCMINLEVEL')
+		menu,size=self:CreateOptionsLayer('BIGSCREEN','USEFUL','MOVEPANEL')
 	end
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')

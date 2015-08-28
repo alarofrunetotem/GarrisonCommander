@@ -24,6 +24,7 @@ local rawget=rawget
 local time=time
 local empty={}
 local index={}
+local classes
 -- Mission caching is a bit different fron follower caching mission appears and disappears on a regular basis
 local module=addon:NewSubClass('MissionCache') --#module
 function module:OnInitialized()
@@ -62,6 +63,31 @@ function module:GetMission(id,noretry)
 	return self:GetMission(id,true)
 end
 function module:AddExtraData(mission)
+	local rewards=mission.rewards
+	if not rewards then
+		rewards=G.GetMissionRewardInfo(mission.missionID)
+	end
+	for i=1,#classes do
+		mission[classes[i].key]=0
+	end
+	mission.numrewards=0
+	mission.xpBonus=0
+	for k,v in pairs(rewards) do
+		if k==615 and v.followerXP then mission.xpBonus=mission.xpBonus+v.followerXP end
+		mission.numrewards=mission.numrewards+1
+		for i,c in ipairs(classes) do
+			local value=c.func(c,k,v)
+			if value then
+				mission[c.key]=mission[c.key]+value
+				mission.class=c.key
+				mission.maxable=c.maxable
+				mission.mat=c.mat
+				break
+			end
+		end
+	end
+end
+function module:AddExtraDataOld(mission)
 	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
 	mission.resources=0
 	mission.oil=0
@@ -75,6 +101,7 @@ function module:AddExtraData(mission)
 	mission.xp=mission.xp or 0
 	mission.rush=0
 	mission.chanceCap=100
+	mission.primalspirit=0
 	local numrewards=0
 	local rewards=mission.rewards
 	if not rewards then
@@ -91,7 +118,10 @@ function module:AddExtraData(mission)
 		if v.icon=="Interface\\Icons\\XPBonus_Icon" and v.followerXP then
 			mission.xpBonus=mission.xpBonus+v.followerXP
 		elseif (v.itemID) then
-			if v.itemID~=120205 then -- xp item
+			if v.itemID==120205 then -- xp item
+			elseif v.itemID==120945 then -- Primal Spirit
+					mission.primalspirit=v.quantity
+			else
 				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
 				if (not itemName or not itemTexture) then
 					mission.class="retry"
@@ -129,6 +159,10 @@ function module:AddExtraData(mission)
 		mission.class='apexis'
 		mission.maxable=true
 		mission.mat=true
+	elseif mission.primalspirit > 0 then
+		mission.class='primalspirit'
+		mission.maxable=false
+		mission.mat=false
 	elseif mission.seal > 0 then
 		mission.class='seal'
 		mission.maxable=fase
@@ -270,94 +304,7 @@ print("Could not find info for mission",missionID,G.GetMissionName(missionID))
 	end
 end
 function addon:AddExtraData(mission)
-	if newcache then return module:AddExtraData(mission) end
-	local _
-	_,mission.xp,mission.type,mission.typeDesc,mission.typeIcon,mission.locPrefix,_,mission.enemies=G.GetMissionInfo(mission.missionID)
-	mission.rank=mission.level < GARRISON_FOLLOWER_MAX_LEVEL and mission.level or mission.iLevel
-	mission.resources=0
-	mission.oil=0
-	mission.apexis=0
-	mission.seal=0
-	mission.gold=0
-	mission.followerUpgrade=0
-	mission.itemLevel=0
-	mission.xpBonus=0
-	mission.others=0
-	mission.xp=mission.xp or 0
-	mission.rush=0
-	mission.chanceCap=100
-	local numrewards=0
-	for k,v in pairs(mission.rewards) do
-		numrewards=numrewards+1
-		if k==615 and v.followerXP then mission.xpBonus=mission.xpBonus+v.followerXP end
-		if v.currencyID and v.currencyID==GARRISON_CURRENCY then mission.resources=v.quantity end
-		if v.currencyID and v.currencyID==GARRISON_SHIP_OIL_CURRENCY then mission.oil=v.quantity end
-		if v.currencyID and v.currencyID==823 then mission.apexis =mission.apexis+v.quantity end
-		if v.currencyID and v.currencyID==994 then mission.seal =mission.seal+v.quantity end
-		if v.currencyID and v.currencyID==0 then mission.gold =mission.gold+v.quantity/10000 end
-		if v.icon=="Interface\\Icons\\XPBonus_Icon" and v.followerXP then
-			mission.xpBonus=mission.xpBonus+v.followerXP
-		elseif (v.itemID) then
-			if v.itemID~=120205 then -- xp item
-				local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(v.itemID)
-				if (not itemName or not itemTexture) then
-					mission.class="retry"
-					return
-				end
-				if itemTexture:lower()==rushOrders then
-					mission.rush=mission.rush+v.quantity
-				elseif itemName and (not v.quantity or v.quantity==1) and not v.followerXP then
-					if (addon:IsFollowerUpgrade(v.itemID)) then
-						mission.followerUpgrade=itemRarity
-					else
-						itemLevel=addon:GetTrueLevel(v.itemID,itemLevel)
-						if itemLevel > 500  then
-							mission.itemLevel=itemLevel
-						else
-							mission.others=mission.others+v.quantity
-						end
-					end
-				else
-					mission.others=mission.others+v.quantity
-				end
-			end
-		end
-	end
-	mission.xpOnly=false
-	if mission.resources > 0 then
-		mission.class='resources'
-		mission.maxable=true
-		mission.mat=true
-	elseif mission.oil > 0 then
-		mission.class='oil'
-		mission.maxable=true
-		mission.mat=true
-	elseif mission.apexis > 0 then
-		mission.class='apexis'
-		mission.maxable=true
-		mission.mat=true
-	elseif mission.seal > 0 then
-		mission.class='seal'
-		mission.maxable=fase
-		mission.mat=false
-	elseif mission.gold >0 then
-		mission.class='gold'
-		mission.maxable=true
-		mission.mat=true
-	elseif mission.itemLevel >0 then
-		mission.class='itemLevel'
-	elseif mission.followerUpgrade>0 then
-		mission.class='followerUpgrade'
-	elseif mission.rush>0 then
-		mission.class='rush'
-	elseif mission.others >0 or numrewards > 1 then
-		mission.class='other'
-	else
-		mission.class='xp'
-		mission.xpOnly=true
-	end
-	mission.globalXp=(mission.xp+mission.xpBonus+(addon:GetParty(mission.missionID)['xpBonus'] or 0) )*mission.numFollowers
-
+	return module:AddExtraData(mission)
 end
 
 function addon:OnAllGarrisonMissions(func,inProgress)
@@ -368,3 +315,81 @@ local sorters={}
 function addon:GetMissionIterator(followerType,func)
 	return module:GetMissionIterator(followerType,func)
 end
+local function inList(self,id,reward)
+	if self.key=='xp'  then
+		if reward.followerXP then return reward.followerXp end
+	elseif self.key=='followerUpgrade' then
+		if not reward.itemID then return false end
+		local info=addon:IsFollowerUpgrade(reward.itemID)
+		if info then
+			local _,_,level=strsplit(':',info)
+			return 	tonumber(level) or 0
+		end
+	elseif self.key=='itemLevel' then
+		if not reward.itemID then return false end
+		local quality,level,minLevel=select(3,GetItemInfo(reward.itemID))
+		if quality then
+			level=addon:GetTrueLevel(reward.itemID,level)
+			if (level > 500 and minLevel >=90) or level >654 then
+				return level
+			end
+		else
+			return -1
+		end
+	elseif self.key=='other' then
+		return reward.quantity or 0
+	elseif reward.itemID and tcontains(self.list,reward.itemID) then
+		return reward.quantity or 1
+	elseif reward.currency and tcontains(self.list,reward.currency) then
+		return reward.quantity or 1
+	end
+	return false
+end
+local function isGearToken(self,id,reward)
+end
+local function isValid(self)
+	print(self.key,self.t)
+	for i=1,#self.list do
+		local id=self.list[i]
+		if id < 10000 then
+			print(GetCurrencyInfo(id))
+		else
+			print(GetItemInfo(id))
+		end
+	end
+end
+local c={}
+local function newMissionType(key,name,icon,maxable,mat,func,...)
+	return{
+		key=key,
+		t=name,
+		func=func or inList,
+		list={...},
+		i='Interface\\Icons\\' .. icon,
+		maxable=maxable,
+		mat=mat,
+		validate=isValid
+	}
+end
+classes={
+	newMissionType('xp',L['Follower experience'],'XPBonus_icon',false,false,nil,0),
+	newMissionType('resources',GetCurrencyInfo(GARRISON_CURRENCY),'inv_garrison_resource',true,true,nil,GARRISON_CURRENCY),
+	newMissionType('oil',GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY),'garrison_oil',true,true,nil,GARRISON_SHIP_OIL_CURRENCY),
+	newMissionType('rush',L['Rush orders'],'INV_Scroll_12',false,false,nil,122595,122594,122596,122592,122590,122593,122591,122576),
+	newMissionType('apexis',GetCurrencyInfo(823),'inv_apexis_draenor',false,false,nil,823),
+	newMissionType('seal',GetCurrencyInfo(994),'ability_animusorbs',false,false,nil,824),
+	newMissionType('gold',BONUS_ROLL_REWARD_MONEY,'inv_misc_coin_01',false,false,nil,0),
+	newMissionType('followerUpgrade',L['Follower equipment set or upgrade'],'Garrison_ArmorUpgrade',false,false,nil,0),
+	newMissionType('itemLevel',L['Item Tokens'],'INV_Bracer_Cloth_Reputation_C_01',false,false,nil,0),
+	newMissionType('other',L['Other rewards'],'INV_Box_02',false,false,nil,0),
+	newMissionType('primalspirit',L['Reagents'],'6BF_Explosive_shard',false,false,nil,118472,120945,113261,113262,113263,113264),
+	newMissionType('ark',L['Archaelogy'],'achievement_character_orc_male',false,false,nil,829,828,821,108439,109585,109584), -- Fragments and completer
+	newMissionType('training',L['Follower Training'],'Spell_Holy_WeaponMastery',false,false,nil,123858,118354,118475,122582,122580,122584,118474),
+	newMissionType('legendary',L['Legendary Items'],'INV_Relics_Runestone',false,false,nil,115510,115280,128693),
+	newMissionType('toys',L['Toys and Mounts'],'INV_LesserGronnMount_Red',false,false,nil,128310,127748,128311),
+	newMissionType('reputation',L['Reputation Items'],'Spell_Shadow_DemonicCircleTeleport',false,false,nil,117492,128315),
+}
+function addon:GetRewardClasses()
+	return classes
+end
+
