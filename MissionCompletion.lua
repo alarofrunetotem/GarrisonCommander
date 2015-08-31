@@ -8,6 +8,7 @@ local GMFMissions=GarrisonMissionFrameMissions
 local GSFMissions=GarrisonMissionFrameMissions
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY or 0
+local SEAL_CURRENCY=994
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local pairs=pairs
@@ -36,9 +37,15 @@ function module:GenerateMissionCompleteList(title,anchor)
 end
 --@debug@
 function addon.ShowRewards()
-	module:GenerateMissionCompleteList("Test")
+	module:GenerateMissionCompleteList("Test",UIParent)
 end
 --@end-debug@
+local cappedCurrencies={
+	GARRISON_CURRENCY,
+	GARRISON_SHIP_OIL_CURRENCY,
+	SEAL_CURRENCY
+}
+
 local missions={}
 local followerType=LE_FOLLOWER_TYPE_GARRISON_6_0
 local states={}
@@ -99,27 +106,30 @@ function module:CloseReport()
 	addon:RefreshParties()
 	addon:RefreshMissions()
 end
-function module:MissionComplete(this,button)
-
---@debug@
-print(this,button,this.missionType)
---@end-debug@
+function module:MissionComplete(this,button,skiprescheck)
 	followerType=this.missionType
 	missions=G.GetCompleteMissions(followerType)
+	
 	if (missions and #missions > 0) then
+		this:SetEnabled(false)
 		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		GSFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
-		report=self:GenerateMissionCompleteList("Missions' results",followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF)
 		wipe(rewards.followerBase)
 		wipe(rewards.followerXP)
 		wipe(rewards.currencies)
 		wipe(rewards.items)
+		local message=C("WARNING",'red')
+		local wasted={}
 		for i=1,#missions do
 			for k,v in pairs(missions[i].followers) do
 				rewards.followerBase[v]=self:GetAnyData(followerType,v,'qLevel',0)
 			end
 			for k,v in pairs(missions[i].rewards) do
 				if v.itemID then GetItemInfo(v.itemID) end -- tickling server
+				if v.currencyID and tContains(cappedCurrencies,v.currencyID) then
+					local currentQT=select(2,GetCurrencyInfo(v.currencyID))
+					wasted[v.currencyID]=(wasted[v.currencyID] or 0) + v.quantity
+				end
 			end
 			local m=missions[i]
 --totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier, goldMultiplier = C_Garrison.GetPartyMissionInfo(MISSION_PAGE_FRAME.missionInfo.missionID);
@@ -128,10 +138,43 @@ print(this,button,this.missionType)
 			_,_,m.isMissionTimeImproved,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
 
 		end
+		local stop
+		for id,qt in pairs(wasted) do
+			local name,current,_,_,_,cap=GetCurrencyInfo(id)
+			--@debug@
+			print(name,current,qt,cap)
+			--@debug-end@			
+			current=current+qt
+			if current+qt > cap then
+				message=message.."\n"..format(L["Capped %1$s. Spend at least %2$d of them"],name,current-cap)
+				stop =true
+			end
+		end
+		if stop and not skiprescheck then
+			self:Popup(message.."\n" ..L["If you continue, you will loose them"],0,
+				function() 
+					module:MissionComplete(this,button,true) 
+				end,
+				function() 
+					this:SetEnabled(true)
+					if GMF then 
+						GMF:Hide() 
+						GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
+					end 
+					if GSF then 
+						GSF:Hide()  
+						GSFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
+					end
+				end
+			)
+			return
+		end
+		report=self:GenerateMissionCompleteList("Missions' results",followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF)
 		report:SetUserData('missions',missions)
 		report:SetUserData('current',1)
 		self:Events(true)
 		self:MissionAutoComplete("INIT")
+		this:SetEnabled(true)		
 	end
 end
 function module:GetMission(missionID)
@@ -199,7 +242,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 		end
 		startTimer(0.1)
 		return
-	else -- event == LOOP
+	else -- event == LOOP or INIT
 		if (currentMission) then
 			local step=currentMission.state or -1
 			if (step<1) then

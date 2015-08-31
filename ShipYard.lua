@@ -47,6 +47,7 @@ function module:OnInitialize()
 	self:SafeSecureHook("GarrisonShipyardMapMission_OnLeave")
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
 
+
 --@debug@
 print(ref)
 --@end-debug@
@@ -138,6 +139,7 @@ function module:ScriptMapButtonOnClick(this)
 end
 function module:HookedGSF_OnClickMission(this,missionInfo)
 	self:FillMissionPage(missionInfo)
+	self:RefreshFollowerStatus()
 end
 function module:HookedGarrisonFollowerButton_UpdateCounters(gsf,frame,follower,showcounter,lastupdate)
 	if follower.followerTypeID~=LE_FOLLOWER_TYPE_SHIPYARD_6_2 then return end
@@ -172,6 +174,9 @@ print("Doing one time initialization for",this:GetName(),...)
 	GCS=addon:CreateHeader(self)
 	self:ScriptGarrisonShipyardFrame_OnShow()
 	self:SafeHookScript(GSF,"OnShow")
+	GSF.FollowerStatusInfo=GSF:CreateFontString(nil, "BORDER", "GameFontNormal")
+	GSF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,-5)	
+	GSF.FollowerStatusInfo:Show()	
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
 	GCS:Show()
@@ -180,7 +185,7 @@ function module:ScriptGarrisonShipyardFrame_OnShow()
 	GSF:SetPoint("TOPLEFT",GCS,"BOTTOMLEFT",0,23)
 	GSF:SetPoint("TOPRIGHT",GCS,"BOTTOMRIGHT",0,23)
 	self:RefreshMenu()
-
+	self:RefreshFollowerStatus()
 --@debug@
 print("Doing all time initialization")
 --@end-debug@
@@ -318,6 +323,31 @@ function module:ShowEnhancements()
 		e:Show()
 	end
 	u:Show()
+end
+do
+	local s=setmetatable({},{__index=function(t,k) return 0 end})
+	local FOLLOWER_STATUS_FORMAT="Ship status: " ..
+								C(AVAILABLE..':%d ','green') ..
+								C(GARRISON_FOLLOWER_ON_MISSION .. ":%d ",'red') 
+	function module:RefreshFollowerStatus()
+
+		wipe(s)
+		for _,followerID in self:GetShipsIterator() do
+			local status=self:GetFollowerStatus(followerID)
+			s[status]=s[status]+1
+		end
+		if (GSF.FollowerStatusInfo) then
+			GSF.FollowerStatusInfo:SetWidth(0)
+			GSF.FollowerStatusInfo:SetFormattedText(
+				FOLLOWER_STATUS_FORMAT,
+				s[AVAILABLE],
+				s[GARRISON_FOLLOWER_ON_MISSION]
+				)
+		end
+	end
+	function module:GetTotFollowers(status)
+		return s[status] or 0
+	end
 end
 --[[ Follower
 displayHeight = 0.25

@@ -20,6 +20,7 @@ local StaticPopupDialogs=StaticPopupDialogs
 local YES=YES
 local NO=NO
 local GARRISON_FOLLOWER_MAX_ITEM_LEVEL=GARRISON_FOLLOWER_MAX_ITEM_LEVEL
+local module=addon:NewSubClass("FollowerPage") --#module
 function addon:ShowImprovements()
 	local scroller=self:GetScroller("Items")
 	scroller:AddRow("Follower Upgrades",C.Orange())

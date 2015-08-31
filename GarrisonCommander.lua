@@ -24,7 +24,7 @@ local trc=false
 local pin=false
 local baseHeight
 local minHeight
-local addon=addon --#self
+local addon=addon --#addon
 local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 ns.bigscreen=true
@@ -398,6 +398,10 @@ print("Initialize")
 	db.lifespan=nil -- Removed in 2.6.9
 	db.traits=nil -- Removed in 2.6.9
 	db.types=nil -- Removed in 2.6.9
+	chardb.missions=nil -- Removed
+	chardb.followers=nil
+	chardb.running=nil
+	chardb.runningIndex=nil
 	if type(dbGAC)== "table " and type(dbGAC.namespaces)=="table" then
 		dbGAC.namespaces.missionscache=nil  -- Removed in 2.6.9
 		dbGAC.namespaces=nil
@@ -423,7 +427,7 @@ print("Initialize")
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("USEFUL",true,L["Enhance tooltip"],L["Adds a list of other useful followers to tooltip"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
-	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when maximise result is enabled. Default is 80%"],1)
+	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
 	self:AddLabel("Followers Panel")
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown"],L["Mission shown for follower"],1)
@@ -794,31 +798,14 @@ function addon:CreatePrivateDb()
 					}
 				},
 				missionControl={
-					version=1,
+					version=3,
 					allowedRewards = {
-						followerUpgrade=true,
-						gold=true,
-						itemLevel=true,
-						resources=true,
-						xp=true,
-						scroll=true,
-						apexis=true,
-						oil=true,
-						other=true
+						['*']=true,
 					},
 					rewardChance={
-						followerUpgrade=100,
-						gold=100,
-						itemLevel=100,
-						resources=100,
-						xp=100,
-						scroll=100,
-						apexis=100,
-						oil=100,
-						seal=100,
-						other=100
+						['*']=100,
 					},
-					rewardOrder={1,2,3,4,5,6,7,8,9,10},
+					rewardList={},
 					useOneChance=true,
 					minimumChance = 100,
 					minDuration = 0,
@@ -1087,18 +1074,12 @@ function addon:CreateOptionsLayer(...)
 	return o,totsize
 end
 function addon:AddOptionToOptionsLayer(o,flag,maxsize)
---@debug@
-	print("Adding option",flag)
---@end-debug@
 	maxsize=tonumber(maxsize) or 160
 	if (not flag) then return 0 end
 	local info=addon:GetVarInfo(flag)
 	if (info) then
 		local data={option=info}
 		local widget
---@debug@
-	print("Adding option",flag,info.type,info)
---@end-debug@
 		if (info.type=="toggle") then
 			widget=AceGUI:Create("CheckBox")
 			local value=addon:GetBoolean(flag)
@@ -1377,6 +1358,14 @@ function addon.ClonedGarrisonMissionMechanic_OnEnter(this)
 	end
 	tip:Show()
 end
+local function removeAllFollowers(missionID)
+	local x=G.GetBasicMissionInfo(missionID)
+	if x then
+		for i=1,#x.followers do
+			G.RemoveFollowerFromMission(missionID,x.followers[i])
+		end
+	end
+end
 function addon:HookedGarrisonFollowerPage_ShowFollower(frame,followerID,force)
 	return self:RenderFollowerPageMissionList(frame,followerID,force)
 end
@@ -1387,7 +1376,17 @@ do
 	local mh=nil
 	local tContains=tContains
 	local function MissionOnClick(this,...)
-
+		local m=GMF.MissionTab.MissionPage.missionInfo
+		if m and m.missionID then
+			holdEvents()
+			local rc,message=pcall(removeAllFollowers,m.missionID)
+			if not rec then
+				print(message)
+			end
+			releaseEvents()
+				 
+			
+		end	
 --@debug@
 print(this.frame,this.frame:GetName())
 --@end-debug@
@@ -1559,9 +1558,6 @@ function addon:RefreshMenu()
 	end
 end
 function addon:AddMenu()
---@debug@
-print("Adding Menu")
---@end-debug@
 	if GCF.Menu then
 		return
 	end
@@ -1576,7 +1572,7 @@ print("Adding Menu")
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
-		menu,size=self:CreateOptionsLayer('BIGSCREEN','USEFUL','MOVEPANEL')
+		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL')
 	end
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
@@ -1595,14 +1591,8 @@ print("Adding Menu")
 	GCF.Menu=menu
 end
 function addon:RemoveMenu()
---@debug@
-print("Removing menu")
---@end-debug@
 	if (GCF.Menu) then
 		local rc,message=pcall(GCF.Menu.Release,GCF.Menu)
-		--@debug@
-		print("Removed menu",rc,message)
-		--@end-debug@
 		GCF.Menu=nil
 	end
 end
@@ -1840,6 +1830,7 @@ local fakeinfo={followerID=false}
 local fakeframe={}
 
 function addon:FillMissionPage(missionInfo)
+	
 	--@debug@
 	print("FillMissionPage",missionInfo)
 	--@end-debug@
@@ -1887,17 +1878,12 @@ function addon:FillMissionPage(missionInfo)
 			local followerID=members[i]
 			if (followerID) then
 				main:AssignFollowerToMission(followerframe,self:GetAnyData(missionInfo.followerTypeID,followerID))
-				--	local rc,error=pcall(GarrisonMissionPage_AddFollower,followerID)
-				--	if (not rc) then
-				--		print("fillmissinopage",error)
-				--	end
 			end
 		end
 	else
-
---@debug@
-print("No martini no party")
---@end-debug@
+		--@debug@
+		print("No martini no party")
+		--@end-debug@
 	end
 	main:UpdateMissionParty(main.MissionTab.MissionPage.Followers)
 	main:UpdateMissionData(main.MissionTab.MissionPage)
@@ -2261,9 +2247,6 @@ function addon:ScriptGarrisonMissionButton_OnClick(tab,button)
 		return
 	end
 	if (type(tab.info)~="table") then return end
-	if (tab.fromFollowerPage) then
-		self:OpenMissionsTab()
-	end
 	self:FillMissionPage(tab.info)
 end
 function addon:OnClick_GCMissionButton(frame,button)
@@ -2354,7 +2337,7 @@ function deleteGarrisonMissionFrame_SetFollowerPortrait(portraitFrame, followerI
 	end
 end
 
-function addon:GarrisonMissionPageOnClose(self)
+function addon:GarrisonMissionPageOnClose()
 	GMF:ClearParty()
 	GarrisonMissionFrame.MissionTab.MissionPage:Hide();
 	GarrisonMissionFrame.followerCounters = nil;
@@ -2518,6 +2501,7 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 --@debug@
 	GameTooltip:AddDoubleLine("MissionID",this.info.missionID)
 	GameTooltip:AddDoubleLine("Class",this.info.class)
+	GameTooltip:AddDoubleLine(this.info.class,this.info[this.info.class])
 	GameTooltip:AddDoubleLine("TitleLen",this.Title:GetStringWidth())
 	GameTooltip:AddDoubleLine("SummaryLen",this.Summary:GetStringWidth())
 	GameTooltip:AddDoubleLine("Reward",this.Rewards[1]:GetWidth())

@@ -317,13 +317,12 @@ function addon:GetMissionIterator(followerType,func)
 end
 local function inList(self,id,reward)
 	if self.key=='xp'  then
-		if reward.followerXP then return reward.followerXp end
+		if reward.followerXP then return reward.followerXP end
 	elseif self.key=='followerUpgrade' then
 		if not reward.itemID then return false end
-		local info=addon:IsFollowerUpgrade(reward.itemID)
-		if info then
-			local _,_,level=strsplit(':',info)
-			return 	tonumber(level) or 0
+		local level=addon:IsFollowerUpgrade(reward.itemID)
+		if level then
+			return tonumber(level) or 0
 		end
 	elseif self.key=='itemLevel' then
 		if not reward.itemID then return false end
@@ -338,9 +337,9 @@ local function inList(self,id,reward)
 		end
 	elseif self.key=='other' then
 		return reward.quantity or 0
-	elseif reward.itemID and tcontains(self.list,reward.itemID) then
+	elseif reward.currencyID and tContains(self.list,-reward.currencyID) then
 		return reward.quantity or 1
-	elseif reward.currency and tcontains(self.list,reward.currency) then
+	elseif reward.itemID and tContains(self.list,reward.itemID) then
 		return reward.quantity or 1
 	end
 	return false
@@ -373,23 +372,30 @@ local function newMissionType(key,name,icon,maxable,mat,func,...)
 end
 classes={
 	newMissionType('xp',L['Follower experience'],'XPBonus_icon',false,false,nil,0),
-	newMissionType('resources',GetCurrencyInfo(GARRISON_CURRENCY),'inv_garrison_resource',true,true,nil,GARRISON_CURRENCY),
-	newMissionType('oil',GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY),'garrison_oil',true,true,nil,GARRISON_SHIP_OIL_CURRENCY),
+	newMissionType('resources',GetCurrencyInfo(GARRISON_CURRENCY),'inv_garrison_resource',true,true,nil,-GARRISON_CURRENCY),
+	newMissionType('oil',GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY),'garrison_oil',true,true,nil,-GARRISON_SHIP_OIL_CURRENCY),
 	newMissionType('rush',L['Rush orders'],'INV_Scroll_12',false,false,nil,122595,122594,122596,122592,122590,122593,122591,122576),
-	newMissionType('apexis',GetCurrencyInfo(823),'inv_apexis_draenor',false,false,nil,823),
-	newMissionType('seal',GetCurrencyInfo(994),'ability_animusorbs',false,false,nil,824),
+	newMissionType('apexis',GetCurrencyInfo(823),'inv_apexis_draenor',false,false,nil,-823),
+	newMissionType('seal',GetCurrencyInfo(994),'ability_animusorbs',false,false,nil,-994),
 	newMissionType('gold',BONUS_ROLL_REWARD_MONEY,'inv_misc_coin_01',false,false,nil,0),
 	newMissionType('followerUpgrade',L['Follower equipment set or upgrade'],'Garrison_ArmorUpgrade',false,false,nil,0),
 	newMissionType('itemLevel',L['Item Tokens'],'INV_Bracer_Cloth_Reputation_C_01',false,false,nil,0),
-	newMissionType('other',L['Other rewards'],'INV_Box_02',false,false,nil,0),
 	newMissionType('primalspirit',L['Reagents'],'6BF_Explosive_shard',false,false,nil,118472,120945,113261,113262,113263,113264),
-	newMissionType('ark',L['Archaelogy'],'achievement_character_orc_male',false,false,nil,829,828,821,108439,109585,109584), -- Fragments and completer
-	newMissionType('training',L['Follower Training'],'Spell_Holy_WeaponMastery',false,false,nil,123858,118354,118475,122582,122580,122584,118474),
+	newMissionType('ark',L['Archaelogy'],'achievement_character_orc_male',false,false,nil,-829,-828,-821,108439,109585,109584), -- Fragments and completer
+	newMissionType('training',L['Follower Training'],'Spell_Holy_WeaponMastery',false,false,nil,123858,118354,118475,122582,122583,122580,122584,118474),
 	newMissionType('legendary',L['Legendary Items'],'INV_Relics_Runestone',false,false,nil,115510,115280,128693),
 	newMissionType('toys',L['Toys and Mounts'],'INV_LesserGronnMount_Red',false,false,nil,128310,127748,128311),
 	newMissionType('reputation',L['Reputation Items'],'Spell_Shadow_DemonicCircleTeleport',false,false,nil,117492,128315),
+	newMissionType('other',L['Other rewards'],'INV_Box_02',false,false,nil,0),
 }
 function addon:GetRewardClasses()
 	return classes
 end
-
+function addon:TestMission(id)
+	local rewards=G.GetMissionRewardInfo(id)
+	for id,reward in pairs(rewards) do
+		for _,v in pairs(classes) do
+			print(v.key,v.func(v,id,reward))
+		end
+	end
+end

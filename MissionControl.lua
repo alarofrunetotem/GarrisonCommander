@@ -18,7 +18,8 @@ local pairs=pairs
 local tinsert=tinsert
 local tremove=tremove
 local dbg
-local tItems = {
+local tItems ={
+	--[[
 	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
 	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
 	{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},
@@ -30,17 +31,23 @@ local tItems = {
 	{t = 'Enable/Disable generc rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'other'},
 	{t = 'Enable/Disable Seal of Tempered Fate.', i = "Interface\\Icons\\ability_animusorbs", key = 'seal'},
 	{t = 'Enable/Disable Primal Spirit.', i = "Interface\\Icons\\6BF_Explosive_shard", key = 'primalspirit'},
-	{t = 'Enable/Disable Follower Equip Set.', i = "Interface\\Icons\\Garrison_GreenArmor", key = 'followerSet'},
-}
-tItems=addon:GetRewardClasses()
-local tOrder
-local tSort={}
+	--]]
+	}
+for _,data in ipairs(addon:GetRewardClasses()) do
+	tItems[data.key]=data
+end
+local classlist={} ---#table local reference to settings.rewardList
+local class2order={} ---#table maps a classname to its priority
 local settings
 local module=addon:NewSubClass("MissionControl") --#module
 function module:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
 end
 addon.GMCBusy=module.GMCBusy
+---
+-- Builds a mission list based on user preferences
+-- @param #module self self
+-- @param #table workList table to be filled with mission list
 function module:GMCCreateMissionList(workList)
 	--First get rid of unwanted rewards and missions that are too long
 	local settings=self.privatedb.profile.missionControl
@@ -50,38 +57,43 @@ function module:GMCCreateMissionList(workList)
 		local discarded=false
 		local class=self:GetMissionData(missionID,"class")
 		repeat
-
---@debug@
-print("|cffff0000",'Examing',missionID,self:GetMissionData(missionID,"name"),class,"|r")
---@end-debug@
+			--@debug@
+			print("|cffff0000",'Examining',missionID,self:GetMissionData(missionID,"name"),class,"|r")
+			--@end-debug@
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
-
---@debug@
-print(missionID,"discarded due to len",durationSeconds /3600)
---@end-debug@
+				--@debug@
+				print("  ",missionID,"discarded due to duration",durationSeconds /3600)
+				--@end-debug@
 				break
 			end -- Mission too long, out of here
 			if self:GetMissionData(missionID,'isRare') and addon:GetBoolean('GCSKIPRARE') then
-
---@debug@
-print(missionID,"discarded due to rarity")
---@end-debug@
+				--@debug@
+				print("  ",missionID,"discarded due to rarity")
+				--@end-debug@
 				break
 			end
 			if (not ar[class]) then
-
---@debug@
-print(missionID,"discarded due to class == ", class)
---@end-debug@
+				--@debug@
+				print("  ",missionID,"discarded due to class == ", class)
+				--@end-debug@
 				discarded=true
 				break
 			end
 			if class=="itemLevel" then
 				if self:GetMissionData(missionID,'itemLevel') < settings.minLevel then
---@debug@
-print(missionID,"discarded due to ilevel == ", self:GetMissionData(missionID,'itemLevel'))
---@end-debug@
+					--@debug@
+					print("  ",missionID,"discarded due to ilevel == ", self:GetMissionData(missionID,'itemLevel'))
+					--@end-debug@
+					discarded=true
+					break
+				end
+			elseif class=="followerUpgrade" then
+				if self:GetMissionData(missionID,'followerUpgrade') < settings.minUpgrade and
+					self:GetMissionData(missionID,'followerUpgrade') > 600 then
+					--@debug@
+					print("  ",missionID,"discarded due to followerUpgrade == ", self:GetMissionData(missionID,'followerUpgrade'))
+					--@end-debug@
 					discarded=true
 					break
 				end
@@ -98,25 +110,27 @@ print(missionID,"discarded due to ilevel == ", self:GetMissionData(missionID,'it
 		if (c1==c2) then
 			return addon:GetMissionData(i1,c1,0) > addon:GetMissionData(i2,c2,0)
 		else
-			return (tSort[c1] or i1)<(tSort[c2] or i2)
+			return (class2order[c1] or i1)<(class2order[c2] or i2)
 		end
 	end
 	table.sort(workList,msort)
---@debug@
+	--@debug@
 	for i=1,#workList do
 		local id=workList[i]
 		print(self:GetMissionData(id,'name'),self:GetMissionData(id,'class'),self:GetMissionData(id,self:GetMissionData(id,'class')))
 	end
---@end-debug@
+	--@end-debug@
 end
---- This routine can be called both as coroutin and as a standard one
+---
+-- This routine can be called both as coroutin and as a standard one
 -- In standard version, delay between group building and submitting is done via a self schedule
---@param #integer missionID Optional, to run a single mission
---@param #bool start Optional, tells that follower already are on mission and that we need just to start it
+-- @param #module self
+-- @param #number missionID Optional, to run a single mission
+-- @param #boolean start Optional, tells that follower already are on mission and that we need just to start it
 function module:GMCRunMission(missionID,start)
---@debug@
+	--@debug@
 	print("Asked to start mission",missionID)
---@end-debug@
+	--@end-debug@
 	local GMC=GMF.MissionControlTab
 	if (start) then
 		G.StartMission(missionID)
@@ -126,9 +140,9 @@ function module:GMCRunMission(missionID,start)
 	end
 	for i=1,#GMC.list.Parties do
 		local party=GMC.list.Parties[i]
---@debug@
+		--@debug@
 		print("Checking",party.missionID)
---@end-debug@
+		--@end-debug@
 		if (missionID and party.missionID==missionID or not missionID) then
 			GMC.list.widget:RemoveChild(party.missionID)
 			GMC.list.widget:DoLayout()
@@ -194,13 +208,13 @@ do
 				end
 				local party={members={},perc=0}
 				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
---@debug@
+				--@debug@
 				print(missionID,"  Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
---@end-debug@
+				--@end-debug@
 				if ( party.full and party.perc >= minimumChance) then
---@debug@
+					--@debug@
 					print(missionID,"  Acccepted",party)
---@end-debug@
+					--@end-debug@
 					local mb=AceGUI:Create("GMCMissionButton")
 					for i=1,#party.members do
 						GMCUsedFollowers[party.members[i]]=true
@@ -227,27 +241,27 @@ function module:GMC_OnClick_Run(this,button)
 	this:Disable()
 	GMC.logoutButton:Disable()
 	do
-	local elapsed=0
-	local co=coroutine.wrap(self.GMCRunMission)
-	self:RawHookScript(GMC.runButton,'OnUpdate',function(this,ts)
-		elapsed=elapsed+ts
-		if (elapsed>0.25) then
-			elapsed=0
-			local rc=co(self)
-			if (not rc) then
-				self:Unhook(GMC.runButton,'OnUpdate')
-				GMC.logoutButton:Enable()
+		local elapsed=0
+		local co=coroutine.wrap(self.GMCRunMission)
+		self:RawHookScript(GMC.runButton,'OnUpdate',function(this,ts)
+			elapsed=elapsed+ts
+			if (elapsed>0.25) then
+				elapsed=0
+				local rc=co(self)
+				if (not rc) then
+					self:Unhook(GMC.runButton,'OnUpdate')
+					GMC.logoutButton:Enable()
+				end
 			end
 		end
-	end
-	)
+		)
 	end
 end
 function module:GMC_OnClick_Start(this,button)
 	local GMC=GMF.MissionControlTab
---@debug@
-print(C("-------------------------------------------------","Yellow"))
---@end-debug@
+	--@debug@
+	print(C("-------------------------------------------------","Yellow"))
+	--@end-debug@
 	GMC.list.widget:ClearChildren()
 	if (self:GetTotFollowers(AVAILABLE) == 0) then
 		GMC.list.widget:SetTitle("All followers are busy")
@@ -275,149 +289,177 @@ print(C("-------------------------------------------------","Yellow"))
 
 end
 local chestTexture
+local function buildDragging(frame,drawItemButtons)
+	local GMC=GMF.MissionControlTab
+	frame:SetScript('OnClick', function(this)
+		settings.allowedRewards[this.key] = not settings.allowedRewards[this.key]
+		drawItemButtons()
+		GMC.startButton:Click()
+	end)
+	frame:SetScript('OnEnter', function(this)
+		GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
+		GameTooltip:AddLine(this.tooltip);
+		for _,line in ipairs(this.list) do
+			local info=GetItemInfo(line,2) 
+			if info then GameTooltip:AddLine(info) end
+		end
+		GameTooltip:Show()
+	end)
+	frame:RegisterForDrag("LeftButton")
+	frame:SetMovable(true)
+	frame:SetScript("OnDragStart",function(this,button)
+			--@debug@
+			print("Start",this:GetName(),GetMouseFocus():GetName(),this:GetID(),this.key)
+			--@end-debug@
+			local f=GMC.ignoreFrames[this:GetID()+1]
+			if f then f:ClearAllPoints() end
+			this:StartMoving()
+			this.oldframestrata=this:GetFrameStrata()
+			this:SetFrameStrata("FULLSCREEN_DIALOG")
+	end)
+	frame:SetScript("OnDragStop",function(this,button)
+		this:StopMovingOrSizing()
+		--@debug@
+		print("Stopped",this:GetName(),GetMouseFocus():GetName(),this:GetID(),this.key)
+		--@end-debug@
+		this:SetFrameStrata(this.oldframestrata)
+	end)
+	frame:SetScript("OnReceiveDrag",function(this,...)
+			--@debug@
+			print("Receive",this:GetName(),GetMouseFocus():GetName(),this:GetID(),this.key,...)
+			--@end-debug@
+			local from=this:GetID()
+			local to
+			local x,y=this:GetCenter()
+			local id=this:GetID()
+			for i=1,#GMC.ignoreFrames do
+				local f=GMC.ignoreFrames[i]
+				if f:GetID() ~= id then
+					if f:IsMouseOver()  then
+						to=f:GetID()
+						break
+					end
+					if y>=f:GetBottom() and y<=f:GetTop() and x>=f:GetLeft() and x<=f:GetRight() then
+						to=f:GetID()
+						break
+					end
+				end
+			end
+			if (to) then
+				local appo=tremove(classlist,from)
+				tinsert(classlist,to,appo)
+				--@debug@
+				print(appo,"from:",from,"to:",to)
+				DevTools_Dump(classlist)
+				--@end-debug@
+			end
+			drawItemButtons()
+			--module:Refresh()
+	end)
+	frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
+
+end
 local function drawItemButtons(frame)
 	local GMC=GMF.MissionControlTab
 	frame=frame or GMC.rewards
-	local scale=0.8
+	local scale=1.0
 	local h=37 -- itemButtonTemplate standard size
 	local gap=5
 	local single=settings.useOneChance
 	--for j = 1, #tItems do
-		--local i=tOrder[j]
-	for j,i in ipairs(tOrder) do
-		local frame = GMC.ignoreFrames[j] or CreateFrame('BUTTON', "Priority" .. j, frame, 'ItemButtonTemplate')
-		GMC.ignoreFrames[j] = frame
-		frame:SetID(j)
-		frame:ClearAllPoints()
-		frame:SetScale(scale)
-			--frame:SetPoint('TOPLEFT', 10,(j) * ((-h * scale) -gap))
-		if j==1 then
-			frame:SetPoint('TOPLEFT', 35,-35)
-		else
-			frame:SetPoint('TOPLEFT', GMC.ignoreFrames[j-1],'BOTTOMLEFT',0,-6)
+	--local i=tOrder[j]
+	local wrap=#classlist/2 +1
+	for frameIndex,i in ipairs(classlist) do
+		local row = GMC.ignoreFrames[frameIndex]
+		if not row then
+		 	row= CreateFrame('BUTTON', "Priority" .. frameIndex, frame, 'ItemButtonTemplate')
+			row.chance=settings.rewardChance[row.key] or 100
+			GMC.ignoreFrames[frameIndex] = row
+			row.slider=row.slider or factory:Slider(row,0,100,row.chance,row.chance)
+			row.slider:SetWidth(128)
+			row.slider:SetPoint('BOTTOMLEFT',row,'BOTTOMRIGHT',15,0)
+			row.slider.Text:SetFontObject('NumberFont_Outline_Med')
+			row.slider.isPercent=true
+			row.slider:SetScript("OnValueChanged",function(this,value)
+				settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
+				module:Refresh()
+			end
+			)
+			row.chest = row.chest or row:CreateTexture(nil, 'BACKGROUND')
+			row.chest:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
+			row.chest:SetAtlas(chestTexture)
+			row.chest:SetSize((209-(209*0.25))*0.30, (155-(155*0.25)) * 0.30)
+			row.chest:SetPoint('CENTER',row.slider, 0, 15)
+			buildDragging(row,drawItemButtons)
 		end
-		frame.icon:SetTexture(tItems[i].i)
-		frame.key=tItems[i].key
-		tSort[frame.key]=j
-		frame.tooltip=tItems[i].t
-		frame.allowed=settings.allowedRewards[frame.key]
-		frame.chance=settings.rewardChance[frame.key]
-		frame.icon:SetDesaturated(not frame.allowed)
-		if frame.key=="itemLevel" then
-			frame.Count:SetText(settings.minLevel)
-			frame.Count:SetPoint('BOTTOMRIGHT',0,5)
-			frame.Count:Show()
-		elseif frame.key=="followerUpgrade" then
-			frame.Count:SetText(settings.minUpgrade)
-			frame.Count:Show()
+		row:SetID(frameIndex)
+		row:ClearAllPoints()
+		row:SetScale(scale)
+		--frame:SetPoint('TOPLEFT', 10,(j) * ((-h * scale) -gap))
+		if frameIndex==1 then
+			row:SetPoint('TOPLEFT', 10,-35)
+		elseif frameIndex==wrap then
+			row:SetPoint('TOPRIGHT', -(10 + 145),-35)
 		else
-			frame.Count:Hide()
+			row:SetPoint('TOPLEFT', GMC.ignoreFrames[frameIndex-1],'BOTTOMLEFT',0,-5)
+		end
+		row.icon:SetTexture(tItems[i].i)
+		row.key=tItems[i].key
+		class2order[row.key]=frameIndex
+		row.tooltip=tItems[i].t
+		row.list=tItems[i].list
+		row.allowed=settings.allowedRewards[row.key]
+		row.chance=settings.rewardChance[row.key] or 100
+		row.icon:SetDesaturated(not row.allowed)
+		if row.key=="itemLevel" then
+			row.Count:SetText(settings.minLevel)
+			row.Count:SetJustifyH("RIGHT")			
+			row.Count:SetPoint('BOTTOMRIGHT',0,5)
+			row.Count:Show()
+		elseif row.key=="followerUpgrade" then
+			row.Count:SetText(settings.minUpgrade)
+			row.Count:SetJustifyH("RIGHT")			
+			row.Count:SetPoint('BOTTOMRIGHT',0,5)
+			row.Count:Show()
+		else
+			row.Count:Hide()
 		end
 		-- Need to resave them asap in order to populate the array for future scans
-		settings.allowedRewards[frame.key]=frame.allowed
-		settings.rewardChance[frame.key]=frame.chance
-		frame.slider=frame.slider or factory:Slider(frame,0,100,frame.chance or 100,frame.chance or 100)
-		frame.slider:SetWidth(128)
-		frame.slider:SetPoint('BOTTOMLEFT',60,0)
-		frame.slider.Text:SetFontObject('NumberFont_Outline_Med')
+		settings.allowedRewards[row.key]=row.allowed
+		settings.rewardChance[row.key]=row.chance
+		--row.slider:OnValueChanged(row.chance)
+		row.slider:SetValue(row.chance)
 		if (single) then
-			frame.slider.Text:SetTextColor(C.Silver())
+			row.slider:SetTextColor(C.Silver())
 		else
-			frame.slider.Text:SetTextColor(C.Green())
+			row.slider:SetTextColor(C.Green())
 		end
-		frame.slider.isPercent=true
-		frame.slider:SetScript("OnValueChanged",function(this,value)
-			settings.rewardChance[this:GetParent().key]=this:OnValueChanged(value)
-			end
-		)
-		frame.slider:OnValueChanged(settings.rewardChance[frame.key] or 100)
+		row.slider:OnValueChanged(settings.rewardChance[row.key] or 100)
 		--frame.slider:SetText(settings.rewardChance[frame.key])
-		frame.chest = frame.chest or frame:CreateTexture(nil, 'BACKGROUND')
-		frame.chest:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
-		frame.chest:SetAtlas(chestTexture)
-		frame.chest:SetSize((209-(209*0.25))*0.30, (155-(155*0.25)) * 0.30)
-		frame.chest:SetPoint('CENTER',frame.slider, 0, 15)
 		if (single) then
-			frame.chest:SetDesaturated(true)
+			row.chest:SetDesaturated(true)
 		else
-			frame.chest:SetDesaturated(false)
+			row.chest:SetDesaturated(false)
 		end
-		frame.chest:Show()
-		frame:SetScript('OnClick', function(this)
-			settings.allowedRewards[this.key] = not settings.allowedRewards[this.key]
-			drawItemButtons()
-			GMC.startButton:Click()
-		end)
-		frame:SetScript('OnEnter', function(this)
-			GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
-			GameTooltip:AddLine(this.tooltip);
-			GameTooltip:Show()
-		end)
-		frame:RegisterForDrag("LeftButton")
-		frame:SetMovable(true)
-		frame:SetScript("OnDragStart",function(this,button)
-
---@debug@
-print("Start",this:GetID(),this.key)
---@end-debug@
-			this:StartMoving()
-			this.oldframestrata=this:GetFrameStrata()
-			this:SetFrameStrata("FULLSCREEN_DIALOG")
-		end)
-		frame:SetScript("OnDragStop",function(this,button)
-			this:StopMovingOrSizing()
-
---@debug@
-print("Stopped",this:GetID(),this.key)
---@end-debug@
-			this:SetFrameStrata(this.oldframestrata)
-
-		end)
-		frame:SetScript("OnReceiveDrag",function(this)
-
---@debug@
-print("Receive",this:GetID(),this.key)
---@end-debug@
-				local from=this:GetID()
-				local to
-				local x,y=this:GetCenter()
-				local id=this:GetID()
-				for i=1,#GMC.ignoreFrames do
-					local f=GMC.ignoreFrames[i]
-					if f:GetID() ~= id then
-						if y>=f:GetBottom() and y<=f:GetTop() then
-							to=f:GetID()
-						end
-					end
-				end
-				if (to) then
-
---@debug@
-print("from:",from,"to:",to)
---@end-debug@
-					local appo=tremove(tOrder,from)
-					tinsert(tOrder,to,appo)
-				end
-				drawItemButtons()
-				GMC.startButton:Click()
-		end)
-		frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
-		frame:Show()
-		frame.top=frame:GetTop()
-		frame.bottom=frame:GetBottom()
+		row.chest:Show()
+		row:Show()
+		row.top=row:GetTop()
+		row.bottom=row:GetBottom()
 	end
 	if not GMC.rewardinfo then
 		GMC.rewardinfo = frame:CreateFontString()
 		local info=GMC.rewardinfo
 		info:SetFontObject('GameFontHighlight')
-		info:SetText("Click to enable/disable a reward.\nDrag to reorder")
+		info:SetText("Click to enable/disable a reward. Drag to reorder")
 		info:SetTextColor(1, 1, 1)
 		info:SetPoint("BOTTOM",0,-5)
 	end
-	frame:SetWidth(200)
 	return GMC.ignoreFrames[#tItems]
 end
 local function dbfixV1()
+--@debug@
+	print('dbfixV1')
+--@debug-end@	
 	if type(settings.allowedRewards['equip'])~='nil' then
 		settings.allowedRewards['itemLevel']=settings.allowedRewards['equip']
 		settings.rewardChance['itemLevel']=settings.rewardChance['equip']
@@ -430,15 +472,62 @@ local function dbfixV1()
 		settings.allowedRewards['followerEquip']=nil
 		settings.rewardChance['followerEquip']=nil
 	end
+	settings.version=2
 end
-local function toggleEpicWarning(warning)
+local function dbfixV2()
+--@debug@
+	print('dbfixV2')
+--@debug-end@	
+	local old=
+		{
+			'gold',
+			'resources',
+			'oil',
+			'rush',
+			'xp',
+			'followerUpgrade',
+			'itemLevel',
+			'apexis',
+			'seal',
+			'other'
+		}
+	settings.rewardList={}
+	settings.itemIgnoreList=nil
+	local a=settings.rewardList
+	if type(settings.rewardOrder)=="table" then
+		for _,i in ipairs(settings.rewardOrder) do
+			if old[i] ~='-' then
+				tinsert(a,old[i])
+				old[i]='-'
+			end
+		end
+	end
+	for  _,v in ipairs(old) do
+		if v~='-' then
+			tinsert(a,v)
+		end
+	end
+	for index,key in ipairs(a) do
+		class2order[key]=index
+	end
+	for _,v in ipairs(addon:GetRewardClasses()) do
+		if not class2order[v.key] then
+			tinsert(a,v.key)
+		end
+	end
+	settings.rewardOrder=nil
+	settings.version=3
+end
+local function toggleEpicWarning()
 	local GMC=GMF.MissionControlTab
+	local warning=GMC.warning
+	if not warning then return end
 	if (settings.skipEpic) then
 		warning:Show()
-		GMC.duration:SetPoint("TOPLEFT",GMC.rewards,"TOPRIGHT",0,-30)
+		GMC.list.widget:SetPoint("TOPLEFT",GMC.chance,"TOPRIGHT",0,ns.bigscreen and -60 or -50)
 	else
 		warning:Hide()
-		GMC.duration:SetPoint("TOPLEFT",GMC.rewards,"TOPRIGHT",0,0)
+		GMC.list.widget:SetPoint("TOPLEFT",GMC.chance,"TOPRIGHT",0,-30)
 	end
 end
 function module:OnInitialized()
@@ -449,29 +538,17 @@ function module:OnInitialized()
 	local GMC = CreateFrame('FRAME', nil, GMF)
 	GMF.MissionControlTab=GMC
 	settings=chardb.missionControl
-	tOrder=settings.rewardOrder
 	if settings.version < 2 then
 		dbfixV1()
 	end
-	if false then
-		local aa={}
-		for k,v in pairs(tOrder) do aa[k]=v end
-		for k,v in pairs(aa) do tOrder[k]=nil end
-		wipe(tOrder)
-		for i=1,#tItems do
-			tinsert(tOrder,i)
-		end
-		_G.tOrder=tOrder
+	if settings.version < 3 or type(settings.rewardOrder)=='table' then
+		dbfixV2()
 	end
-	if #tOrder<#tItems then
-		for i=#tOrder+1,#tItems do
-			tOrder[i]=i
-		end
-	end
-	for i=1,#tOrder do
-		tSort[tItems[tOrder[i]].key]=i
-	end
-
+	wipe(class2order)
+	classlist=settings.rewardList	
+	for index,key in ipairs(classlist) do
+		class2order[key]=index
+	end		
 	if settings.itemPrio then
 		settings.itemPrio=nil
 	end
@@ -489,19 +566,22 @@ function module:OnInitialized()
 	local rewards=GMC.rewards
 	local list=GMC.list
 	local flags=GMC.flags
-	rewards:SetPoint("TOPLEFT",20,-25)
-	rewards:SetPoint("BOTTOMLEFT",20,25)
-	list.widget:SetPoint("TOPLEFT",duration,"TOPRIGHT",0,-30)
+	list.widget:SetPoint("TOPLEFT",chance,"TOPRIGHT",0,-30)
 	list.widget:SetPoint("BOTTOMRIGHT",GMF,"BOTTOMRIGHT",-25,25)
-	--duration:SetPoint("TOPLEFT",rewards,"TOPRIGHT",0,-50) Now, its position is decided in toggleEpicWarning
-	chance:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",0,0)
-	flags:SetPoint("TOPLEFT",chance,"BOTTOMLEFT",0,0)
---@debug@
---	AddBackdrop(rewards)
---	AddBackdrop(duration,0,1,0)
---	AddBackdrop(chance,0,0,1)
---	AddBackdrop(flags,0,1,1)
---@end-debug@
+	duration:SetPoint("TOPLEFT",20,-25)
+	chance:SetPoint("TOPLEFT",duration,"TOPRIGHT",0,0)
+	rewards:SetPoint("TOPLEFT",duration,"BOTTOMLEFT",0,0)
+	rewards:SetPoint("BOTTOMLEFT",20,25)
+	toggleEpicWarning()
+	if flags then
+		flags:SetPoint("TOPLEFT",chance,"BOTTOMLEFT",0,0)
+	end
+	--@debug@
+	--AddBackdrop(rewards)
+	--AddBackdrop(duration,0,1,0)
+	--AddBackdrop(chance,0,0,1)
+	--	AddBackdrop(flags,0,1,1)
+	--@end-debug@
 	GMC.Credits=GMC:CreateFontString(nil,"ARTWORK","QuestFont_Shadow_Small")
 	GMC.Credits:SetWidth(0)
 	GMC.Credits:SetFormattedText(C(L["Original concept and interface by %s"],'Yellow'),C("Motig","Red") )
@@ -511,6 +591,7 @@ function module:OnInitialized()
 end
 local refreshTimer
 function module:Refresh()
+	if not GMF.MissionControlTab.startButton then return end
 	if GMF.MissionControlTab.startButton:IsEnabled() and not IsMouseButtonDown("LeftButton") then
 		self:GMC_OnClick_Start(GMF.MissionControlTab.startButton,"LeftUp")
 	else
@@ -525,25 +606,18 @@ function module:GMCBuildChance()
 	local GMC=GMF.MissionControlTab
 	--Chance
 	local frame= CreateFrame('FRAME', nil, GMC)
-	frame:SetSize(210, 170)
-
-	GMC.cc = frame:CreateFontString() --title
-	GMC.cc:SetFontObject('GameFontNormalHuge')
-	GMC.cc:SetText(L['Success Chance'])
-	GMC.cc:SetPoint('TOP', 0, -5)
-	GMC.cc:SetTextColor(C:White())
-
+	frame:SetSize(210, 165)
 	GMC.cp = frame:CreateTexture(nil, 'BACKGROUND') --Chest
 	GMC.cp:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
 	GMC.cp:SetAtlas(chestTexture)
 	GMC.cp:SetDesaturated(not settings.useOneChance)
 	GMC.cp:SetSize((209-(209*0.25))*0.60, (155-(155*0.25))*0.60)
-	GMC.cp:SetPoint('CENTER', 0, 20)
+	GMC.cp:SetPoint('CENTER', 0, 40)
 
 	GMC.ct = frame:CreateFontString() --Chance number
 	GMC.ct:SetFontObject('ZoneTextFont')
 	GMC.ct:SetFormattedText('%d%%',settings.minimumChance)
-	GMC.ct:SetPoint('CENTER', 0,20)
+	GMC.ct:SetPoint('CENTER', 0,25)
 	if settings.useOneChance then
 		GMC.ct:SetTextColor(C:Green())
 	else
@@ -552,9 +626,10 @@ function module:GMCBuildChance()
 	GMC.cs = factory:Slider(frame,0,100,settings.minimumChance,L['Minumum needed chance'],L["Mission with lower success chance will be ignored"]) -- Slider
 	GMC.cs:SetPoint('CENTER', 0, -25)
 	GMC.cs:SetScript('OnValueChanged', function(self, value)
-			local value = math.floor(value)
-			GMC.ct:SetText(value..'%')
-			settings.minimumChance = value
+		local value = math.floor(value)
+		GMC.ct:SetText(value..'%')
+		settings.minimumChance = value
+		module:Refresh()
 	end)
 	GMC.cs:SetValue(settings.minimumChance)
 	GMC.ck=factory:Checkbox(frame,settings.useOneChance,L["Global success chance"],L["Unchecking this will allow you to set specific success chance for each reward type"])
@@ -569,6 +644,7 @@ function module:GMCBuildChance()
 			GMC.ct:SetTextColor(C.Silver())
 		end
 		drawItemButtons()
+		module:Refresh()
 	end)
 	return frame
 end
@@ -587,78 +663,98 @@ local function timeslidechange(this,value)
 	GMC.mt:SetTextColor(1, c, c)
 	GMC.mt:SetFormattedText("%d-%dh",settings.minDuration,settings.maxDuration)
 end
+function addon:ApplyGCMINLEVEL(value)
+	settings.minLevel=value
+	drawItemButtons()
+	module:Refresh()
+end
+function addon:ApplyGCMINUPGRADE(value)
+	settings.minUpgrade=value
+	drawItemButtons()
+	module:Refresh()
+end
+function addon:ApplyGCSKIPEPIC(value)
+	settings.skipEpic=value
+	toggleEpicWarning()
+	module:Refresh()
+end
+function addon:ApplyGCSKIPRARE(value)
+	settings.skipRare=value
+	module:Refresh()
+end
 function module:GMCBuildFlags()
-	-- Duration
 	local GMC=GMF.MissionControlTab
-	local frame= CreateFrame('FRAME', nil, GMC) -- Flags frame
-	frame:SetSize(210, 30+40*5)
-	local title = frame:CreateFontString() -- Title
-	title:SetFontObject('GameFontNormalHuge')
-	title:SetText(L['Other settings'])
-	title:SetPoint('TOPLEFT', 0, -5)
-	title:SetPoint('TOPRIGHT', 0, -5)
-	title:SetTextColor(1, 1, 1)
-	title:SetJustifyH("CENTER")
-	GMC.skipRare=factory:Checkbox(frame,settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
-	GMC.skipRare:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-5)
-	GMC.skipRare:SetScript("OnClick",function(this)
-		settings.skipRare=this:GetChecked()
-		module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
-	end)
-	local warning=GMC:CreateFontString(nil,"ARTWORK","CombatTextFont")
+	local warning=GMC:CreateFontString(nil,"ARTWORK",ns.bigscreen and "GameFontNormalHuge" or "GameFontNormal")
 	warning:SetText(L["Epic followers are NOT sent alone on xp only missions"])
-	warning:SetPoint("TOPLEFT",GMC.rewards,"TOPRIGHT",0,0)
+	warning:SetPoint("TOPLEFT",GMC.chance,"TOPRIGHT",0,0)
 	warning:SetPoint("TOPRIGHT",GMC,"TOPRIGHT",0,-25)
 	warning:SetJustifyH("CENTER")
 	warning:SetTextColor(C.Orange())
-	toggleEpicWarning(warning)
-	GMC.skipEpic=factory:Checkbox(frame,settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
-	GMC.skipEpic:SetPoint("TOPLEFT",GMC.skipRare,"BOTTOMLEFT",0,-5)
-	GMC.skipEpic:SetScript("OnClick",function(this)
-		settings.skipEpic=this:GetChecked()
-		toggleEpicWarning(warning)
-		module:Refresh()
-	end)
-	GMC.minLevel=factory:Slider(frame,540,715,settings.minLevel,L["Item minimum level"],L['Minimum requested level for equipment rewards'])
-	GMC.minLevel:SetPoint('TOP', GMC.skipEpic,"BOTTOM",0, -25)
-	GMC.minLevel:SetScript('OnValueChanged', function(self, value)
+	GMC.warning=warning
+	if true then
+		addon:AddLabel(L["Mission Control"])
+		addon:AddSlider("GCMINLEVEL",settings.minLevel,535,715,L["Item minimum level"],L['Minimum requested level for equipment rewards'],15)
+		addon:AddSlider("GCMINUPGRADE",settings.minUpgrade,600,675,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'],15)
+		addon:AddToggle("GCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
+		addon:AddToggle("GCSKIPRARE",settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
+	else
+		-- Duration
+		local frame= CreateFrame('FRAME', nil, GMC) -- Flags frame
+		frame:SetSize(210, 30+40*5)
+		local title = frame:CreateFontString() -- Title
+		title:SetFontObject('GameFontNormalHuge')
+		title:SetText(L['Other settings'])
+		title:SetPoint('TOPLEFT', 0, -5)
+		title:SetPoint('TOPRIGHT', 0, -5)
+		title:SetTextColor(1, 1, 1)
+		title:SetJustifyH("CENTER")
+		GMC.skipRare=factory:Checkbox(frame,settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
+		GMC.skipRare:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-5)
+		GMC.skipRare:SetScript("OnClick",function(this)
+			settings.skipRare=this:GetChecked()
+			module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
+		end)
+		GMC.skipEpic=factory:Checkbox(frame,settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
+		GMC.skipEpic:SetPoint("TOPLEFT",GMC.skipRare,"BOTTOMLEFT",0,-5)
+		GMC.skipEpic:SetScript("OnClick",function(this)
+			settings.skipEpic=this:GetChecked()
+			toggleEpicWarning(warning)
+			module:Refresh()
+		end)
+		GMC.minLevel=factory:Slider(frame,540,715,settings.minLevel,L["Item minimum level"],L['Minimum requested level for equipment rewards'])
+		GMC.minLevel:SetPoint('TOP', GMC.skipEpic,"BOTTOM",0, -25)
+		GMC.minLevel:SetScript('OnValueChanged', function(self, value)
 			local value = math.floor(value)
 			settings.minLevel = value
 			drawItemButtons()
 			module:Refresh()
-	end)
-	--GMC.minLevel:SetValue(settings.minLevel)
-	GMC.minLevel:SetStep(15)
-	GMC.minUpgrade=factory:Slider(frame,600,675,settings.minUpgrade,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'])
-	GMC.minUpgrade:SetPoint('TOP', GMC.minLevel,"BOTTOM",0, -25)
-	GMC.minUpgrade:SetScript('OnValueChanged', function(self, value)
+		end)
+		--GMC.minLevel:SetValue(settings.minLevel)
+		GMC.minLevel:SetStep(15)
+		GMC.minUpgrade=factory:Slider(frame,600,675,settings.minUpgrade,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'])
+		GMC.minUpgrade:SetPoint('TOP', GMC.minLevel,"BOTTOM",0, -25)
+		GMC.minUpgrade:SetScript('OnValueChanged', function(self, value)
 			local value = math.floor(value)
 			settings.minUpgrade = value
 			drawItemButtons()
 			module:Refresh()
-	end)
-	--GMC.minUpgrade:SetValue(settings.minUpgrade)
-	GMC.minUpgrade:SetStep(15)
-	return frame
+		end)
+		--GMC.minUpgrade:SetValue(settings.minUpgrade)
+		GMC.minUpgrade:SetStep(15)
+		return frame
+	end
 end
 function module:GMCBuildDuration()
 	-- Duration
 	local GMC=GMF.MissionControlTab
-	local frame= CreateFrame('FRAME', nil, GMC) -- Dutation frame
-	frame:SetSize(210, 220)
+	local frame= CreateFrame('FRAME', 'PIPPO', GMC) -- Dutation frame
+	frame:SetSize(210, 165)
 	frame:SetPoint('TOP',0, -20)
-
-	GMC.mdt = frame:CreateFontString() -- Title
-	GMC.mdt:SetFontObject('GameFontNormalHuge')
-	GMC.mdt:SetText(L['Mission Duration'])
-	GMC.mdt:SetPoint('TOP', 0, -5)
-	GMC.mdt:SetTextColor(1, 1, 1)
-
 
 	GMC.hg = frame:CreateTexture(nil, 'BACKGROUND') -- Hourglass
 	GMC.hg:SetTexture('Interface\\Timer\\Challenges-Logo.blp')
 	GMC.hg:SetSize(7, 70)
-	GMC.hg:SetPoint('CENTER', 0, 0)
+	GMC.hg:SetPoint('CENTER', 0, 10)
 	GMC.hg:SetBlendMode('ADD')
 
 	GMC.rune = frame:CreateTexture(nil, 'BACKGROUND') --Rune
@@ -666,7 +762,7 @@ function module:GMCBuildDuration()
 	--bb:SetTexture('dungeons\\textures\\devices\\mm_clockface_01.blp')
 	GMC.rune:SetTexture('World\\Dungeon\\Challenge\\clockRunes.blp')
 	GMC.rune:SetSize(80, 80)
-	GMC.rune:SetPoint('CENTER', 0, 0)
+	GMC.rune:SetPoint('CENTER', 0, 10)
 	GMC.rune:SetBlendMode('ADD')
 
 	GMC.mt = frame:CreateFontString() -- Duration string over hourglass
@@ -677,7 +773,7 @@ function module:GMCBuildDuration()
 
 	GMC.ms1 = factory:Slider(frame,0,24,settings.minDuration,L['Minimum mission duration.'])
 	GMC.ms2 = factory:Slider(frame,0,24,settings.maxDuration,L['Maximum mission duration.'])
-	GMC.ms1:SetPoint('TOP', frame,'TOP',0, -45)
+	GMC.ms1:SetPoint('TOP', frame,'TOP',0, -10)
 	GMC.ms2:SetPoint('BOTTOM', frame,'BOTTOM',0, 15)
 	GMC.ms2.max=true
 	GMC.ms1:SetScript('OnValueChanged', timeslidechange)
@@ -690,6 +786,7 @@ function module:GMCBuildRewards()
 	--Allowed rewards
 	local GMC=GMF.MissionControlTab
 	local frame = CreateFrame('FRAME', nil, GMC)
+	frame:SetWidth(420)
 	GMC.itf = frame:CreateFontString()
 	GMC.itf:SetFontObject('GameFontNormalHuge')
 	GMC.itf:SetText(L['Allowed Rewards'])

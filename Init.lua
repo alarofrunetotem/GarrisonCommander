@@ -13,7 +13,6 @@ local tostringall=tostringall
 local tostring=tostring
 local tonumber=tonumber
 local type=type
-print("init loaded")
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
 LoadAddOn("LibDebug")
@@ -383,7 +382,9 @@ ns.traitTable={
 	[232]="Dancer"
 }
 }
-
+-- Caching iteminfo
+ns.I=LibStub("LibItemUpgradeInfo-1.0")
+ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
 -- Pseudo Global Support.
 -- Calling ns.Configure() will give to the calling function a preloaded env
 
@@ -409,29 +410,5 @@ function ns.Configure()
 		end
 		setfenv(2, ENV)
 end
--------------------- to be estracted to CountersCache
---
---local G=C_Garrison
---ns.Abilities=setmetatable({},{
---	__index=function(t,k) rawset(t,k,G.GetFollowerAbilityName(k)) return rawget(t,k) end
---})
---
---
---
 
---[[ TtraitTable generator
-local TT=C_Garrison.GetRecruiterAbilityList(true)
-local map={}
-local  keys={}
-for i,v in pairs(C_Garrison.GetRecruiterAbilityCategories()) do
-	keys[v]=i
-end
-for  _,trait in  pairs(TT) do
-	local key=keys[trait.category]
-	if type(map[key])~="table"  then
-			map[key]={}
-	end
-	map[key][trait.id]=trait.name
-end
-ATEINFO['abilities']=map
---]]
+
