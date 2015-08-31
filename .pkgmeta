@@ -23,6 +23,7 @@ manual-changelog:
 ignore:
 - .buildpath
 - .project
+- .gitignore
 - Debug.lua
 - info.txt
 - wowhead.sh
