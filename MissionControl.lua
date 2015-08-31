@@ -459,7 +459,7 @@ end
 local function dbfixV1()
 --@debug@
 	print('dbfixV1')
---@debug-end@	
+--@end-debug@	
 	if type(settings.allowedRewards['equip'])~='nil' then
 		settings.allowedRewards['itemLevel']=settings.allowedRewards['equip']
 		settings.rewardChance['itemLevel']=settings.rewardChance['equip']
@@ -477,7 +477,7 @@ end
 local function dbfixV2()
 --@debug@
 	print('dbfixV2')
---@debug-end@	
+--@end-debug@	
 	local old=
 		{
 			'gold',

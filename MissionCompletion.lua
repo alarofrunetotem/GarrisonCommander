@@ -143,7 +143,7 @@ function module:MissionComplete(this,button,skiprescheck)
 			local name,current,_,_,_,cap=GetCurrencyInfo(id)
 			--@debug@
 			print(name,current,qt,cap)
-			--@debug-end@			
+			--@end-debug@			
 			current=current+qt
 			if current+qt > cap then
 				message=message.."\n"..format(L["Capped %1$s. Spend at least %2$d of them"],name,current-cap)
