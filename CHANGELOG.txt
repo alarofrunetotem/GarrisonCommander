@@ -1,6 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
 * *2.7.0*
+Feature: If quick completing a mission is wasting currencies, you are warned and can cancel it (suggesion by Runya)
+Feature: Follower upgrades can be filtered on level
 Feature: Item rewards in Mission Control can be filtered on level
 Feature: Added quite a bunch of rewards in mission control
 Feature: All header menu are now context sensitive
