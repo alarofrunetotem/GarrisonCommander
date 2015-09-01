@@ -66,6 +66,7 @@ print(ref)
 	self:SafeHookScript(GSF.MissionTab,"OnShow",true)
 	self:SafeHookScript(GSF.FollowerTab,"OnShow",true)
 	self:SafeRegisterEvent("GARRISON_SHIPYARD_NPC_CLOSED")
+	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
 	--GarrisonShipyardFrameFollowersListScrollFrameButton1
 	--GarrisonShipyardMapMission1
 	addon:AddLabel(L["Shipyard Appearance"])
@@ -166,17 +167,14 @@ print("Doing one time initialization for",this:GetName(),...)
 	addon:CheckMP()
 	self:SafeSecureHookScript("GarrisonShipyardFrame","OnShow")
 	self:SafeSecureHookScript(GSF.FollowerTab,"OnShow","FollowerOnShow")
-	--GSF:EnableMouse(true)
-	--GSF:SetMovable(true)
-	--GSF:RegisterForDrag("LeftButton")
-	--GSF:SetScript("OnDragStart",function(frame)if (self:GetBoolean("MOVEPANEL")) then frame:StartMoving() end end)
-	--GSF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 	GCS=addon:CreateHeader(self)
 	self:ScriptGarrisonShipyardFrame_OnShow()
 	self:SafeHookScript(GSF,"OnShow")
-	GSF.FollowerStatusInfo=GSF:CreateFontString(nil, "BORDER", "GameFontNormal")
-	GSF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,-5)	
-	GSF.FollowerStatusInfo:Show()	
+	GSF.FollowerStatusInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	GSF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,0)
+	GSF.FollowerStatusInfo:SetHeight(25)
+	self:RefreshFollowerStatus()
+	GSF.FollowerStatusInfo:Show()
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
 	GCS:Show()
@@ -221,6 +219,12 @@ print("NPC CLOSED")
 		self:RemoveMenu()
 		GCS:Hide()
 	end
+end
+function module:EventGARRISON_MISSION_STARTED(event,missionID,...)
+	--@debug@
+	print(event,missionID)
+	--@end-debug@
+	self:RefreshFollowerStatus()
 end
 function module:RefreshMenu()
 	if not GCS then return end  -- This could be called befaur header is built
@@ -328,7 +332,7 @@ do
 	local s=setmetatable({},{__index=function(t,k) return 0 end})
 	local FOLLOWER_STATUS_FORMAT="Ship status: " ..
 								C(AVAILABLE..':%d ','green') ..
-								C(GARRISON_FOLLOWER_ON_MISSION .. ":%d ",'red') 
+								C(GARRISON_FOLLOWER_ON_MISSION .. ":%d ",'red')
 	function module:RefreshFollowerStatus()
 
 		wipe(s)
