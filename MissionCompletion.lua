@@ -1,6 +1,7 @@
 local me, ns = ...
 ns.Configure()
 local addon=addon --#addon
+local shipyard
 local _G=_G
 local GMF=GMF
 local GSF=GSF
@@ -109,11 +110,12 @@ end
 function module:MissionComplete(this,button,skiprescheck)
 	followerType=this.missionType
 	missions=G.GetCompleteMissions(followerType)
-	
+	shipyard=addon:GetModule("ShipYard")
+	local missionsFrame=followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMFMissions or GSFMissions
+
 	if (missions and #missions > 0) then
 		this:SetEnabled(false)
-		GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
-		GSFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
+		missionsFrame.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
 		wipe(rewards.followerBase)
 		wipe(rewards.followerXP)
 		wipe(rewards.currencies)
@@ -143,7 +145,7 @@ function module:MissionComplete(this,button,skiprescheck)
 			local name,current,_,_,_,cap=GetCurrencyInfo(id)
 			--@debug@
 			print(name,current,qt,cap)
-			--@end-debug@			
+			--@end-debug@
 			current=current+qt
 			if current+qt > cap then
 				message=message.."\n"..format(L["Capped %1$s. Spend at least %2$d of them"],name,current-cap)
@@ -152,19 +154,13 @@ function module:MissionComplete(this,button,skiprescheck)
 		end
 		if stop and not skiprescheck then
 			self:Popup(message.."\n" ..L["If you continue, you will loose them"],0,
-				function() 
-					module:MissionComplete(this,button,true) 
+				function()
+					module:MissionComplete(this,button,true)
 				end,
-				function() 
+				function()
 					this:SetEnabled(true)
-					if GMF then 
-						GMF:Hide() 
-						GMFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
-					end 
-					if GSF then 
-						GSF:Hide()  
-						GSFMissions.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
-					end
+					missionsFrame:GetParent():Hide()
+					missionsFrame.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
 				end
 			)
 			return
@@ -174,7 +170,7 @@ function module:MissionComplete(this,button,skiprescheck)
 		report:SetUserData('current',1)
 		self:Events(true)
 		self:MissionAutoComplete("INIT")
-		this:SetEnabled(true)		
+		this:SetEnabled(true)
 	end
 end
 function module:GetMission(missionID)
@@ -266,7 +262,8 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 				startTimer(2)
 			elseif (step>=2) then
 				self:GetMissionResults(step==3,currentMission)
-				self:RefreshFollowerStatus()
+				addon:RefreshFollowerStatus()
+				shipyard:RefreshFollowerStatus()
 				local current=report:GetUserData('current')
 				report:SetUserData('current',current+1)
 				startTimer()
