@@ -1,3 +1,4 @@
+local pp=print
 local me, ns = ...
 ns.Configure()
 local addon=addon --#addon
@@ -8,6 +9,8 @@ local G=C_Garrison
 local pairs=pairs
 local format=format
 local strsplit=strsplit
+local select=select
+local GetCurrencyInfo=GetCurrencyInfo
 local generated
 local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY
 local GARRISON_CURRENCY=GARRISON_CURRENCY
@@ -168,13 +171,16 @@ print("Doing one time initialization for",this:GetName(),...)
 	self:SafeSecureHookScript("GarrisonShipyardFrame","OnShow")
 	self:SafeSecureHookScript(GSF.FollowerTab,"OnShow","FollowerOnShow")
 	GCS=addon:CreateHeader(self)
-	self:ScriptGarrisonShipyardFrame_OnShow()
-	self:SafeHookScript(GSF,"OnShow")
 	GSF.FollowerStatusInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	GSF.ResourceInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	GSF.ResourceFormat="|TInterface\\Icons\\garrison_oil:0|t %s " .. GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY)
+	GSF.ResourceInfo:SetPoint("TOPLEFT",30,0)
+	GSF.ResourceInfo:SetHeight(25)
 	GSF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,0)
 	GSF.FollowerStatusInfo:SetHeight(25)
-	self:RefreshFollowerStatus()
 	GSF.FollowerStatusInfo:Show()
+	self:ScriptGarrisonShipyardFrame_OnShow()
+	self:SafeHookScript(GSF,"OnShow")
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
 	GCS:Show()
@@ -183,6 +189,7 @@ function module:ScriptGarrisonShipyardFrame_OnShow()
 	GSF:SetPoint("TOPLEFT",GCS,"BOTTOMLEFT",0,23)
 	GSF:SetPoint("TOPRIGHT",GCS,"BOTTOMRIGHT",0,23)
 	self:RefreshMenu()
+	self:RefrreshCurrency()
 	self:RefreshFollowerStatus()
 --@debug@
 print("Doing all time initialization")
@@ -220,11 +227,20 @@ print("NPC CLOSED")
 		GCS:Hide()
 	end
 end
+function module:EventCHAT_MSG_CURRENCY(event)
+	self:RefrreshCurrency()
+end
+function module:RefrreshCurrency()
+	if GSF:IsVisible() then
+		GSF.ResourceInfo:SetFormattedText(GSF.ResourceFormat,select(2,GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY)))
+	end
+end
 function module:EventGARRISON_MISSION_STARTED(event,missionID,...)
 	--@debug@
-	print(event,missionID)
+	pp(event,missionID)
 	--@end-debug@
 	self:RefreshFollowerStatus()
+	self:ScheduleTimer("RefrreshCurrency",0.2)
 end
 function module:RefreshMenu()
 	if not GCS then return end  -- This could be called befaur header is built
