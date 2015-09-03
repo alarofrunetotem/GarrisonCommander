@@ -300,7 +300,7 @@ local function buildDragging(frame,drawItemButtons)
 		GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
 		GameTooltip:AddLine(this.tooltip);
 		for _,line in ipairs(this.list) do
-			local info=GetItemInfo(line,2) 
+			local info=GetItemInfo(line,2)
 			if info then GameTooltip:AddLine(info) end
 		end
 		GameTooltip:Show()
@@ -372,7 +372,7 @@ local function drawItemButtons(frame)
 	for frameIndex,i in ipairs(classlist) do
 		local row = GMC.ignoreFrames[frameIndex]
 		if not row then
-		 	row= CreateFrame('BUTTON', "Priority" .. frameIndex, frame, 'ItemButtonTemplate')
+			row= CreateFrame('BUTTON', "Priority" .. frameIndex, frame, 'ItemButtonTemplate')
 			row.chance=settings.rewardChance[row.key] or 100
 			GMC.ignoreFrames[frameIndex] = row
 			row.slider=row.slider or factory:Slider(row,0,100,row.chance,row.chance)
@@ -413,12 +413,12 @@ local function drawItemButtons(frame)
 		row.icon:SetDesaturated(not row.allowed)
 		if row.key=="itemLevel" then
 			row.Count:SetText(settings.minLevel)
-			row.Count:SetJustifyH("RIGHT")			
+			row.Count:SetJustifyH("RIGHT")
 			row.Count:SetPoint('BOTTOMRIGHT',0,5)
 			row.Count:Show()
 		elseif row.key=="followerUpgrade" then
 			row.Count:SetText(settings.minUpgrade)
-			row.Count:SetJustifyH("RIGHT")			
+			row.Count:SetJustifyH("RIGHT")
 			row.Count:SetPoint('BOTTOMRIGHT',0,5)
 			row.Count:Show()
 		else
@@ -459,7 +459,7 @@ end
 local function dbfixV1()
 --@debug@
 	print('dbfixV1')
---@end-debug@	
+--@end-debug@
 	if type(settings.allowedRewards['equip'])~='nil' then
 		settings.allowedRewards['itemLevel']=settings.allowedRewards['equip']
 		settings.rewardChance['itemLevel']=settings.rewardChance['equip']
@@ -477,7 +477,7 @@ end
 local function dbfixV2()
 --@debug@
 	print('dbfixV2')
---@end-debug@	
+--@end-debug@
 	local old=
 		{
 			'gold',
@@ -541,14 +541,14 @@ function module:OnInitialized()
 	if settings.version < 2 then
 		dbfixV1()
 	end
-	if settings.version < 3 or type(settings.rewardOrder)=='table' then
+	if settings.version < 3 or type(settings.rewardOrder)=='table' or #settings.rewardList==0 then
 		dbfixV2()
 	end
 	wipe(class2order)
-	classlist=settings.rewardList	
+	classlist=settings.rewardList
 	for index,key in ipairs(classlist) do
 		class2order[key]=index
-	end		
+	end
 	if settings.itemPrio then
 		settings.itemPrio=nil
 	end
