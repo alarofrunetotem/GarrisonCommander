@@ -1,6 +1,8 @@
 local pp=print
 local me, ns = ...
 ns.Configure()
+local GarrisonMissionFrame_SetItemRewardDetails=GarrisonMissionFrame_SetItemRewardDetails
+local GetItemCount=GetItemCount
 local addon=addon --#addon
 local over=over --#over
 local _G=_G
@@ -174,7 +176,7 @@ print("Doing one time initialization for",this:GetName(),...)
 	GSF.FollowerStatusInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	GSF.ResourceInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	GSF.ResourceFormat="|TInterface\\Icons\\garrison_oil:0|t %s " .. GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY)
-	GSF.ResourceInfo:SetPoint("TOPLEFT",30,0)
+	GSF.ResourceInfo:SetPoint("TOPLEFT",5,0)
 	GSF.ResourceInfo:SetHeight(25)
 	GSF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,0)
 	GSF.FollowerStatusInfo:SetHeight(25)
@@ -183,6 +185,10 @@ print("Doing one time initialization for",this:GetName(),...)
 	self:SafeHookScript(GSF,"OnShow")
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
+--@debug@
+	print("Doing all time initialization")
+	print(GetTime())
+--@end-debug@
 	GCS:Show()
 	GCS:SetWidth(GSF:GetWidth())
 	GSF:ClearAllPoints()
@@ -192,7 +198,8 @@ function module:ScriptGarrisonShipyardFrame_OnShow()
 	self:RefrreshCurrency()
 	self:RefreshFollowerStatus()
 --@debug@
-print("Doing all time initialization")
+	print("Doing all time initialization")
+	print(GetTime())
 --@end-debug@
 end
 function module:HookedGarrisonShipyardMapMission_OnLeave()
@@ -232,7 +239,15 @@ function module:EventCHAT_MSG_CURRENCY(event)
 end
 function module:RefrreshCurrency()
 	if GSF:IsVisible() then
-		GSF.ResourceInfo:SetFormattedText(GSF.ResourceFormat,select(2,GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY)))
+		local qt=select(2,GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY))
+		GSF.ResourceInfo:SetFormattedText(GSF.ResourceFormat,qt)
+		if qt > 1000 then
+			GSF.ResourceInfo:SetTextColor(C.Green())
+		elseif qt > 200 then
+			GSF.ResourceInfo:SetTextColor(C.Orange())
+		else
+			GSF.ResourceInfo:SetTextColor(C.Red())
+		end
 	end
 end
 function module:EventGARRISON_MISSION_STARTED(event,missionID,...)
@@ -331,9 +346,6 @@ function module:ShowEnhancements()
 			e:RegisterForClicks("LeftButtonDown")
 			e:SetAttribute("type","item")
 			e:SetAttribute("item",select(2,GetItemInfo(itemID)))
-			--@debug@
-			print('Filling ',itemID,GetItemInfo(itemID))
-			--@end-debug@
 		end
 		e=u.items[i]
 		local qt=GetItemCount(itemID)
