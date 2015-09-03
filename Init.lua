@@ -100,6 +100,22 @@ do
 	end
 	--@end-debug@
 end
+-- Caching iteminfo
+ns.I=LibStub("LibItemUpgradeInfo-1.0")
+ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
+function ns.GarrisonMissionFrame_SetItemRewardDetails(frame)
+	local itemName, _, itemRarity, _, _, _, _, _, _, itemTexture = ns.GetItemInfo(frame.itemID);
+	print(frame.itemID,'is',itemName)
+	if itemName then
+		frame.Icon:SetTexture(itemTexture);
+		if (frame.Name and itemName and itemRarity) then
+			frame.Name:SetText(ITEM_QUALITY_COLORS[itemRarity].hex..itemName..FONT_COLOR_CODE_CLOSE);
+		end
+	else
+		addon:ScheduleTimer(0.2,ns.GarrisonMissionFrame_SetItemRewardDetails,frame)
+	end
+end
+
 local backdrop = {
 		--bgFile="Interface\\TutorialFrame\\TutorialFrameBackground",
 		bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
@@ -382,9 +398,7 @@ ns.traitTable={
 	[232]="Dancer"
 }
 }
--- Caching iteminfo
-ns.I=LibStub("LibItemUpgradeInfo-1.0")
-ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
+
 -- Pseudo Global Support.
 -- Calling ns.Configure() will give to the calling function a preloaded env
 
