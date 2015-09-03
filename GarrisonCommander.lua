@@ -1384,9 +1384,7 @@ do
 				print(message)
 			end
 			releaseEvents()
-				 
-			
-		end	
+		end
 --@debug@
 print(this.frame,this.frame:GetName())
 --@end-debug@
@@ -1830,7 +1828,7 @@ local fakeinfo={followerID=false}
 local fakeframe={}
 
 function addon:FillMissionPage(missionInfo)
-	
+
 	--@debug@
 	print("FillMissionPage",missionInfo)
 	--@end-debug@
@@ -2489,7 +2487,10 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 	else
 		GameTooltip:SetText(this.info.name);
 		GameTooltip:AddLine(string.format(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS, this.info.numFollowers), 1, 1, 1);
-		GarrisonMissionButton_AddThreatsToTooltip(this.info.missionID, GarrisonMissionFrame:GetFollowerType());
+		local rc,message=pcall(GarrisonMissionButton_AddThreatsToTooltip,this.info.missionID, GarrisonMissionFrame:GetFollowerType());
+		--@debug@
+		if not rc then GameTooltip:AddLine(message) end
+		--@end-debug@
 		GameTooltip:AddLine(GARRISON_MISSION_AVAILABILITY);
 		GameTooltip:AddLine(this.info.offerTimeRemaining, 1, 1, 1);
 		addon:AddFollowersToTooltip(this.info.missionID,LE_FOLLOWER_TYPE_GARRISON_6_0 or 0)
