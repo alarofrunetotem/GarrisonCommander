@@ -105,7 +105,9 @@ ns.I=LibStub("LibItemUpgradeInfo-1.0")
 ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
 function ns.GarrisonMissionFrame_SetItemRewardDetails(frame)
 	local itemName, _, itemRarity, _, _, _, _, _, _, itemTexture = ns.GetItemInfo(frame.itemID);
+	--@debug@
 	print(frame.itemID,'is',itemName)
+	--@end-debug@
 	if itemName then
 		frame.Icon:SetTexture(itemTexture);
 		if (frame.Name and itemName and itemRarity) then
