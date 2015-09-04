@@ -1376,8 +1376,10 @@ do
 		if m and m.missionID then
 			holdEvents()
 			local rc,message=pcall(removeAllFollowers,m.missionID)
-			if not rec then
+			if not rc then
+				--@debug@
 				print(message)
+				--@end-debug@
 			end
 			releaseEvents()
 		end
@@ -1564,7 +1566,6 @@ function addon:AddMenu()
 		return
 	end
 	local menu,size
-	print("Was",frametoname(self.currentmenu))
 	if GMF.MissionTab:IsVisible() then
 		self.currentmenu=GMF.MissionTab
 		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','MOVEPANEL')
@@ -1585,12 +1586,10 @@ function addon:AddMenu()
 		self.currentmenu=nil
 		menu,size=self:CreateOptionsLayer('BIGSCREEN')
 	end
-	print("Is",frametoname(self.currentmenu))
 
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
 	self:AddOptionToOptionsLayer(menu,'TRC')
-	print("Menu size",size)
 --@end-debug@
 	local frame=menu.frame
 	frame:Show()
@@ -2255,7 +2254,6 @@ function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(th
 	end
 end
 function addon:ScriptGarrisonMissionButton_OnClick(tab,button)
-	print("click",tab,tab.info)
 	lastTab=1
 	if (GMF.MissionTab.MissionList.showInProgress) then
 		return
@@ -2714,7 +2712,6 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 			button.Env:SetScript("OnEnter",addon.ClonedGarrisonMissionMechanic_OnEnter)
 			button.Env:SetScript("OnLeave",function() GameTooltip:Hide() end)
 		else
-			print("No typeIcon in",mission)
 			button.Env:SetScript("OnEnter",nil)
 			button.Env:Hide()
 		end

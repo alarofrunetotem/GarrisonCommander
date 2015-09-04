@@ -1,5 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.7.4*
+Fix: Removed chat spam
+
 * *2.7.3*
 Fix: Lua error "attempt to compare number with function"
 
