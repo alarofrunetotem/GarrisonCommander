@@ -103,10 +103,11 @@ end
 -- Caching iteminfo
 ns.I=LibStub("LibItemUpgradeInfo-1.0")
 ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
-function ns.GarrisonMissionFrame_SetItemRewardDetails(frame)
+function ns.GarrisonMissionFrame_SetItemRewardDetails(frame,bark)
+	print(frame,bark)
 	local itemName, _, itemRarity, _, _, _, _, _, _, itemTexture = ns.GetItemInfo(frame.itemID);
 	--@debug@
-	print(frame.itemID,'is',itemName)
+	if bark then print(frame.itemID,'rescheduled',itemName) end
 	--@end-debug@
 	if itemName then
 		frame.Icon:SetTexture(itemTexture);
@@ -114,7 +115,10 @@ function ns.GarrisonMissionFrame_SetItemRewardDetails(frame)
 			frame.Name:SetText(ITEM_QUALITY_COLORS[itemRarity].hex..itemName..FONT_COLOR_CODE_CLOSE);
 		end
 	else
-		addon:ScheduleTimer(0.2,ns.GarrisonMissionFrame_SetItemRewardDetails,frame)
+		--@debug@
+		print(frame.itemID,'rescheduled')
+		--@end-debug@
+		addon:ScheduleTimer(ns.GarrisonMissionFrame_SetItemRewardDetails,0.2,frame,true)
 	end
 end
 
