@@ -1,7 +1,10 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.7.3*
+Fix: Lua error "attempt to compare number with function"
+
 * *2.7.2*
-Fix: Lua error due to an incompatobility with MP
+Fix: Lua error due to an incompatibility with MP
 
 * *2.7.1*
 Fix: Reward list in Mission Control was sometimes empty
