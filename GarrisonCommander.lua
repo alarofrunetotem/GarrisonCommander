@@ -408,7 +408,7 @@ print("Initialize")
 	end
 	self:AddLabel(L["Garrison Appearance"])
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
-	self:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
+	self:AddToggle("BIGSCREEN",true,L["Big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	self:AddToggle("PIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
 	self:AddLabel("Mission Panel")
 	self:AddToggle("IGM",true,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
@@ -435,10 +435,10 @@ print("Initialize")
 	self:AddToggle("ILV",true,L["Show itemlevel"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
 	self:AddToggle("IXP",true,L["Show xp"],L["When checked, show on each follower button missing xp to next level"])
 	self:AddToggle("UPG",true,L["Show upgrades"],L["Only meaningful upgrades are shown"])
-	self:AddToggle("NOCONFIRM",true,L["Don't ask confirmation"],L["If checked, clicking an upgrade icon will consume the item and upgrade the follower\n|cFFFF0000NO QUESTION ASKED|r"])
-	self:AddToggle("SWAPBUTTONS",false,L["Swap upgrades position"],L["IF checked, shows armors on the left and weapons on the right "])
+	self:AddToggle("NOCONFIRM",true,L["No confirmation"],L["If checked, clicking an upgrade icon will consume the item and upgrade the follower\n|cFFFF0000NO QUESTION ASKED|r"])
+	self:AddToggle("SWAPBUTTONS",false,L["Swap upgrades positions"],L["IF checked, shows armors on the left and weapons on the right "])
 	if not ns.bigscreen then
-		self:AddToggle("FOLLOWERMISSIONLIST",true,L["Show missionlist"],L["Affects only little screen mode, hiding the per follower mission list if not checked"])
+		self:AddToggle("FOLLOWERMISSIONLIST",true,L["Missionlist"],L["Affects only little screen mode, hiding the per follower mission list if not checked"])
 	end
 	self:AddLabel("Buildings Panel")
 	self:AddToggle("HF",false,L["Hide followers"],L["Do not show follower icon on plots"])
@@ -547,7 +547,7 @@ function addon:ApplyMINPERC(value)
 	BUSY_MESSAGE=format(BUSY_MESSAGE_FORMAT,MAXMISSIONS,MINPERC)
 end
 function addon:ApplyFOLLOWERMISSIONLIST(value)
-	if (GMF.FollowerTab:IsVisible()) then
+	if GMF.FollowerTab:IsVisible() or (GMF.SummaryTab and GMF.SummaryTab:IsVisible()) then
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	end
 end
@@ -741,12 +741,7 @@ function addon:RefreshParties()
 end
 function addon:RefreshMissions(missionID)
 	if (GMF:IsVisible()) then
-		--@debug@
-		print("Mission Refresh")
-		--@end-debug@
 		GarrisonMissionList_UpdateMissions()
-		--GMF.MissionTab.MissionList.listScroll:update()
-		print("Mission Refreshed")
 	end
 end
 
@@ -1157,7 +1152,8 @@ function addon:CreateHeader(module)
 	local main=module:GetMain()
 	GCF:SetFrameStrata(main:GetFrameStrata())
 	GCF:SetFrameLevel(main:GetFrameLevel()-2)
-	if (not ns.bigscreen and module == self) then GCF:SetHeight(130) end
+	--if (not ns.bigscreen and module == self) then GCF:SetHeight(130) end
+	if module == self then GCF:SetHeight(130) end
 --@debug@
 print(GCF:GetHeight())
 --@end-debug@
@@ -1400,7 +1396,6 @@ print(this.frame,this.frame:GetName())
 		--if not ns.bigscreen then return end
 		if not ns.bigscreen and not self:GetBoolean("FOLLOWERMISSIONLIST") then
 			if mh then mh:Hide() end
-			if ml then ml:Hide() end
 			return
 		end
 		if not GMFFollowers:IsVisible() then return end
@@ -1408,7 +1403,7 @@ print(this.frame,this.frame:GetName())
 		if not mh then
 			mh=CreateFrame("Frame","GCFMissions",GMFFollowers,"GarrisonCommanderFollowerMissionList")
 			GCFMissions=mh
-			local fs=GMFFollowers:CreateFontString(nil, "BACKGROUND", "GameFontNormalHugeBlack")
+			local fs=mh:CreateFontString(nil, "BACKGROUND", "GameFontNormalHugeBlack")
 			if (ns.bigscreen) then
 				mh:SetPoint("TOPLEFT",GMFFollowers,"TOPRIGHT")
 				fs:SetPoint("TOPLEFT",GMFFollowers,"TOPRIGHT")
@@ -1425,11 +1420,14 @@ print(this.frame,this.frame:GetName())
 			GCFBusyStatus=fs
 		end
 		if (not ml) then
+			--@debug@
+			print("Building MissionList Widget")
+			--@end-debug@
 			ml=AceGUI:Create("GMCLayer")
 			ml:SetTitle("Ninso")
 			ml:SetTitleColor(C.Orange())
 			ml:SetTitleHeight(40)
-			ml:SetParent(GMFFollowers)
+			ml:SetParent(mh)
 			ml:Show()
 			ml:ClearAllPoints()
 			ml:SetWidth(200)
@@ -1478,10 +1476,6 @@ print(this.frame,this.frame:GetName())
 			local party=parties[missionID]
 			local mission=self:GetMissionData(missionID)
 			if mission and party and #party.members >= G.GetMissionMaxFollowers(missionID) then
---@debug@
-				print(i,prog,mission,party,self:GetNumber("MAXMISSIONS"),self:GetNumber("MINPERC"))
-				if prog > self:GetNumber("MAXMISSIONS") or party.perc< self:GetNumber("MINPERC") then print("------------------") break end
---@end-debug@
 				local mb=AceGUI:Create("GMCMissionButton")
 				mb:SetScale(0.6)
 				ml:PushChild(mb,missionID)
@@ -1502,7 +1496,7 @@ print("Setup")
 --@end-debug@
 	SIZEV=GMF:GetHeight()
 	self:CheckMP()
-	if MP then self:AddToggle("CKMP",true,L["Use GC Interface"],L["GCMPSWITCH"]) end
+	if MP then self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switch between Garrison Commander and Master Plan interface for missions"]) end
 	self:CheckGMM()
 	GCF=self:CreateHeader()
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
@@ -1548,18 +1542,29 @@ print("Setup")
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
+local function frametoname(m)
+	if m==GMF.MissionTab then
+		return "MissionTab"
+	elseif m==GMF.FollowerTab then
+		return "FollowerTab"
+	elseif m==GMF.SummaryTab then
+		return "Summary"
+	elseif m==GMF.MissionContrlTab then
+		return "MissionControl"
+	end
+	return "none"
+end
 function addon:RefreshMenu()
 	if not GCF then return end  -- This could be called befaur header is built
-	if not self.currentmenu or not self.currentmenu:IsVisible() then
-		self:RemoveMenu()
-		self:AddMenu()
-	end
+	self:RemoveMenu()
+	self:AddMenu()
 end
 function addon:AddMenu()
 	if GCF.Menu then
 		return
 	end
 	local menu,size
+	print("Was",frametoname(self.currentmenu))
 	if GMF.MissionTab:IsVisible() then
 		self.currentmenu=GMF.MissionTab
 		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','MOVEPANEL')
@@ -1568,13 +1573,24 @@ function addon:AddMenu()
 		self.currentmenu=GMF.FollowerTab
 		menu,size=self:CreateOptionsLayer('BIGSCREEN',ns.bigscreen and nil or 'FOLLOWERMISSIONLIST',missionlist and 'MAXMISSIONS' or nil,missionlist and 'MINPERC' or nil,'ILV','IXP','UPG','NOCONFIRM','SWAPBUTTONS','MOVEPANEL')
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
+	elseif GMF.SummaryTab and GMF.SummaryTab:IsVisible() then
+		local missionlist=ns.bigscreen or self:GetBoolean("FOLLOWERMISSIONLIST")
+		self.currentmenu=GMF.SummaryTab
+		menu,size=self:CreateOptionsLayer('BIGSCREEN',ns.bigscreen and nil or 'FOLLOWERMISSIONLIST',missionlist and 'MAXMISSIONS' or nil,missionlist and 'MINPERC' or nil,'ILV','IXP','UPG','NOCONFIRM','SWAPBUTTONS','MOVEPANEL')
+		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
 		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL')
+	else
+		self.currentmenu=nil
+		menu,size=self:CreateOptionsLayer('BIGSCREEN')
 	end
+	print("Is",frametoname(self.currentmenu))
+
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
 	self:AddOptionToOptionsLayer(menu,'TRC')
+	print("Menu size",size)
 --@end-debug@
 	local frame=menu.frame
 	frame:Show()
@@ -2779,7 +2795,6 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 			button.xp:SetJustifyH("CENTER")
 		end
 		button.xp:SetWidth(0)
-		print (self:GetMissionData(missionID,'xp',0),self:GetMissionData(missionID,'xpBonus',0),self:GetParty(missionID,'xpBonus',0) ,button.info.numFollowers)
 		local xp=(self:GetMissionData(missionID,'xp',0)+self:GetMissionData(missionID,'xpBonus',0)+self:GetParty(missionID,'xpBonus',0) )*button.info.numFollowers
 		button.xp:SetFormattedText("Xp: %d",xp)
 		button.xp:SetTextColor(self:GetDifficultyColors(xp/3000*100))
@@ -2873,7 +2888,7 @@ function addon:HookedGarrisonMissionList_SetTab(tab)
 end
 function addon:HookedClickOnTabs(tab)
 --@debug@
-	print(tab)
+	print(tab,tab:GetID())
 --@end-debug@
 	lastTab=tab
 	self:RefreshMenu()
