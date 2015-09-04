@@ -1,6 +1,6 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
-* *2.7.3*
+* *2.7.2*
 Fix: Lua error due to an incompatobility with MP
 
 * *2.7.1*
