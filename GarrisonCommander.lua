@@ -836,9 +836,6 @@ end
 
 
 function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
---@debug@
-print("NPC CLOSED")
---@end-debug@
 	if (GCF) then
 		self:RemoveMenu()
 		GCF:Hide()
