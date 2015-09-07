@@ -1,5 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.7.5*
+Fix: Seal of Tempered Fate were marked as a limited resource. Turned out they are not
+
 * *2.7.4*
 Fix: Removed chat spam
 
