@@ -116,6 +116,10 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	addendum.chance:SetTextColor(self:GetDifficultyColors(perc))
 	local cost=mission.cost
 	local currency=mission.costCurrencyTypesID
+	if not mission.canStart then
+		addendum:SetBackdropBorderColor(0,0,0)
+		return
+	end
 	if cost and currency then
 		local _,available=GetCurrencyInfo(currency)
 		if cost>available then
