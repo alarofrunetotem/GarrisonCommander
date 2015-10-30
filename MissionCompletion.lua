@@ -145,8 +145,8 @@ function module:MissionComplete(this,button,skiprescheck)
 			print(name,current,qt,cap)
 			--@end-debug@
 			current=current+qt
-			if current+qt > (cap*0.8) then
-				message=message.."\n"..format(L["Capped %1$s. Spend at least %2$d of them"],name,current-cap)
+			if current+qt > cap then
+				message=message.."\n"..format(L["Capped %1$s. Spend at least %2$d of them"],name,current+qt-cap)
 				stop =true
 			end
 		end
