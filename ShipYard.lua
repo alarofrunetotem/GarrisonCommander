@@ -282,6 +282,9 @@ print("Adding Menu",GCS.Menu,GSF.MissionTab:IsVisible(),GSF.FollowerTab:IsVisibl
 	--elseif GSF.MissionControlTab:IsVisible() then
 	--	self.currentmenu=GSF.MissionControlTab
 	--	menu,size=self:CreateOptionsLayer('BIGSCREEN','GCSKIPRARE','GCSKIPEPIC')
+	else
+		self.currentmenu=nil
+		menu,size=self:CreateOptionsLayer('SHIPMOVEPANEL')
 	end
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
