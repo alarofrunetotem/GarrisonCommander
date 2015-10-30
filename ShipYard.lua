@@ -51,11 +51,6 @@ function module:OnInitialize()
 	self:SafeSecureHook("GarrisonShipyardMapMission_OnEnter")
 	self:SafeSecureHook("GarrisonShipyardMapMission_OnLeave")
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
-
-
---@debug@
-print(ref)
---@end-debug@
 	local bt = CreateFrame('BUTTON','GCQuickShipMissionCompletionButton', ref, 'UIPanelButtonTemplate')
 	bt.missionType=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 	bt:SetWidth(300)
