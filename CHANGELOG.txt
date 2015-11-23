@@ -1,5 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.8.1*
+Fix: ticket #101 Gold Mission which also rewarded XP were taken as xp only missions
+
 * *2.8.0*
 Feature: Added keybindings for follower equipment upgrade
 Feature: Blocked mission in shipyard have now a black border
