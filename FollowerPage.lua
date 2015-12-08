@@ -122,6 +122,7 @@ function module:ShowUpgradeButtons(force)
 	end
 	local gf=GMF.FollowerTab
 	if not self:GetBoolean("UPG") then
+		if not gf.upgradeButtons then return end
 		local b=gf.upgradeButtons
 		for i=1,#b	 do
 			b[i]:Hide()
