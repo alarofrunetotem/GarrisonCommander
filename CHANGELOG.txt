@@ -1,5 +1,8 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.9.0*
+Feature: Missions can be blacklisted. Blacklisted mission are shown in mission control, but not started, nor use followers
+
 * *2.8.2*
 Fix: ticket #107 FollowerPage.lua error
 

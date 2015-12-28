@@ -146,7 +146,7 @@ function module:GMCRunMission(missionID,start)
 		if (missionID and party.missionID==missionID or not missionID) then
 			GMC.list.widget:RemoveChild(party.missionID)
 			GMC.list.widget:DoLayout()
-			if (party.full) then
+			if (party.full and not blacklist[party.missionID]) then
 				for j=1,#party.members do
 					G.AddFollowerToMission(party.missionID, party.members[j])
 				end
@@ -159,18 +159,34 @@ function module:GMCRunMission(missionID,start)
 					self:ScheduleTimer("GMCRunMission",0.25,party.missionID,true)
 					return
 				end
+			else
+				if not missionID then coroutine.yield(true) end
 			end
 		end
 		addon:RefreshFollowerStatus()
 	end
 end
 do
+	local function leftclick(this)
+		print("leftclick")
+		local missionID=this.frame.info.missionID
+		if (blacklist[missionID]) then return end
+		module:GMCRunMission(missionID)
+		GMF.MissionControlTab.list.widget:RemoveChild(missionID)
+	end
+	local function rightclick(this)
+		print("rightclick")
+		local missionID=this.frame.info.missionID
+		blacklist[missionID]=not blacklist[missionID]
+		module:Refresh()
+	end
 	local timeElapsed=0
 	local currentMission=0
 	local x=0
 	function module:GMCCalculateMissions(this,elapsed)
 		local GMC=GMF.MissionControlTab
 		db.news.MissionControl=true
+
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
 			if timeElapsed >= 1 then
@@ -213,22 +229,22 @@ do
 				--@end-debug@
 				if ( party.full and party.perc >= minimumChance) then
 					--@debug@
-					print(missionID,"  Acccepted",party)
+					print(missionID,"  Accepted",party)
 					--@end-debug@
 					local mb=AceGUI:Create("GMCMissionButton")
-					for i=1,#party.members do
-						GMCUsedFollowers[party.members[i]]=true
+					if not blacklist[missionID] then
+						for i=1,#party.members do
+							GMCUsedFollowers[party.members[i]]=true
+						end
 					end
 					party.missionID=missionID
 					tinsert(GMC.list.Parties,party)
 					GMC.list.widget:PushChild(mb,missionID)
 					mb:SetFullWidth(true)
 					mb:SetMission(self:GetMissionData(missionID),party,false,"control")
-					mb:SetCallback("OnClick",function(...)
-						module:GMCRunMission(missionID)
-						GMC.list.widget:RemoveChild(missionID)
-					end
-					)
+					mb:Blacklist(blacklist[missionID])
+					mb:SetCallback("OnClick",leftclick)
+					mb:SetCallback("OnRightClick",rightclick)
 				end
 				timeElapsed=0
 			end

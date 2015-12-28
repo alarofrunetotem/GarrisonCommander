@@ -388,8 +388,9 @@ print("Initialize")
 		b.Title:SetFont(f,h*scale,s)
 		local f,h,s=b.Summary:GetFont()
 		b.Summary:SetFont(f,h*scale,s)
+		b:RegisterForClicks("LeftButtonUp","RightButtonUp")
 		addon:SafeRawHookScript(b,"OnEnter","ScriptGarrisonMissionButton_OnEnter")
-		addon:SafeSecureHookScript(b,"OnClick","ScriptGarrisonMissionButton_OnClick")
+		addon:SafeRawHookScript(b,"OnClick","ScriptGarrisonMissionButton_OnClick")
 	end
 	self:CreatePrivateDb()
 	db=self.db.global
@@ -406,6 +407,7 @@ print("Initialize")
 		dbGAC.namespaces.missionscache=nil  -- Removed in 2.6.9
 		dbGAC.namespaces=nil
 	end
+	blacklist=chardb.missionControl.blacklist
 	self:AddLabel(L["Garrison Appearance"])
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
 	self:AddToggle("BIGSCREEN",true,L["Big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
@@ -793,6 +795,7 @@ function addon:CreatePrivateDb()
 					}
 				},
 				missionControl={
+					blacklist={},
 					version=3,
 					allowedRewards = {
 						['*']=true,
@@ -1879,6 +1882,9 @@ function addon:FillMissionPage(missionInfo)
 	holdEvents()
 	local main=missionInfo.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF
 	local missionpage=main.MissionTab.MissionPage
+--@debug@
+	print(missionpage)
+--@end-debug@
 	main:ClearParty()
 	local party=self:GetParty(missionID)
 	if (party) then
@@ -2255,7 +2261,20 @@ function addon:ScriptGarrisonMissionButton_OnClick(tab,button)
 		return
 	end
 	if (type(tab.info)~="table") then return end
-	self:FillMissionPage(tab.info)
+	if (button=="LeftButton") then
+		self.hooks[tab].OnClick(tab,button)
+		self:FillMissionPage(tab.info)
+	else
+		blacklist[tab.info.missionID]=not blacklist[tab.info.missionID]
+		if blacklist[tab.info.missionID] then
+			tab.Title:SetTextColor(0,0,0)
+		else
+			tab.Title:SetTextColor(1,1,1)
+		end
+		GameTooltip:Hide()
+		addon:ScriptGarrisonMissionButton_OnEnter(tab,button)
+	end
+
 end
 function addon:OnClick_GCMissionButton(frame,button)
 	if (button=="RightButton") then
@@ -2503,6 +2522,13 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 		--@end-debug@
 		GameTooltip:AddLine(GARRISON_MISSION_AVAILABILITY);
 		GameTooltip:AddLine(this.info.offerTimeRemaining, 1, 1, 1);
+		if (blacklist[this.info.missionID]) then
+			GameTooltip:AddDoubleLine(L["Blacklisted"],L["Right-Click to remove from blacklist"],1,0.125,0.125,C:Green())
+			GameTooltip:AddLine(L["Blacklisted missions are ignored in Mission Control"])
+		else
+			GameTooltip:AddDoubleLine(L["Not blacklisted"],L["Right-Click to blacklist"],0.125,1.0,0.125,C:Red())
+		end
+		GameTooltip:AddLine(this.info.offerTimeRemaining, 1, 1, 1);
 		addon:AddFollowersToTooltip(this.info.missionID,LE_FOLLOWER_TYPE_GARRISON_6_0 or 0)
 		if not C_Garrison.IsOnGarrisonMap() and not GMF:IsVisible() then
 			GameTooltip:AddLine(" ");
@@ -2551,6 +2577,8 @@ function addon:DrawSingleButton(source,frame,progressing,bigscreen)
 				end
 			end
 		end
+		if (blacklist[missionID]) then frame.Title:SetTextColor(0,0,0) else frame.Title:SetTextColor(1,1,1) end
+
 		frame:Show();
 
 	else
@@ -2589,7 +2617,7 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
 	button.MissionType:SetAtlas(mission.typeAtlas);
-	if source=="blizzard" then return end
+	if source=="blizzard" then print("source blizzard")return end
 	if (mission.isRare) then
 		button.RareOverlay:Show();
 		button.RareText:Show();
