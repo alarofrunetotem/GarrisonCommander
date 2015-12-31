@@ -1372,7 +1372,7 @@ do
 	local ml=nil
 	local mh=nil
 	local tContains=tContains
-	local function MissionOnClick(this,...)
+	local function MissionOnClick(this,method,frame,button)
 		local m=GMF.MissionTab.MissionPage.missionInfo
 		if m and m.missionID then
 			holdEvents()
@@ -1384,14 +1384,15 @@ do
 			end
 			releaseEvents()
 		end
---@debug@
-print(this.frame,this.frame:GetName())
---@end-debug@
-		GMF:OnClickMission(this.frame.info)
+		if button=="RightButton" then
+			return addon:ScriptGarrisonMissionButton_OnClick(this.frame,button)
+		end
+		GMF:OnClickMission(this.frame.info,button)
 		if (PanelTemplates_GetSelectedTab(GMF) ~= 1) then
 			addon:OpenMissionsTab()
 		end
-		addon:ScriptGarrisonMissionButton_OnClick(this.frame,"Leftup")
+		--addon:ScriptGarrisonMissionButton_OnClick(this.frame,button)
+		addon:FillMissionPage(this.frame.info)
 		lastTab=2
 	end
 	function addon:RenderFollowerPageMissionList(dummy,followerID,force)
@@ -2256,12 +2257,15 @@ function addon:OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton(th
 	end
 end
 function addon:ScriptGarrisonMissionButton_OnClick(tab,button)
+	--@debug@
+	print(tab,button)
+	--@end-debug@
 	lastTab=1
 	if (GMF.MissionTab.MissionList.showInProgress) then
 		return
 	end
 	if (type(tab.info)~="table") then return end
-	if (button=="LeftButton") then
+	if (button~="RightButton") then
 		self.hooks[tab].OnClick(tab,button)
 		self:FillMissionPage(tab.info)
 	else
@@ -2617,7 +2621,7 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 		button.Rewards[1]:SetPoint("RIGHT",button,"RIGHT",-500 - (GMM and 40 or 0),0)
 	end
 	button.MissionType:SetAtlas(mission.typeAtlas);
-	if source=="blizzard" then print("source blizzard")return end
+	if source=="blizzard" then return end
 	if (mission.isRare) then
 		button.RareOverlay:Show();
 		button.RareText:Show();
