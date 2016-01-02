@@ -104,22 +104,16 @@ end
 -- Caching iteminfo
 ns.I=LibStub("LibItemUpgradeInfo-1.0")
 ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
-function ns.GarrisonMissionFrame_SetItemRewardDetails(frame,bark)
+function ns.GarrisonMissionFrame_SetItemRewardDetails(frame)
 	if not frame.itemID then return end
 	local itemName, _, itemRarity, _, _, _, _, _, _, itemTexture = ns.GetItemInfo(frame.itemID);
-	--@debug@
-	if bark then print(frame.itemID,'rescheduled',itemName) end
-	--@end-debug@
 	if itemName then
 		frame.Icon:SetTexture(itemTexture);
 		if (frame.Name and itemName and itemRarity) then
 			frame.Name:SetText(ITEM_QUALITY_COLORS[itemRarity].hex..itemName..FONT_COLOR_CODE_CLOSE);
 		end
 	else
-		--@debug@
-		print(frame.itemID,'rescheduled')
-		--@end-debug@
-		addon:ScheduleTimer(ns.GarrisonMissionFrame_SetItemRewardDetails,0.2,frame,true)
+		addon:ScheduleTimer(ns.GarrisonMissionFrame_SetItemRewardDetails,0.2,frame)
 	end
 end
 
@@ -318,6 +312,7 @@ function addon:GetType(itemID)
 	return "generic"
 end
 -- Thanks to wowheade
+
 ns.traitTable={
 [1]={
 	[45]="Cave Dweller",
