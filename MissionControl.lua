@@ -267,6 +267,10 @@ function module:GMC_OnClick_Run(this,button)
 				if (not rc) then
 					self:Unhook(GMC.runButton,'OnUpdate')
 					GMC.logoutButton:Enable()
+					if addon:GetBoolean("AUTOLOGOUT") or ns.quick then
+						ns.quick=false
+						addon:ScheduleTimer(Logout,0.5)
+					end
 				end
 			end
 		end
@@ -713,6 +717,7 @@ function module:GMCBuildFlags()
 		addon:AddSlider("GCMINUPGRADE",settings.minUpgrade,600,675,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'],15)
 		addon:AddToggle("GCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
 		addon:AddToggle("GCSKIPRARE",settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
+		addon:AddToggle("AUTOLOGOUT",false,L["Auto Logout"],L["Automatically logout after sending missions"])
 	else
 		-- Duration
 		local frame= CreateFrame('FRAME', nil, GMC) -- Flags frame
@@ -847,5 +852,6 @@ function module:GMCBuildMissionList()
 	GMC.logoutButton:SetScript("OnClick",function() GMF:Hide() Logout() end )
 	GMC.logoutButton:SetPoint('TOP',0,25)
 	return ml
-
 end
+
+

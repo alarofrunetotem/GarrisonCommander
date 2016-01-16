@@ -444,6 +444,7 @@ print("Initialize")
 	end
 	self:AddLabel("Buildings Panel")
 	self:AddToggle("HF",false,L["Hide followers"],L["Do not show follower icon on plots"])
+
 --@debug@
 	self:AddLabel("Developers options")
 	self:AddToggle("DBG",false, "Enable Debug")
@@ -1505,7 +1506,7 @@ print("Setup")
 	GCF=self:CreateHeader(self,"PIN")
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabMC=tabMC
-	tabMC.tooltip="Open Garrison Commander Mission Control"
+	tabMC.tooltip=L["Open Garrison Commander Mission Control"]
 	tabMC:SetNormalTexture("Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME.blp")
 	self:MarkAsNew(tabMC,'MissionControl','New in 2.2.0! Try automatic mission management!')
 	tabMC:Show()
@@ -1513,24 +1514,32 @@ print("Setup")
 	GMF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,-5)
 	local tabCF=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabCF=tabCF
-	tabCF.tooltip="Open Garrison Commander Configuration Screen"
+	tabCF.tooltip=L["Open Garrison Commander Configuration Screen"]
 	tabCF:SetNormalTexture("Interface\\ICONS\\Trade_Engineering.blp")
 	tabCF:SetPushedTexture("Interface\\ICONS\\Trade_Engineering.blp")
 	tabCF:Show()
 	local tabHP=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabHP=tabHP
-	tabHP.tooltip="Open Garrison Commander Help"
+	tabHP.tooltip=L["Open Garrison Commander Help"]
 	tabHP:SetNormalTexture("Interface\\ICONS\\INV_Misc_QuestionMark.blp")
 	tabHP:SetPushedTexture("Interface\\ICONS\\INV_Misc_QuestionMark.blp")
 	tabHP:Show()
+	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
+	GMF.tabQ=tabQ
+	tabQ.tooltip=L["Automatically process completed missions and schedules new ones"]
+	tabQ:SetNormalTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
+	tabQ:SetPushedTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
+	tabQ:Show()
 	tabMC:SetScript("OnClick",function(this,...) addon:OpenMissionControlTab() end)
 	tabCF:SetScript("OnClick",function(this,...) GMF:Hide() addon:Gui() end)
 	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
+	tabQ:SetScript("OnClick",function(this,button) addon:RunQuick() end)
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
 	tabCF:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-60)
 	tabMC:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-110)
+	tabQ:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-160)
 	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
-	local bt = CreateFrame('BUTTON',nil, ref, 'UIPanelButtonTemplate')
+	local bt = CreateFrame('BUTTON','GarrisonCommanderQuickMissionComplete', ref, 'UIPanelButtonTemplate')
 	bt:SetWidth(300)
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
@@ -1583,7 +1592,7 @@ function addon:AddMenu()
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
-		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL')
+		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL','AUTOLOGOUT')
 	else
 		self.currentmenu=nil
 		menu,size=self:CreateOptionsLayer('BIGSCREEN')

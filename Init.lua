@@ -31,6 +31,7 @@ ns.L=ns.addon:GetLocale()
 ns.G=C_Garrison
 ns.GMF=_G.GarrisonMissionFrame
 ns.blacklist=false
+ns.prioritylist=false
 if not ns.GMF then
 --@debug@
 	print("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available")
