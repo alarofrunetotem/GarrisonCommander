@@ -1,5 +1,9 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.10*
+Feature: Full automation. You can now with a single click have Garrison Commander completing missions, sendng new ones and logout.
+Farming your alts will never be so easy! (Thanks to Vasco90 for the suggestion)
+
 * *2.9.3*
 Fix: broken localization for follower per trait selection ticket #112
 
