@@ -267,9 +267,9 @@ function module:GMC_OnClick_Run(this,button)
 				if (not rc) then
 					self:Unhook(GMC.runButton,'OnUpdate')
 					GMC.logoutButton:Enable()
-					if addon:GetBoolean("AUTOLOGOUT") or ns.quick then
+					if addon:GetBoolean("AUTOLOGOUT") then
 						ns.quick=false
-						addon:ScheduleTimer(Logout,0.5)
+						addon:ScheduleTimer(function() GMC.logoutButton:Click() end,0.5)
 					end
 				end
 			end
@@ -711,59 +711,12 @@ function module:GMCBuildFlags()
 	warning:SetJustifyH("CENTER")
 	warning:SetTextColor(C.Orange())
 	GMC.warning=warning
-	if true then
-		addon:AddLabel(L["Mission Control"])
-		addon:AddSlider("GCMINLEVEL",settings.minLevel,535,715,L["Item minimum level"],L['Minimum requested level for equipment rewards'],15)
-		addon:AddSlider("GCMINUPGRADE",settings.minUpgrade,600,675,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'],15)
-		addon:AddToggle("GCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
-		addon:AddToggle("GCSKIPRARE",settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
-		addon:AddToggle("AUTOLOGOUT",false,L["Auto Logout"],L["Automatically logout after sending missions"])
-	else
-		-- Duration
-		local frame= CreateFrame('FRAME', nil, GMC) -- Flags frame
-		frame:SetSize(210, 30+40*5)
-		local title = frame:CreateFontString() -- Title
-		title:SetFontObject('GameFontNormalHuge')
-		title:SetText(L['Other settings'])
-		title:SetPoint('TOPLEFT', 0, -5)
-		title:SetPoint('TOPRIGHT', 0, -5)
-		title:SetTextColor(1, 1, 1)
-		title:SetJustifyH("CENTER")
-		GMC.skipRare=factory:Checkbox(frame,settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
-		GMC.skipRare:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-5)
-		GMC.skipRare:SetScript("OnClick",function(this)
-			settings.skipRare=this:GetChecked()
-			module:GMC_OnClick_Start(GMC.startButton,"LeftUp")
-		end)
-		GMC.skipEpic=factory:Checkbox(frame,settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
-		GMC.skipEpic:SetPoint("TOPLEFT",GMC.skipRare,"BOTTOMLEFT",0,-5)
-		GMC.skipEpic:SetScript("OnClick",function(this)
-			settings.skipEpic=this:GetChecked()
-			toggleEpicWarning(warning)
-			module:Refresh()
-		end)
-		GMC.minLevel=factory:Slider(frame,540,715,settings.minLevel,L["Item minimum level"],L['Minimum requested level for equipment rewards'])
-		GMC.minLevel:SetPoint('TOP', GMC.skipEpic,"BOTTOM",0, -25)
-		GMC.minLevel:SetScript('OnValueChanged', function(self, value)
-			local value = math.floor(value)
-			settings.minLevel = value
-			drawItemButtons()
-			module:Refresh()
-		end)
-		--GMC.minLevel:SetValue(settings.minLevel)
-		GMC.minLevel:SetStep(15)
-		GMC.minUpgrade=factory:Slider(frame,600,675,settings.minUpgrade,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'])
-		GMC.minUpgrade:SetPoint('TOP', GMC.minLevel,"BOTTOM",0, -25)
-		GMC.minUpgrade:SetScript('OnValueChanged', function(self, value)
-			local value = math.floor(value)
-			settings.minUpgrade = value
-			drawItemButtons()
-			module:Refresh()
-		end)
-		--GMC.minUpgrade:SetValue(settings.minUpgrade)
-		GMC.minUpgrade:SetStep(15)
-		return frame
-	end
+	addon:AddLabel(L["Mission Control"])
+	addon:AddSlider("GCMINLEVEL",settings.minLevel,535,715,L["Item minimum level"],L['Minimum requested level for equipment rewards'],15)
+	addon:AddSlider("GCMINUPGRADE",settings.minUpgrade,600,675,L["Follower set minimum upgrade"],L['Minimum requested upgrade for followers set (Enhancements are always included)'],15)
+	addon:AddToggle("GCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
+	addon:AddToggle("GCSKIPRARE",settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
+	addon:AddToggle("AUTOLOGOUT",false,L["Auto Logout"],L["Automatically logout after sending missions"])
 end
 function module:GMCBuildDuration()
 	-- Duration
@@ -849,7 +802,12 @@ function module:GMCBuildMissionList()
 	GMC.logoutButton=CreateFrame('BUTTON', nil,ml.widget.frame, 'GameMenuButtonTemplate')
 	GMC.logoutButton:SetText(LOGOUT)
 	GMC.logoutButton:SetWidth(ns.bigscreen and 148 or 90)
-	GMC.logoutButton:SetScript("OnClick",function() GMF:Hide() Logout() end )
+	GMC.logoutButton:SetScript("OnClick",function()
+		GMF:Hide()
+		module:Popup(LOGOUT)
+		module:ScheduleTimer(Logout,0.5)
+		end
+	)
 	GMC.logoutButton:SetPoint('TOP',0,25)
 	return ml
 end
