@@ -1509,7 +1509,9 @@ print("Setup")
 	tabMC.tooltip=L["Open Garrison Commander Mission Control"]
 	tabMC:SetNormalTexture("Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME.blp")
 	self:MarkAsNew(tabMC,'MissionControl','New in 2.2.0! Try automatic mission management!')
+	tabMC:SetScript("OnClick",function(this,...) addon:OpenMissionControlTab() end)
 	tabMC:Show()
+	tabMC:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-110)
 	GMF.FollowerStatusInfo=GMF:CreateFontString(nil, "BORDER", "GameFontNormal")
 	GMF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,-5)
 	local tabCF=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
@@ -1518,26 +1520,27 @@ print("Setup")
 	tabCF:SetNormalTexture("Interface\\ICONS\\Trade_Engineering.blp")
 	tabCF:SetPushedTexture("Interface\\ICONS\\Trade_Engineering.blp")
 	tabCF:Show()
+	tabCF:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-60)
+	tabCF:SetScript("OnClick",function(this,...) GMF:Hide() addon:Gui() end)
 	local tabHP=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabHP=tabHP
 	tabHP.tooltip=L["Open Garrison Commander Help"]
 	tabHP:SetNormalTexture("Interface\\ICONS\\INV_Misc_QuestionMark.blp")
 	tabHP:SetPushedTexture("Interface\\ICONS\\INV_Misc_QuestionMark.blp")
 	tabHP:Show()
-	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
-	GMF.tabQ=tabQ
-	tabQ.tooltip=L["Automatically process completed missions and schedules new ones"]
-	tabQ:SetNormalTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
-	tabQ:SetPushedTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
-	tabQ:Show()
-	tabMC:SetScript("OnClick",function(this,...) addon:OpenMissionControlTab() end)
-	tabCF:SetScript("OnClick",function(this,...) GMF:Hide() addon:Gui() end)
-	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
-	tabQ:SetScript("OnClick",function(this,button) addon:RunQuick() end)
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
-	tabCF:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-60)
-	tabMC:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-110)
-	tabQ:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-160)
+	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
+	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
+	--if self.RunQuick then
+		GMF.tabQ=tabQ
+		tabQ.tooltip=L["Automatically process completed missions and schedules new ones."].."\n"..
+			format(L["Check %s in mission control in order to be also logged out"],L["Auto Logout"])
+		tabQ:SetNormalTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
+		tabQ:SetPushedTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
+		tabQ:Show()
+		tabQ:SetScript("OnClick",function(this,button) addon:RunQuick() end)
+		tabQ:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-210)
+	--end
 	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
 	local bt = CreateFrame('BUTTON','GarrisonCommanderQuickMissionComplete', ref, 'UIPanelButtonTemplate')
 	bt:SetWidth(300)
