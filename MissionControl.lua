@@ -267,8 +267,8 @@ function module:GMC_OnClick_Run(this,button)
 				if (not rc) then
 					self:Unhook(GMC.runButton,'OnUpdate')
 					GMC.logoutButton:Enable()
+					ns.quick=false
 					if addon:GetBoolean("AUTOLOGOUT") then
-						ns.quick=false
 						addon:ScheduleTimer(function() GMC.logoutButton:Click() end,0.5)
 					end
 				end

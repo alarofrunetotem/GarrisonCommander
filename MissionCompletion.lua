@@ -151,18 +151,18 @@ function module:MissionComplete(this,button,skiprescheck)
 			end
 		end
 		if stop and not skiprescheck then
-			local wasquick=ns.quick
-			ns.quick=false
 			self:Popup(message.."\n" ..format(L["If you %s, you will loose them\nClick on %s to abort"],ACCEPT,CANCEL),0,
 				function()
-					ns.quick=wasquick
+					StaticPopup_Hide("LIBINIT_POPUP")				
 					module:MissionComplete(this,button,true)
-					if ns.quick then addon:RunQuick() end
 				end,
 				function()
+					StaticPopup_Hide("LIBINIT_POPUP")				
 					this:SetEnabled(true)
 					missionsFrame.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
 					panel:Hide()
+					ns.quick=false
+
 				end
 			)
 			return
