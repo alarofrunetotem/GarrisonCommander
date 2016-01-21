@@ -1531,7 +1531,7 @@ print("Setup")
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
 	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
 	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
-	--if self.RunQuick then
+	if self.RunQuick then
 		GMF.tabQ=tabQ
 		tabQ.tooltip=L["Automatically process completed missions and schedules new ones."].."\n"..
 			format(L["Check %s in mission control in order to be also logged out"],L["Auto Logout"])
@@ -1540,7 +1540,7 @@ print("Setup")
 		tabQ:Show()
 		tabQ:SetScript("OnClick",function(this,button) addon:RunQuick() end)
 		tabQ:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-210)
-	--end
+	end
 	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
 	local bt = CreateFrame('BUTTON','GarrisonCommanderQuickMissionComplete', ref, 'UIPanelButtonTemplate')
 	bt:SetWidth(300)
@@ -1582,7 +1582,7 @@ function addon:AddMenu()
 	local menu,size
 	if GMF.MissionTab:IsVisible() then
 		self.currentmenu=GMF.MissionTab
-		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','MOVEPANEL')
+		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','MOVEPANEL','AUTOLOGOUT')
 	elseif GMF.FollowerTab:IsVisible() then
 		local missionlist=ns.bigscreen or self:GetBoolean("FOLLOWERMISSIONLIST")
 		self.currentmenu=GMF.FollowerTab
