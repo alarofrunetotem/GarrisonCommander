@@ -57,7 +57,7 @@ local function tcopy(obj, seen)
 end
 
 local parties
-
+local missionCompleteOrder=122514
 
 local lastTab
 local new, del, copy =ns.new,ns.del,ns.copy
@@ -464,6 +464,16 @@ print("Initialize")
 --	assert(pcall(format,"%03d %03d",tonumber(1/0) or 1,tonumber(0/0) or 2))
 --@end-debug@
 	self:SafeSecureHookScript("GarrisonMissionFrame","OnShow","Setup")
+	local tabCO=CreateFrame("Button",nil,UIParent,"GarrisonCommanderUpgradeButton,SecureActionbuttonTemplate")
+	ns.tabCO=tabCO
+	tabCO.tooltip=L["Complete in progress mission"]
+	tabCO:SetNormalTexture("Interface\\ICONS\\Ability_Skyreach_Empowered.blp")
+	tabCO:SetPushedTexture("Interface\\ICONS\\Ability_Skyreach_Empowered.blp")
+	tabCO:Show()
+	tabCO.Quantity:Show()
+	tabCO.Quantity:SetFormattedText("%d",GetItemCount(missionCompleteOrder))
+	tabCO:SetAttribute("type","item")
+	tabCO:SetAttribute("item",select(2,GetItemInfo(missionCompleteOrder)))
 	return true
 end
 function addon:showdata(fullargs,action,missionid)
@@ -1530,8 +1540,8 @@ print("Setup")
 	tabHP:Show()
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
 	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
-	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	if self.RunQuick then
+		local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 		GMF.tabQ=tabQ
 		tabQ.tooltip=L["Automatically process completed missions and schedules new ones."].."\n"..
 			format(L["Check %s in mission control in order to be also logged out"],L["Auto Logout"])
@@ -1541,6 +1551,7 @@ print("Setup")
 		tabQ:SetScript("OnClick",function(this,button) addon:RunQuick() end)
 		tabQ:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-210)
 	end
+
 	local ref=GMFMissions.CompleteDialog.BorderFrame.ViewButton
 	local bt = CreateFrame('BUTTON','GarrisonCommanderQuickMissionComplete', ref, 'UIPanelButtonTemplate')
 	bt:SetWidth(300)
@@ -1645,6 +1656,9 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 		GCF:SetHeight(minHeight)
 	end
 	self:PermanentEvents()
+	ns.tabCO:ClearAllPoints()
+	ns.tabCO:SetParent(GMF)
+	ns.tabCO:SetPoint('TOPRIGHT',GMF,'TOPLEFT',0,0)
 	--self:SafeSecureHook("GarrisonMissionButton_AddThreatsToTooltip")
 	self:SafeSecureHook("GarrisonFollowerListButton_OnClick") -- used both to update follower mission list and itemlevel display
 	if (ns.bigscreen) then
@@ -2274,6 +2288,8 @@ function addon:ScriptGarrisonMissionButton_OnClick(tab,button)
 	--@end-debug@
 	lastTab=1
 	if (GMF.MissionTab.MissionList.showInProgress) then
+		self.hooks[tab].OnClick(tab,button)
+		ns.tabCO.Quantity:SetFormattedText("%d",GetItemCount(missionCompleteOrder))
 		return
 	end
 	if (type(tab.info)~="table") then return end
