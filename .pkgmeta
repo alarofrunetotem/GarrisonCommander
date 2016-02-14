@@ -6,6 +6,10 @@ externals:
 		url: git://git.curseforge.net/wow/libinit/mainline.git/LibInit
 		tag: latest
 
+	libs/Ace3/AceBucket-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceBucket-3.0
+		tag: latest
+
 	libs/Ace3:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk
 		tag: latest
