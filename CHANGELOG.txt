@@ -1,7 +1,7 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
 * *2.10.2*
-Fix: Missing AceBucket Library was keeoing addon from loading with some configurations
+Fix: Missing AceBucket Library was keeping addon from loading with some configurations
 
 * *2.10.1*
 Fix: Big screen reload popup had no button.
