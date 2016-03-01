@@ -407,7 +407,6 @@ print("Initialize")
 		dbGAC.namespaces.missionscache=nil  -- Removed in 2.6.9
 		dbGAC.namespaces=nil
 	end
-	blacklist=chardb.missionControl.blacklist
 	self:AddLabel(L["Garrison Appearance"])
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
 	self:AddToggle("BIGSCREEN",true,L["Big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
@@ -474,7 +473,7 @@ print("Initialize")
 	tabCO.Quantity:SetFormattedText("%d",GetItemCount(missionCompleteOrder))
 	tabCO:SetAttribute("type","item")
 	tabCO:SetAttribute("item",select(2,GetItemInfo(missionCompleteOrder)))
-	return true
+	--return true
 end
 function addon:showdata(fullargs,action,missionid)
 	self:Print(fullargs,",",missionid)
@@ -789,6 +788,27 @@ end
 function addon:SetDbDefaults(default)
 	default.global=default.global or {}
 	default.global["*"]={}
+	default.profile=default.profile or {}
+	default.profile.missionControl={
+		blacklist={},
+		version=1,
+		allowedRewards = {
+			['*']=true,
+		},
+		rewardChance={
+			['*']=100,
+		},
+		rewardList={},
+		useOneChance=true,
+		minimumChance = 100,
+		minDuration = 0,
+		maxDuration = 24,
+		epicExp = false,
+		skipRare=true,
+		skipEpic=not addon:HasSalvageYard(),
+		minLevel=540,
+		minUpgrade=600
+	}
 end
 function addon:CreatePrivateDb()
 	self.privatedb=self:RegisterDatabase(

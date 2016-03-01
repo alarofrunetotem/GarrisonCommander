@@ -153,11 +153,11 @@ function module:MissionComplete(this,button,skiprescheck)
 		if stop and not skiprescheck then
 			self:Popup(message.."\n" ..format(L["If you %s, you will loose them\nClick on %s to abort"],ACCEPT,CANCEL),0,
 				function()
-					StaticPopup_Hide("LIBINIT_POPUP")				
+					StaticPopup_Hide("LIBINIT_POPUP")
 					module:MissionComplete(this,button,true)
 				end,
 				function()
-					StaticPopup_Hide("LIBINIT_POPUP")				
+					StaticPopup_Hide("LIBINIT_POPUP")
 					this:SetEnabled(true)
 					missionsFrame.CompleteDialog.BorderFrame.ViewButton:SetEnabled(true)
 					panel:Hide()
@@ -273,7 +273,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 			end
 			currentMission.state=step
 		else
-			report:AddButton(L["Building Final report"],function() module:MissionsPrintResults() end)
+			report:AddButton(L["Building Final report"])
 			startTimer(1,"LOOT")
 		end
 	end

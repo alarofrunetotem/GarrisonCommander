@@ -54,10 +54,11 @@ local function GMCList()
 	end
 	function m:AddButton(text,action)
 		local obj=self.scroll
-		local b=AceGUI:Create("Button")
+		local b=AceGUI:Create("Label")
 		b:SetFullWidth(true)
 		b:SetText(text)
-		b:SetCallback("OnClick",action)
+		b:SetColor(C.yellow.r,C.yellow.g,C.yellow.b)
+		--b:SetCallback("OnClick",action)
 		obj:AddChild(b)
 	end
 	function m:AddMissionButton(mission,party,perc,source)

@@ -9,8 +9,6 @@ local _G=_G
 local factory=addon:GetFactory()
 --GMC_G.frame = CreateFrame('FRAME')
 local aMissions={}
-local chardb
-local db
 local GMF=GarrisonMissionFrame
 local GMCUsedFollowers={}
 local wipe=wipe
@@ -38,7 +36,7 @@ for _,data in ipairs(addon:GetRewardClasses()) do
 end
 local classlist={} ---#table local reference to settings.rewardList
 local class2order={} ---#table maps a classname to its priority
-local settings
+local settings ---#table Pointer to settings in saved var
 local module=addon:NewSubClass("MissionControl") --#module
 function module:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
@@ -50,7 +48,6 @@ addon.GMCBusy=module.GMCBusy
 -- @param #table workList table to be filled with mission list
 function module:GMCCreateMissionList(workList)
 	--First get rid of unwanted rewards and missions that are too long
-	local settings=self.privatedb.profile.missionControl
 	local ar=settings.allowedRewards
 	wipe(workList)
 	for _,missionID in self:GetMissionIterator() do
@@ -185,7 +182,7 @@ do
 	local x=0
 	function module:GMCCalculateMissions(this,elapsed)
 		local GMC=GMF.MissionControlTab
-		db.news.MissionControl=true
+		addon.db.global.news.MissionControl=true
 
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
@@ -388,7 +385,7 @@ local function drawItemButtons(frame)
 	local single=settings.useOneChance
 	--for j = 1, #tItems do
 	--local i=tOrder[j]
-	local wrap=#classlist/2 +1
+	local wrap=math.ceil(#classlist/2 +1)
 	for frameIndex,i in ipairs(classlist) do
 		local row = GMC.ignoreFrames[frameIndex]
 		if not row then
@@ -552,22 +549,16 @@ local function toggleEpicWarning()
 end
 function module:OnInitialized()
 	local bigscreen=ns.bigscreen
-	db=addon.db.global
-	chardb=addon.privatedb.profile
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
 	local GMC = CreateFrame('FRAME', nil, GMF)
 	GMF.MissionControlTab=GMC
-	settings=chardb.missionControl
+	settings=addon.privatedb.profile.missionControl
+	self:RefreshConfig("Init")
 	if settings.version < 2 then
 		dbfixV1()
 	end
 	if settings.version < 3 or type(settings.rewardOrder)=='table' or #settings.rewardList==0 then
 		dbfixV2()
-	end
-	wipe(class2order)
-	classlist=settings.rewardList
-	for index,key in ipairs(classlist) do
-		class2order[key]=index
 	end
 	if settings.itemPrio then
 		settings.itemPrio=nil
@@ -607,7 +598,54 @@ function module:OnInitialized()
 	GMC.Credits:SetFormattedText(C(L["Original concept and interface by %s"],'Yellow'),C("Motig","Red") )
 	GMC.Credits:SetJustifyH("RIGHT")
 	GMC.Credits:SetPoint("BOTTOMRIGHT",-50,5)
+	addon.db.RegisterCallback(self, "OnNewProfile", "RefreshConfig")
+	--addon.db.RegisterCallback(self,"OnProfileShutdown","ShowList")
+	addon.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
+	addon.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
+	addon.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
 	return GMC
+end
+function module:ShowList()
+	self:Print("Rewards list for profile",addon.db:GetCurrentProfile())
+	DevTools_Dump(settings.rewardList)
+end
+local function clone(from,to)
+	for k,v in pairs(from) do
+		if type(v)~="table" then
+			to[k]=v
+		else
+			to[k]=to[k] or {}
+			clone(v,to[k])
+		end
+	end
+end
+function module:RefreshConfig(event)
+	settings=addon.db.profile.missionControl
+	local oldsettings=addon.privatedb.profile.missionControl
+	if #settings.rewardList==0 and oldsettings and #oldsettings.rewardList>0 then
+		clone(oldsettings,settings)
+	end
+	--self:ShowList()
+	blacklist=settings.blacklist
+	classlist=settings.rewardList
+	wipe(class2order)
+	for index,key in ipairs(classlist) do
+		class2order[key]=index
+	end
+	if #classlist < #addon:GetRewardClasses() then
+		for _,v in ipairs(addon:GetRewardClasses()) do
+			if not class2order[v.key] then
+				tinsert(classlist,v.key)
+			end
+		end
+		wipe(class2order)
+		for index,key in ipairs(classlist) do
+			class2order[key]=index
+		end
+	end
+	if event ~="Init" then -- Initialization routine, we cant design yet
+		drawItemButtons()
+	end
 end
 local refreshTimer
 function module:Refresh()
