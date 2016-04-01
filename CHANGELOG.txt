@@ -1,5 +1,9 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.10.3*
+Fix: "loose" was used instead of "lose" in resource lost message
+Feature: Added more localization
+
 * *2.10.2*
 Fix: Missing AceBucket Library was keeping addon from loading with some configurations
 
@@ -7,7 +11,7 @@ Fix: Missing AceBucket Library was keeping addon from loading with some configur
 Fix: Big screen reload popup had no button.
 
 * *2.10*
-Feature: Full automation. You can now with a single click have Garrison Commander completing missions, sendng new ones and logout.
+Feature: Full automation. You can now with a single click have Garrison Commander completing missions, sending new ones and logout.
 Farming your alts will never be so easy! (Thanks to Vasco90 for the suggestion)
 
 * *2.9.3*
