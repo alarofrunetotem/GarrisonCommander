@@ -1,6 +1,6 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
-* *2.10.3*
+* *2.11.1*
 Fix: "loose" was used instead of "lose" in resource lost message
 Feature: Added more localization
 
