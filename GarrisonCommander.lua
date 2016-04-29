@@ -1285,7 +1285,6 @@ function addon:HookedGarrisonFollowerTooltipTemplate_SetGarrisonFollower(...)
 		g:SetOwner(GarrisonFollowerTooltip, "ANCHOR_NONE")
 		g:SetPoint("TOPLEFT",GarrisonFollowerTooltip,"BOTTOMLEFT")
 		g:AddLine(L["Left Click to see available missions"],C.Green())
-		g:AddLine(L["Left Click to see available missions"],C.Green())
 		g:SetWidth(GarrisonFollowerTooltip:GetWidth())
 		g:Show()
 	end
