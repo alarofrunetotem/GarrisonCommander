@@ -256,6 +256,7 @@ function module:GMC_OnClick_Run(this,button)
 	do
 		local elapsed=0
 		local co=coroutine.wrap(self.GMCRunMission)
+		self:Unhook(GMC.runButton,'OnUpdate')
 		self:RawHookScript(GMC.runButton,'OnUpdate',function(this,ts)
 			elapsed=elapsed+ts
 			if (elapsed>0.25) then
