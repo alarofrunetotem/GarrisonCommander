@@ -21,7 +21,7 @@ if LibDebug then LibDebug() ns.print=print else ns.print=function() end end
 --[===[@non-debug@
 ns.print=function() end
 --@end-non-debug@]===]
-ns.addon=LibStub("LibInit"):NewAddon(me,'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
+ns.addon=LibStub("LibInit"):NewAddon(me,{profile='Default',enhanchedProfile=true},'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
 local addon=ns.addon --#addon
 ns.toc=select(4,GetBuildInfo())
 ns.AceGUI=LibStub("AceGUI-3.0")
@@ -32,6 +32,8 @@ ns.G=C_Garrison
 ns.GMF=_G.GarrisonMissionFrame
 ns.blacklist=false
 ns.prioritylist=false
+ns.KEY_BUTTON1 = "\124TInterface\\TutorialFrame\\UI-Tutorial-Frame:12:12:0:0:512:512:10:65:228:283\124t" -- left mouse button
+ns.KEY_BUTTON2 = "\124TInterface\\TutorialFrame\\UI-Tutorial-Frame:12:12:0:0:512:512:10:65:330:385\124t" -- right mouse button
 if not ns.GMF then
 --@debug@
 	print("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available")
