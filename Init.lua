@@ -21,7 +21,7 @@ if LibDebug then LibDebug() ns.print=print else ns.print=function() end end
 --[===[@non-debug@
 ns.print=function() end
 --@end-non-debug@]===]
-ns.addon=LibStub("LibInit"):NewAddon(me,{profile='Default',enhanchedProfile=true},'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
+ns.addon=LibStub("LibInit"):NewAddon(me,{profile='Default',enhancedProfile=true},'AceHook-3.0','AceTimer-3.0','AceEvent-3.0','AceBucket-3.0')
 local addon=ns.addon --#addon
 ns.toc=select(4,GetBuildInfo())
 ns.AceGUI=LibStub("AceGUI-3.0")
