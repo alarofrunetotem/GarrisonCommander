@@ -427,6 +427,7 @@ print("Initialize")
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("USEFUL",true,L["Enhance tooltip"],L["Adds a list of other useful followers to tooltip"])
+	self:AddToggle("NOTOOLTIP",false,L["No tooltips"],L["Totally removes mission tooltips"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
 	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
@@ -1612,7 +1613,7 @@ function addon:AddMenu()
 	local menu,size
 	if GMF.MissionTab:IsVisible() then
 		self.currentmenu=GMF.MissionTab
-		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','MOVEPANEL','AUTOLOGOUT')
+		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','NOTOOLTIP','MOVEPANEL','AUTOLOGOUT')
 	elseif GMF.FollowerTab:IsVisible() then
 		local missionlist=ns.bigscreen or self:GetBoolean("FOLLOWERMISSIONLIST")
 		self.currentmenu=GMF.FollowerTab
@@ -1625,7 +1626,7 @@ function addon:AddMenu()
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
-		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL','AUTOLOGOUT')
+		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL','NOTOOLTIP','AUTOLOGOUT')
 	else
 		self.currentmenu=nil
 		menu,size=self:CreateOptionsLayer('BIGSCREEN')
@@ -2551,6 +2552,7 @@ function addon:HookedGarrisonMissionPageFollowerFrame_OnEnter(frame)
 		);
 end
 function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
+	if self:GetBoolean("NOTOOLTIP") then return end
 	if (this.info == nil) then
 		return;
 	end
