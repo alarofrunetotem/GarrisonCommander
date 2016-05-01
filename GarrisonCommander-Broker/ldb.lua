@@ -537,13 +537,7 @@ function dataobj:OnTooltipShow()
 	local last
 	if #db > 0 then
 		if addon:GetBoolean("SUMMARY") then
-		--@debug@
-		print("Cached",addon:CachedTableCount())
-		--@end-debug@
 			local sorted=addon:NewTable()
-		--@debug@
-		print("Cached",addon:CachedTableCount())
-		--@end-debug@
 			local now=time()
 			for i=1,#db do
 				if db[i] then
@@ -573,7 +567,7 @@ function dataobj:OnTooltipShow()
 			end
 			addon:DelTable(sorted)
 		--@debug@
-		print("Cached",addon:CachedTableCount())
+		addon:CacheStats()
 		--@end-debug@
 		else
 			for i=1,#db do
