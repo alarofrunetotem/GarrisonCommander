@@ -362,6 +362,7 @@ function addon:OnInitialized()
 	self:AddLabel(GARRISON_NUM_COMPLETED_MISSIONS)
 	self:AddToggle("OLDINT",false,L["Use old interface"],L["Uses the old, more intrusive interface"])
 	self:AddToggle("SHOWNEXT",false,L["Show next toon"],L["Show the next toon which will complete a mission"])
+	self:AddToggle("SUMMARY",false,L["Only summary"],"Only show summary in tooltip")
 	self:AddSlider("FREQUENCY",5,1,60,L["Update frequency"])
 	frequency=self:GetNumber("FREQUENCY",5)
 	self:ScheduleTimer("DelayedInit",1)
@@ -533,29 +534,73 @@ function dataobj:OnTooltipShow()
 	local db=addon.db.realm.missions
 	local now=time()
 	local remove=nil
-	for i=1,#db do
-		if db[i] then
-			local t,missionID,pc,followerType=strsplit('.',db[i])
-			t=tonumber(t) or 0
-			followerType=tonumber(followerType) or LE_FOLLOWER_TYPE_GARRISON_6_0
-			local name= (followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2) and C(G.GetMissionName(missionID),"cyan") or G.GetMissionName(missionID)
-			if (name) then
-				if not remove and pc==ns.me then
-					if not G.GetPartyMissionInfo(missionID) then
-						remove=i
+	local last
+	if #db > 0 then
+		if addon:GetBoolean("SUMMARY") then
+		--@debug@
+		print("Cached",addon:CachedTableCount())
+		--@end-debug@
+			local sorted=addon:NewTable()
+		--@debug@
+		print("Cached",addon:CachedTableCount())
+		--@end-debug@
+			local now=time()
+			for i=1,#db do
+				if db[i] then
+					local t,missionID,pc,followerType=strsplit('.',db[i])
+					t=tonumber(t) or 0
+					if not sorted[pc] then
+						sorted[pc]=t
+					else
+						if t > now then
+							if sorted[pc]<now then
+								sorted[pc]=t
+							else
+								sorted[pc]=math.min(sorted[pc],t)
+							end
+						end
 					end
 				end
-				local msg=format("|cff%s%s|r: %s",pc==ns.me and C.Green.c or C.Orange.c,pc,name)
-				if t > now then
-					self:AddDoubleLine(msg,SecondsToTime(t-now),nil,nil,nil,C.Red())
+			end
+			for pc,t in pairs(sorted) do
+				local msg=format("|cff%s%s|r",pc==ns.me and C.Green.c or C.Orange.c,pc)
+				t=t-now
+				if t > 0 then
+					self:AddDoubleLine(msg,SecondsToTime(t),nil,nil,nil,C:Red())
 				else
-					self:AddDoubleLine(msg,DONE)
+					self:AddDoubleLine(msg,DONE,nil,nil,nil,C:Green())
+				end
+			end
+			addon:DelTable(sorted)
+		--@debug@
+		print("Cached",addon:CachedTableCount())
+		--@end-debug@
+		else
+			for i=1,#db do
+				if db[i] then
+					local t,missionID,pc,followerType=strsplit('.',db[i])
+					t=tonumber(t) or 0
+					followerType=tonumber(followerType) or LE_FOLLOWER_TYPE_GARRISON_6_0
+					local name= (followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2) and C(G.GetMissionName(missionID),"cyan") or G.GetMissionName(missionID)
+					if name then
+						if not remove and pc==ns.me then
+							if not G.GetPartyMissionInfo(missionID) then
+								remove=i
+							end
+						end
+						local msg=format("|cff%s%s|r: %s",pc==ns.me and C.Green.c or C.Orange.c,pc,name)
+						if t > now then
+							self:AddDoubleLine(msg,SecondsToTime(t-now),nil,nil,nil,C.Red())
+						else
+							self:AddDoubleLine(msg,DONE)
+						end
+					end
 				end
 			end
 		end
-	end
-	if remove then
-		tremove(db,remove)
+		if remove then
+			tremove(db,remove)
+		end
 	end
 	self:AddLine(me,C.Silver())
 end
