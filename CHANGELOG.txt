@@ -1,5 +1,10 @@
 *GarrisonCommander helps you when choosing the right follower for the right mission*
 
+* *2.12.0*
+Feature: Item appraising: GC uses any possible source for auction prices (or, as a last resort, vendor values) in order to appraise gold value also for non gold mission
+Fix: Maximize resource switch was not working
+
+
 * *2.11.2*
 Fix: Almost maxed follower were not able to use upgrades (#113)
 Feature: Mission tooltip can now be totally hidden (#123)

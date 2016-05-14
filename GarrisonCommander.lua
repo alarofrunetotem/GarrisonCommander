@@ -430,6 +430,8 @@ print("Initialize")
 	self:AddToggle("NOTOOLTIP",false,L["No tooltips"],L["Totally removes mission tooltips"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
 	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
+	self:AddSlider("MINXPLEVEL",90,90,100,L["Minimum XP missions level"],L["Ignore XP missions under this level"])
+	self:AddSlider("MINGOLD",50,1,1000,L["Minimum Gold Value"],L["Gold missions wich returns less than this amount are ignored"])
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
 	self:AddLabel("Followers Panel")
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown"],L["Mission shown for follower"],1)
@@ -1613,7 +1615,7 @@ function addon:AddMenu()
 	local menu,size
 	if GMF.MissionTab:IsVisible() then
 		self.currentmenu=GMF.MissionTab
-		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','IGM','IGP','MSORT','MAXRES','MAXRESCHANCE','NOFILL','USEFUL','NOTOOLTIP','MOVEPANEL','AUTOLOGOUT')
+		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MSORT','MAXRES','MAXRESCHANCE','IGM','IGP','NOFILL','USEFUL','NOTOOLTIP','MOVEPANEL','AUTOLOGOUT')
 	elseif GMF.FollowerTab:IsVisible() then
 		local missionlist=ns.bigscreen or self:GetBoolean("FOLLOWERMISSIONLIST")
 		self.currentmenu=GMF.FollowerTab
@@ -1626,7 +1628,7 @@ function addon:AddMenu()
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
-		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','GCSKIPRARE','GCSKIPEPIC','USEFUL','NOTOOLTIP','AUTOLOGOUT')
+		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','MINXPLEVEL','MINGOLD','GCSKIPRARE','GCSKIPEPIC','USEFUL','NOTOOLTIP','AUTOLOGOUT')
 	else
 		self.currentmenu=nil
 		menu,size=self:CreateOptionsLayer('BIGSCREEN')
@@ -2436,19 +2438,41 @@ function addon:AddRewards(frame, rewards, numRewards)
 		local index = 1;
 		local party=frame.party
 		local mission=frame.info
+		local missionID=mission.missionID
+		local moreClasses=self:GetMissionData(missionID,'moreClasses')
+		local bestItemID=self:GetMissionData(missionID,'bestItemID')
+		if moreClasses and moreClasses.gold then
+			rewards.pseudogold=self:NewTable()
+			rewards.pseudogold.quantity=self:GetMissionData(missionID,'gold')
+			rewards.pseudogold.currencyID=0
+			numRewards=numRewards+1
+		end
+		if bestItemID then
+			rewards.extraItem=self:NewTable()
+			rewards.extraItem.itemID=bestItemID
+			rewards.extraItem.best=true
+			rewards.extraItem.quantity=1
+			numRewards=numRewards+1
+		end
 		for id, reward in pairs(rewards) do
 			if (not frame.Rewards[index]) then
+				self:SafeSecureHookScript(frame,"OnEnter","AddRewardExtraTooltip")
 				frame.Rewards[index] = CreateFrame("Frame", nil, frame, "GarrisonMissionListButtonRewardTemplate");
-				frame.Rewards[index]:SetPoint("RIGHT", frame.Rewards[index-1], "LEFT", 0, 0);
+				frame.Rewards[index]:SetPoint("RIGHT", frame.Rewards[index-1], "LEFT", 15, 0);
+				frame.Rewards[index].ScriptHooked=true
 			end
 			local Reward = frame.Rewards[index];
+			if not Reward.ScriptHooked then
+				Reward.ScriptHooked=true
+				self:SafeSecureHookScript(Reward,"OnEnter","AddRewardExtraTooltip")
+			end
 			Reward.Quantity:Hide();
 			Reward.itemID = nil;
 			Reward.currencyID = nil;
 			Reward.tooltip = nil;
 			Reward.Quantity:SetTextColor(C.White())
 			if (reward.itemID) then
-				Reward.itemID = reward.itemID;
+				Reward.itemID = reward.itemID
 				GarrisonMissionFrame_SetItemRewardDetails(Reward);
 				if ( reward.quantity > 1 ) then
 					Reward.Quantity:SetText(reward.quantity);
@@ -2457,8 +2481,8 @@ function addon:AddRewards(frame, rewards, numRewards)
 					Reward.Quantity:SetText(frame.info.xp);
 					Reward.Quantity:Show();
 				else
-					local name,link,quality,iLevel,level=GetItemInfo(reward.itemID)
-					iLevel=addon:GetTrueLevel(reward.itemID,iLevel)
+					local name,link,quality,iLevel,level=GetItemInfo(Reward.itemID)
+					iLevel=addon:GetTrueLevel(Reward.itemID,iLevel)
 					if (name) then
 						if (iLevel<500 and reward.quantity) then
 							Reward.Quantity:SetText(reward.quantity);
@@ -2471,8 +2495,13 @@ function addon:AddRewards(frame, rewards, numRewards)
 
 				end
 			else
-				Reward.Icon:SetTexture(reward.icon);
-				Reward.title = reward.title
+				if id=='pseudogold' then
+					Reward.Icon:SetTexture('Interface/ICONS/INV_Misc_Coin_02')
+					Reward.title=L['Estimated gold value of mission']
+				else
+					Reward.Icon:SetTexture(reward.icon);
+					Reward.title = reward.title
+				end
 				if (reward.currencyID and reward.quantity) then
 					local multi=1
 					if type(party.materialMultiplier)=="table" then
@@ -2485,10 +2514,14 @@ function addon:AddRewards(frame, rewards, numRewards)
 					if (reward.currencyID == 0) then
 						local multi=party.goldMultiplier or 1
 						Reward.tooltip = GetMoneyString(reward.quantity);
-						Reward.Quantity:SetText(reward.quantity/10000 *multi);
+						if id=='pseudogold' then multi=1 end
+						Reward.Quantity:SetText(BreakUpLargeNumbers(floor(reward.quantity *multi / COPPER_PER_GOLD)));
+--						Reward.Quantity:SetText(math.floor(reward.quantity/10000) * multi);
 						Reward.Quantity:Show();
 						if multi >1 then
 							Reward.Quantity:SetTextColor(C:Green())
+						elseif id=='pseudogold' then
+							Reward.Quantity:SetTextColor(C:Orange())
 						else
 							Reward.Quantity:SetTextColor(C:Gold())
 						end
@@ -2517,11 +2550,55 @@ function addon:AddRewards(frame, rewards, numRewards)
 			Reward:Show();
 			index = index + 1;
 		end
-	end
+		if rewards.pseudogold then
+			self:DelTable(rewards.pseudogold)
+			rewards.pseudogold=nil
+		end
+		if rewards.extraItem then
+			self:DelTable(rewards.extraItem)
+			rewards.extraItem=nil
+		end
 
+	end
 	for i = (numRewards + 1), #frame.Rewards do
 		frame.Rewards[i]:Hide();
 	end
+	return numRewards
+end
+function addon:AddRewardExtraTooltip(this,...)
+	local tip=GameTooltip
+	local itemID=tostring(this.itemID)
+	if itemID and this.best then
+		local _1,l,_3,_4,_5,_6,_7,_8,_9,_10,buy=GetItemInfo(this.itemID)
+		local value,auction=self:GetMarketValue(l)
+		tip:AddDoubleLine(SELL_PRICE,GetMoneyString(buy))
+		if auction then
+			tip:AddLine(TOKEN_CURRENT_AUCTION_VALUE:format(value))
+		end
+	elseif itemID then
+		local data=allRewards[itemID]
+		local rc,creates=self:Deserialize(data or "") -- Deserialize wants a string
+		if rc then
+			local spec=tostring(GetSpecializationInfo(GetSpecialization()))
+			creates=creates[spec] or creates['*'] or false
+			if creates then
+				tip:AddLine(REWARDS,C:Green())
+				for k,v in pairs(creates) do
+					local _1,l,_3,_4,_5,_6,_7,_8,_9,t=GetItemInfo(k)
+					local buy,source=self:GetMarketValue(l)
+					tip:AddDoubleLine(format("|T%s:32|t %s",t,l),
+					--tip:AddDoubleLine(format("link:%s %s",t,l),
+						GetMoneyString(buy))
+				end
+			end
+		end
+	else
+		return
+	end
+	if not GetAuctionBuyout then
+		tip:AddLine(L["Using vendor prices\nInstall an auction management addon to get auction prices"],C:Red())
+	end
+	tip:Show()
 end
 function addon:HookedGarrisonMissionPageFollowerFrame_OnEnter(frame)
 	if not frame.info then
@@ -2615,8 +2692,8 @@ function addon:DrawSingleButton(source,frame,progressing,bigscreen)
 		local missionID=mission.missionID
 		self:AddStandardDataToButton(source,frame,mission,missionID,bigscreen)
 		self:AddIndicatorToButton(frame,mission,missionID,bigscreen)
-		self:AddRewards(frame, mission.rewards, mission.numRewards);
-		self:AddFollowersToButton(frame,mission,missionID,bigscreen)
+		local numRewards=self:AddRewards(frame, mission.rewards, mission.numRewards);
+		self:AddFollowersToButton(frame,mission,missionID,bigscreen,numRewards)
 		if source=="blizzard" and not self:IsRewardPage() and not progressing then
 			self:AddThreatsToButton(frame,mission,missionID,bigscreen)
 		end
@@ -2645,11 +2722,11 @@ function addon:DrawSlimButton(source,frame,progressing,bigscreen)
 	if mission then
 		local missionID=mission.missionID
 		self:AddStandardDataToButton(false,frame,mission,missionID,bigscreen)
-		self:AddRewards(frame, mission.rewards, mission.numRewards);
+		local numRewards=self:AddRewards(frame, mission.rewards, mission.numRewards);
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
-			self:AddFollowersToButton(frame,mission,missionID,bigscreen)
+			self:AddFollowersToButton(frame,mission,missionID,bigscreen,numRewards)
 		else
-			self:AddShipsToButton(frame,mission,missionID,bigscreen)
+			self:AddShipsToButton(frame,mission,missionID,bigscreen,numRewards)
 		end
 		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,-5)
 		frame.Success:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
@@ -2896,7 +2973,7 @@ function addon:AddShipsToButton(button,mission,missionID,bigscreen)
 		frame:Hide()
 	end
 end
-function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
+function addon:AddFollowersToButton(button,mission,missionID,bigscreen,numRewards)
 	if (not button.gcPANEL) then
 		local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
 		bg:SetPoint("RIGHT")
@@ -2917,7 +2994,7 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen)
 --@end-debug@
 	end
 	if (not bigscreen) then
-		local index=mission.numFollowers+mission.numRewards-3
+		local index=mission.numFollowers+numRewards-3
 		local position=(index * -65) - 130
 		button.gcPANEL.Party[1]:ClearAllPoints()
 		button.gcPANEL.Party[1]:SetPoint("BOTTOMLEFT",button.Rewards[1],"BOTTOMLEFT", position,0)
@@ -3028,6 +3105,22 @@ function addon:HookedGMFMissionsListScroll_update(frame)
 		self:HookedGarrisonMissionList_Update(frame,false)
 	end
 end
+local getMarketPrice
+function addon:GetMarketPrice(item)
+	if not getMarketPrice then
+		local auc_module=LibStub("LibInit"):GetAddon("GarrisonCommander-Auction")
+		if auc_module then
+			getMarketPrice=auc_module:Wrap("GetMarketPrice")
+		else
+			getMarketPrice=function(item)
+				return GetItemInfo(item,11)
+			end
+		end
+	else
+		addon.GetMarketPrice=function(dummy,item) print("Checked ",item)return getMarketprice(item) end
+		return getMarketPrice(item)
+	end
+end
 do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
 	collectgarbage('step',200)
@@ -3066,5 +3159,4 @@ addon:SafeRawHook("GarrisonMissionPageFollowerFrame_OnEnter")
 addon:SafeSecureHook("GarrisonMissionList_SetTab")
 addon:SafeSecureHook(GMF,"SelectTab","GarrisonMissionFrame_SelectTab")
 addon:SafeRawHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","GarrisonMissionPageOnClose")
-
 _G.GAC=addon

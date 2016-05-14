@@ -10,8 +10,8 @@ externals:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceBucket-3.0
 		tag: latest
 
-	libs/Ace3:
-		url: svn://svn.wowace.com/wow/ace3/mainline/trunk
+	libs/Ace3/AceSerializer-3.0:
+		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceSerializer-3.0
 		tag: latest
 
 	libs/LibItemUpgradeInfo-1.0:
@@ -20,6 +20,7 @@ externals:
 
 move-folders:
 	GarrisonCommander/GarrisonCommander-Broker: GarrisonCommander-Broker
+#	GarrisonCommander/GarrisonCommander-Auction: GarrisonCommander-Auction
 
 manual-changelog:
 		filename: CHANGELOG.txt

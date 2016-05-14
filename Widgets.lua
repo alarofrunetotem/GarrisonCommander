@@ -376,7 +376,9 @@ local function GMCMissionButton()
 	function m:Blacklist(blacklisted)
 		local mb=self.frame
 		if blacklisted then
+--@debug@
 			print("Blacklisting",mb:GetName())
+--@end-debug@		
 			mb.Overlay:Show()
 			mb.Overlay.Overlay:SetAlpha(1)
 			for i,v in pairs(mb.gcPANEL.Party) do
@@ -390,7 +392,6 @@ local function GMCMissionButton()
 			end
 			return true
 		else
-			print("UnBlacklisting",mb:GetName())
 			mb.Overlay:Hide()
 			mb.Overlay.Overlay:SetAlpha(0.4)
 			for i,v in pairs(mb.gcPANEL.Party) do

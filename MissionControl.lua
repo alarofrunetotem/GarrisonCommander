@@ -9,6 +9,8 @@ local _G=_G
 local factory=addon:GetFactory()
 --GMC_G.frame = CreateFrame('FRAME')
 local aMissions={}
+local choosenby={}
+local priority={}
 local GMF=GarrisonMissionFrame
 local GMCUsedFollowers={}
 local wipe=wipe
@@ -42,20 +44,77 @@ function module:GMCBusy(followerID)
 	return GMCUsedFollowers[followerID]
 end
 addon.GMCBusy=module.GMCBusy
+local function chooseBestClass(class,moreClasses)
+	local i=class2order[class] or 999
+	local class=class
+	if type(moreClasses)=="table" then
+		for k,v in pairs(moreClasses) do
+			if class2order[k] < i then
+				class=k
+				i=class2order[class]
+			end
+		end
+	end
+
+end
+function module:AcceptMission(missionID,class,value,name,choosenby)
+	local ar=settings.allowedRewards
+	value=tonumber(value)
+	if not value then
+		value=tonumber(self:GetMissionData(missionID,class)) or 0
+	end
+	if class=='gold' then
+		value=math.floor(value/10000)
+		if value<self:GetNumber("MINGOLD") then return false end
+	end
+	if class=="xp" then
+		if self:GetMissionData(missionID,"level")<self:GetNumber("MINXPLEVEL") then return false end
+	end
+	if (not ar[class]) then
+		--@debug@
+		print("  ",missionID,"discarded due to class == ", class)
+		--@end-debug@
+		return false
+	end
+	if class=="itemLevel" then
+		if self:GetMissionData(missionID,'itemLevel') < settings.minLevel then
+			--@debug@
+			print("  ",missionID,"discarded due to ilevel == ", self:GetMissionData(missionID,'itemLevel'))
+			--@end-debug@
+			return false
+		end
+	elseif class=="followerUpgrade" then
+		if self:GetMissionData(missionID,'followerUpgrade') < settings.minUpgrade and
+			self:GetMissionData(missionID,'followerUpgrade') > 600 then
+			--@debug@
+			print("  ",missionID,"discarded due to followerUpgrade == ", self:GetMissionData(missionID,'followerUpgrade'))
+			--@end-debug@
+			return false
+		end
+	end
+	tinsert(choosenby,format("%05d@%010d@%d@%s@%s",class2order[class],999999999-value,missionID,class,name))
+end
 ---
 -- Builds a mission list based on user preferences
 -- @param #module self self
 -- @param #table workList table to be filled with mission list
 function module:GMCCreateMissionList(workList)
-	--First get rid of unwanted rewards and missions that are too long
 	local ar=settings.allowedRewards
+	wipe(priority)
+	for class,enabled in pairs(ar) do
+		if enabled then tinsert(priority,class) end
+	end
+	table.sort(priority,function(a,b) return class2order[a] < class2order[b] end)
 	wipe(workList)
+	wipe(choosenby)
 	for _,missionID in self:GetMissionIterator() do
 		local discarded=false
 		local class=self:GetMissionData(missionID,"class")
+		local moreClasses=self:GetMissionData(missionID,"moreClasses")
+		local name=self:GetMissionData(missionID,"name")
 		repeat
 			--@debug@
-			print("|cffff0000",'Examining',missionID,self:GetMissionData(missionID,"name"),class,"|r")
+			print("|cffff0000",'Examining',name,class,"|r")
 			--@end-debug@
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
@@ -70,53 +129,24 @@ function module:GMCCreateMissionList(workList)
 				--@end-debug@
 				break
 			end
-			if (not ar[class]) then
+			for _,testclass in ipairs(priority) do
+				if class==testclass or moreClasses[testclass] then
+					if self:AcceptMission(missionID,testclass,self:GetMissionData(missionID,testclass),name,choosenby) then
 				--@debug@
-				print("  ",missionID,"discarded due to class == ", class)
+						print("  ",missionID,"accepted for",testclass)
 				--@end-debug@
-				discarded=true
-				break
-			end
-			if class=="itemLevel" then
-				if self:GetMissionData(missionID,'itemLevel') < settings.minLevel then
-					--@debug@
-					print("  ",missionID,"discarded due to ilevel == ", self:GetMissionData(missionID,'itemLevel'))
-					--@end-debug@
-					discarded=true
-					break
+						break
+					end
 				end
-			elseif class=="followerUpgrade" then
-				if self:GetMissionData(missionID,'followerUpgrade') < settings.minUpgrade and
-					self:GetMissionData(missionID,'followerUpgrade') > 600 then
-					--@debug@
-					print("  ",missionID,"discarded due to followerUpgrade == ", self:GetMissionData(missionID,'followerUpgrade'))
-					--@end-debug@
-					discarded=true
-					break
-				end
-			end
-			if (not discarded) then
-				tinsert(workList,missionID)
 			end
 		until true
 	end
 	local parties=self:GetParty()
-	local function msort(i1,i2)
-		local c1=addon:GetMissionData(i1,'class','other')
-		local c2=addon:GetMissionData(i2,'class','other')
-		if (c1==c2) then
-			return addon:GetMissionData(i1,c1,0) > addon:GetMissionData(i2,c2,0)
-		else
-			return (class2order[c1] or i1)<(class2order[c2] or i2)
-		end
+	table.sort(choosenby)
+	for i=1,#choosenby do
+		local _,_,missionId,_=strsplit('@',choosenby[i])
+		tinsert(workList,tonumber(missionId))
 	end
-	table.sort(workList,msort)
-	--@debug@
-	for i=1,#workList do
-		local id=workList[i]
-		print(self:GetMissionData(id,'name'),self:GetMissionData(id,'class'),self:GetMissionData(id,self:GetMissionData(id,'class')))
-	end
-	--@end-debug@
 end
 ---
 -- This routine can be called both as coroutin and as a standard one
@@ -222,7 +252,7 @@ do
 				local party={members={},perc=0}
 				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
 				--@debug@
-				print(missionID,"  Requested",class,";",minimumChance,"Mission",party.perc,party.full,settings)
+				print(missionID,"  Requested",class,";",minimumChance,"Mission",party.perc,party.full)
 				--@end-debug@
 				if ( party.full and party.perc >= minimumChance) then
 					--@debug@
