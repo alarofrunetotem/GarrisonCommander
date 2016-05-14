@@ -2441,20 +2441,29 @@ function addon:AddRewards(frame, rewards, numRewards)
 		local missionID=mission.missionID
 		local moreClasses=self:GetMissionData(missionID,'moreClasses')
 		local bestItemID=self:GetMissionData(missionID,'bestItemID')
+		local pseudoGold
+		local extraItem
+		local rw=self:NewTable()
+		for _, reward in pairs(rewards) do
+			tinsert(rw,reward)
+		end
 		if moreClasses and moreClasses.gold then
-			rewards.pseudogold=self:NewTable()
-			rewards.pseudogold.quantity=self:GetMissionData(missionID,'gold')
-			rewards.pseudogold.currencyID=0
 			numRewards=numRewards+1
+			pseudoGold=self:NewTable()
+			pseudoGold.quantity=self:GetMissionData(missionID,'gold')
+			pseudoGold.currencyID=0
+			pseudoGold.pseudogold=true
+			tinsert(rw,pseudoGold)
 		end
 		if bestItemID then
-			rewards.extraItem=self:NewTable()
-			rewards.extraItem.itemID=bestItemID
-			rewards.extraItem.best=true
-			rewards.extraItem.quantity=1
 			numRewards=numRewards+1
+			extraItem=self:NewTable()
+			extraItem.itemID=bestItemID
+			extraItem.best=true
+			extraItem.quantity=1
+			tinsert(rw,extraItem)
 		end
-		for id, reward in pairs(rewards) do
+		for id, reward in ipairs(rw) do
 			if (not frame.Rewards[index]) then
 				self:SafeSecureHookScript(frame,"OnEnter","AddRewardExtraTooltip")
 				frame.Rewards[index] = CreateFrame("Frame", nil, frame, "GarrisonMissionListButtonRewardTemplate");
@@ -2495,7 +2504,7 @@ function addon:AddRewards(frame, rewards, numRewards)
 
 				end
 			else
-				if id=='pseudogold' then
+				if reward.pseudogold then
 					Reward.Icon:SetTexture('Interface/ICONS/INV_Misc_Coin_02')
 					Reward.title=L['Estimated gold value of mission']
 				else
@@ -2514,13 +2523,13 @@ function addon:AddRewards(frame, rewards, numRewards)
 					if (reward.currencyID == 0) then
 						local multi=party.goldMultiplier or 1
 						Reward.tooltip = GetMoneyString(reward.quantity);
-						if id=='pseudogold' then multi=1 end
+						if reward.pseudogold then multi=1 end
 						Reward.Quantity:SetText(BreakUpLargeNumbers(floor(reward.quantity *multi / COPPER_PER_GOLD)));
 --						Reward.Quantity:SetText(math.floor(reward.quantity/10000) * multi);
 						Reward.Quantity:Show();
 						if multi >1 then
 							Reward.Quantity:SetTextColor(C:Green())
-						elseif id=='pseudogold' then
+						elseif reward.pseudogold then
 							Reward.Quantity:SetTextColor(C:Orange())
 						else
 							Reward.Quantity:SetTextColor(C:Gold())
@@ -2550,12 +2559,11 @@ function addon:AddRewards(frame, rewards, numRewards)
 			Reward:Show();
 			index = index + 1;
 		end
-		if rewards.pseudogold then
-			self:DelTable(rewards.pseudogold)
-			rewards.pseudogold=nil
+		if pseudoGold then
+			self:DelTable(pseudoGold)
 		end
-		if rewards.extraItem then
-			self:DelTable(rewards.extraItem)
+		if extraItem then
+			self:DelTable(extraItem)
 			rewards.extraItem=nil
 		end
 
