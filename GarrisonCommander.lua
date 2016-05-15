@@ -2447,6 +2447,15 @@ function addon:AddRewards(frame, rewards, numRewards)
 		for _, reward in pairs(rewards) do
 			tinsert(rw,reward)
 		end
+		if bestItemID then
+			numRewards=numRewards+1
+			extraItem=self:NewTable()
+			extraItem.itemID=bestItemID
+			extraItem.best=true
+			extraItem.quantity=1
+			extraItem.auction=self:GetMissionData(missionID,'bestItemIDAuction')
+			tinsert(rw,extraItem)
+		end
 		if moreClasses and moreClasses.gold then
 			numRewards=numRewards+1
 			pseudoGold=self:NewTable()
@@ -2455,20 +2464,10 @@ function addon:AddRewards(frame, rewards, numRewards)
 			pseudoGold.pseudogold=true
 			tinsert(rw,pseudoGold)
 		end
-		if bestItemID then
-			numRewards=numRewards+1
-			extraItem=self:NewTable()
-			extraItem.itemID=bestItemID
-			extraItem.best=true
-			extraItem.quantity=1
-			tinsert(rw,extraItem)
-		end
 		for id, reward in ipairs(rw) do
 			if (not frame.Rewards[index]) then
-				self:SafeSecureHookScript(frame,"OnEnter","AddRewardExtraTooltip")
 				frame.Rewards[index] = CreateFrame("Frame", nil, frame, "GarrisonMissionListButtonRewardTemplate");
 				frame.Rewards[index]:SetPoint("RIGHT", frame.Rewards[index-1], "LEFT", 15, 0);
-				frame.Rewards[index].ScriptHooked=true
 			end
 			local Reward = frame.Rewards[index];
 			if not Reward.ScriptHooked then
@@ -2531,6 +2530,8 @@ function addon:AddRewards(frame, rewards, numRewards)
 							Reward.Quantity:SetTextColor(C:Green())
 						elseif reward.pseudogold then
 							Reward.Quantity:SetTextColor(C:Orange())
+						elseif Reward.auction then
+							Reward.Quantity:SetTextColor(C:Cyan())
 						else
 							Reward.Quantity:SetTextColor(C:Gold())
 						end
@@ -2584,21 +2585,39 @@ function addon:AddRewardExtraTooltip(this,...)
 			tip:AddLine(TOKEN_CURRENT_AUCTION_VALUE:format(value))
 		end
 	elseif itemID then
-		local data=allRewards[itemID]
-		local rc,creates=self:Deserialize(data or "") -- Deserialize wants a string
-		if rc then
-			local spec=tostring(GetSpecializationInfo(GetSpecialization()))
-			creates=creates[spec] or creates['*'] or false
-			if creates then
-				tip:AddLine(REWARDS,C:Green())
-				for k,v in pairs(creates) do
-					local _1,l,_3,_4,_5,_6,_7,_8,_9,t=GetItemInfo(k)
-					local buy,source=self:GetMarketValue(l)
-					tip:AddDoubleLine(format("|T%s:32|t %s",t,l),
+		local creates=self:GetContainedItems(itemID)
+		if creates then
+--@debug@
+			print("Tooltip for",itemID)
+			DevTools_Dump(creates)
+--@end-debug@
+			tip:AddLine(REWARDS,C:Green())
+			local total=0
+			for k,v in pairs(creates) do
+				local c,k=strsplit('@',v)
+				c=tonumber(c) or 1
+				total=total+(tonumber(c) or 1)
+			end
+			for _,v in pairs(creates) do
+				local c,k=strsplit('@',v)
+				c=tonumber(c) or 1
+				k=tonumber(k)
+				local _1,l,_3,_4,_5,_6,_7,_8,_9,t=GetItemInfo(k)
+				local buy,source=self:GetMarketValue(l or k)
+	--@debug@
+				print("Info for",k,"=",c,l,t,buy,source)
+	--@end-debug@
+				if l then
+					tip:AddDoubleLine(format("|T%s:32|t %s %3.2f%%",t,l,c/total*100),
+					--tip:AddDoubleLine(format("link:%s %s",t,l),
+						GetMoneyString(buy))
+				else
+					tip:AddDoubleLine(format("%s (%s) %3.2f%%",UNKNOWN,k,c/total*100),
 					--tip:AddDoubleLine(format("link:%s %s",t,l),
 						GetMoneyString(buy))
 				end
 			end
+			tip:AddDoubleLine(L["Drop rate updated"],date("%Y-%m-%d %H:%M:%S",tonumber(allRewards._lastupdate)))
 		end
 	else
 		return
@@ -3111,22 +3130,6 @@ function addon:HookedGMFMissionsListScroll_update(frame)
 		self:HookedGarrisonMissionList_Update(frame,true)
 	else
 		self:HookedGarrisonMissionList_Update(frame,false)
-	end
-end
-local getMarketPrice
-function addon:GetMarketPrice(item)
-	if not getMarketPrice then
-		local auc_module=LibStub("LibInit"):GetAddon("GarrisonCommander-Auction")
-		if auc_module then
-			getMarketPrice=auc_module:Wrap("GetMarketPrice")
-		else
-			getMarketPrice=function(item)
-				return GetItemInfo(item,11)
-			end
-		end
-	else
-		addon.GetMarketPrice=function(dummy,item) print("Checked ",item)return getMarketprice(item) end
-		return getMarketPrice(item)
 	end
 end
 do local lasttime=0

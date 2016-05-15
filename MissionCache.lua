@@ -31,8 +31,11 @@ local module=addon:NewSubClass('MissionCache') --#module
 local GetAuctionBuyout=GetAuctionBuyout
 if GetAuctionBuyout then
 	function addon:GetMarketValue(item)
-		local price=GetAuctionBuyout(item)
-		if price==0 then
+		local rc,price=pcall(GetAuctionBuyout,item)
+		if not rc or price==0 then
+--@debug@
+			if not rc then print("Error calling buyour for",item,":",price) end
+--@end-debug@
 			return tonumber(select(11,GetItemInfo(item))) or 0
 		else
 			return price,true
@@ -42,6 +45,29 @@ else
 	function addon:GetMarketValue(item)
 		return tonumber(select(11,GetItemInfo(item))) or 0
 	end
+end
+function addon:GetContainedItems(itemID,spec)
+	spec=spec or GetSpecializationInfo(GetSpecialization())
+	itemID=tostring(itemID)
+	local rc,data=false,allRewards[itemID]
+	if type(data)=="string" then
+		rc,data=self:Deserialize(data) -- Deserialize wants a string
+		if rc then
+			allRewards[itemID]=data
+		else
+			data=false
+		end
+	end
+	if type(data)=="table" then
+		data=data[tostring(spec)] or data['*'] or false
+	end
+	--@debug@
+	if (data) then
+		print("Internal for itemID",itemID)
+		DevTools_Dump(data)
+	end
+	--@end-debug@
+	return data
 end
 function module:OnInitialized()
 --@debug@
@@ -89,64 +115,77 @@ function module:AddExtraData(mission)
 	for i=1,#classes do
 		mission[classes[i].key]=0
 	end
-	local spec=tostring(GetSpecializationInfo(GetSpecialization()))
+	local spec=GetSpecializationInfo(GetSpecialization())
 	mission.numrewards=0
 	mission.xpBonus=0
 	mission.moreClasses=mission.moreClasses or {}
 	wipe(mission.moreClasses)
 	mission.class=nil
+--@debug@
+	local dbg=173
+--@end-debug@
+	if mission.missionID == dbg then print("Extradata loading for ",mission.name) end
 	for k,v in pairs(rewards) do
 		if k==615 and v.followerXP then mission.xpBonus=mission.xpBonus+v.followerXP end
 		mission.numrewards=mission.numrewards+1
+		if mission.missionID == dbg then DevTools_Dump(v) end
 		for i,c in ipairs(classes) do
+			--@debug@
+			if mission.missionID == dbg then print("Checking for class",c.key) end
+			--@end-debug@
 			local value=c.func(c,k,v)
+			--@debug@
+			if mission.missionID == dbg then print("Returned:",value) end
+			--@end-debug@
 			if value then
-				mission[c.key]=mission[c.key]+value
 				if not mission.class  then
+					mission[c.key]=mission[c.key]+value
 					mission.class=c.key
 					mission.maxable=c.maxable
 					mission.mat=c.mat
 				elseif mission.class ~= c.key  and c.key ~= "other" then
-					mission.moreClasses[c.key]=value
+					mission.moreClasses[c.key]=tonumber(mission.moreClasses[c.key] or 0) + value
 				end
 				if spec and v.itemID then
-					local itemID=tostring(v.itemID)
-					local value=0
-					if type(mission.creates)=="nil" then
-						local data=allRewards[itemID]
-						local rc,creates=self:Deserialize(data or "") -- Deserialize wants a string
-						if rc then
-							mission.creates= creates[spec] or creates['*'] or false
-						else
-							mission.creates=false
-						end
-					end
-					if mission.creates then
+					local sellvalue=0
+					local data=self:GetContainedItems(v.itemID,spec)
+					if data then
 						mission.bestItemID=v.itemID
-						for k,v in pairs(mission.creates) do
+						local count=0
+						for i=1,#data do
+							local c,k,l=strsplit('@',data[i])
+							c=tonumber(c) or 1
 							k=tonumber(k)
-							local val,auction=self:GetMarketValue(k)
-							if val and val > value then
-								value=val
-								mission.bestItemID=k
-								mission.bestItemIDAuction=auction
+							if (tonumber(c) or 1) >= count then
+								local val,auction=self:GetMarketValue(k)
+								if count<c or (val and val > sellvalue) then
+									count=c
+									sellvalue=val
+									mission.bestItemID=k
+									mission.bestItemIDAuction=auction
+								end
 							end
 						end
 					else
-						value=self:GetMarketValue(v.itemID)
+						sellvalue=self:GetMarketValue(v.itemID)
 					end
-					if value > COPPER_PER_GOLD then
-						mission.moreClasses.gold=value
+					if mission.missionID == dbg then print("Market value",sellvalue) end
+					if sellvalue > 0 then
+						mission.moreClasses.gold=(mission.moreClasses.gold or 0) + sellvalue * (v.quantity)
 					end
 				end
+				if mission.missionID == dbg then print("Current gold",mission.gold,"moreclass gold",mission.moreClasses.gold) end
+				break
 			end
 		end
-
 	end
 	for k,v in pairs(mission.moreClasses) do
 		if not mission.class then mission.class=k end
 		mission[k]=mission[k]+v
 	end
+--@debug@
+	if mission.missionID == dbg then print("Final gold",mission.gold) DevTools_Dump(mission.moreClasses)end
+--@end-debug@
 	if not mission.class then mission.class="other" end
 end
 function module:GetMissionIterator(followerType)

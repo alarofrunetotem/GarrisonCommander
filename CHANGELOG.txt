@@ -2,6 +2,7 @@
 
 * *2.12.0*
 Feature: Item appraising: GC uses any possible source for auction prices (or, as a last resort, vendor values) in order to appraise gold value also for non gold mission
+Feature: GC attempts to gues which item you will retrieve from token and container
 Fix: Maximize resource switch was not working
 
 
