@@ -122,7 +122,7 @@ function module:AddExtraData(mission)
 	wipe(mission.moreClasses)
 	mission.class=nil
 --@debug@
-	local dbg=173
+	local dbg=461
 --@end-debug@
 	if mission.missionID == dbg then print("Extradata loading for ",mission.name) end
 	for k,v in pairs(rewards) do
@@ -169,12 +169,16 @@ function module:AddExtraData(mission)
 					else
 						sellvalue=self:GetMarketValue(v.itemID)
 					end
+					--@debug@
 					if mission.missionID == dbg then print("Market value",sellvalue) end
+					--@end-debug@
 					if sellvalue > 0 then
 						mission.moreClasses.gold=(mission.moreClasses.gold or 0) + sellvalue * (v.quantity)
 					end
 				end
+				--@debug@
 				if mission.missionID == dbg then print("Current gold",mission.gold,"moreclass gold",mission.moreClasses.gold) end
+				--@end-debug@
 				break
 			end
 		end
