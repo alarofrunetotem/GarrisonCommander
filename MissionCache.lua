@@ -29,16 +29,22 @@ local classes
 -- Mission caching is a bit different fron follower caching mission appears and disappears on a regular basis
 local module=addon:NewSubClass('MissionCache') --#module
 local GetAuctionBuyout=GetAuctionBuyout
-if GetAuctionBuyout then
+if type(GetAuctionBuyout)=="function" then
 	function addon:GetMarketValue(item)
 		local rc,price=pcall(GetAuctionBuyout,item)
-		if not rc or price==0 then
+		print(item,rc,price)
+		if not rc then
 --@debug@
-			if not rc then print("Error calling buyour for",item,":",price) end
+			print("Error calling buyout for",item,":",price)
 --@end-debug@
-			return tonumber(select(11,GetItemInfo(item))) or 0
-		else
+		end
+		price=tonumber(price) or 0
+		if price>0 then
+			print(item,price,true)
 			return price,true
+		else
+			print(item,tonumber(select(11,GetItemInfo(item))) or 0,false)
+			return tonumber(select(11,GetItemInfo(item))) or 0,false
 		end
 	end
 else
@@ -64,7 +70,7 @@ function addon:GetContainedItems(itemID,spec)
 	--@debug@
 	if (data) then
 		print("Internal for itemID",itemID)
-		DevTools_Dump(data)
+		--DevTools_Dump(data)
 	end
 	--@end-debug@
 	return data
@@ -172,6 +178,10 @@ function module:AddExtraData(mission)
 					--@debug@
 					if mission.missionID == dbg then print("Market value",sellvalue) end
 					--@end-debug@
+					if not tonumber(sellvalue) then
+						print(mission.missionID,"sellvalue for",v.itemID,"was non numeric:",sellvalue)
+						sellvalue=0
+					end
 					if sellvalue > 0 then
 						mission.moreClasses.gold=(mission.moreClasses.gold or 0) + sellvalue * (v.quantity)
 					end
