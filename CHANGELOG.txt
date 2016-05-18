@@ -2,8 +2,8 @@
 
 * *2.12.0*
 Feature: Item appraising: GC uses any possible source for auction prices (or, as a last resort, vendor values) in order to appraise gold value also for non gold mission
-Feature: GC attempts to gues which item you will retrieve from token and container
-Fix: Maximize resource switch was not working
+Feature: GC knows what toke or containers will creates and shows the one with the highest drop rate. Hovering on the container will show the full list with drop rate (from wowhead)
+Fix: Maximize resource switch was not working (#119)
 
 
 * *2.11.2*
