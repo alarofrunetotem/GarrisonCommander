@@ -32,7 +32,6 @@ local GetAuctionBuyout=GetAuctionBuyout
 if type(GetAuctionBuyout)=="function" then
 	function addon:GetMarketValue(item)
 		local rc,price=pcall(GetAuctionBuyout,item)
-		print(item,rc,price)
 		if not rc then
 --@debug@
 			print("Error calling buyout for",item,":",price)
@@ -40,10 +39,8 @@ if type(GetAuctionBuyout)=="function" then
 		end
 		price=tonumber(price) or 0
 		if price>0 then
-			print(item,price,true)
 			return price,true
 		else
-			print(item,tonumber(select(11,GetItemInfo(item))) or 0,false)
 			return tonumber(select(11,GetItemInfo(item))) or 0,false
 		end
 	end
