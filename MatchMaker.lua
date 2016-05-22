@@ -282,7 +282,7 @@ function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 	missionID=mission.missionID
 	if (not party) then party=addon:GetParty(missionID) end
 --@debug@
-print("Using cap data:",cap)
+	print("Using cap data:",cap)
 --@end-debug@
 	MatchMaker(self,mission,party,false,true,cap)
 	if (skipEpic) then
