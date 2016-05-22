@@ -92,7 +92,8 @@ function module:AcceptMission(missionID,class,value,name,choosenby)
 			return false
 		end
 	end
-	tinsert(choosenby,format("%05d@%010d@%d@%s@%s",class2order[class],999999999-value,missionID,class,name))
+	tinsert(choosenby,format("%05d@%010d@%d@%s@%s",class2order[class],99999999-value,missionID,class,name))
+	return true
 end
 ---
 -- Builds a mission list based on user preferences
@@ -114,7 +115,7 @@ function module:GMCCreateMissionList(workList)
 		local name=self:GetMissionData(missionID,"name")
 		repeat
 			--@debug@
-			print("|cffff0000",'Examining',name,class,"|r")
+			print("|cffff0000Examining|r",name,missionID,class)
 			--@end-debug@
 			local durationSeconds=self:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
@@ -143,10 +144,21 @@ function module:GMCCreateMissionList(workList)
 	end
 	local parties=self:GetParty()
 	table.sort(choosenby)
+	--@debug@
+	print("Final worklist")
+	--@end-debug@
+	local used=self:NewTable()
 	for i=1,#choosenby do
-		local _,_,missionId,_=strsplit('@',choosenby[i])
-		tinsert(workList,tonumber(missionId))
+		local _1,_2,missionId,_=strsplit('@',choosenby[i])
+		if not used[missionId] then
+			tinsert(workList,tonumber(missionId))
+			used[missionId]=true
+			--@debug@
+				print(missionId,_1,99999999-tonumber(_2))
+			--@end-debug@
+		end
 	end
+	self:DelTable(used)
 end
 ---
 -- This routine can be called both as coroutin and as a standard one
@@ -250,13 +262,13 @@ do
 					minimumChance=tonumber(settings.rewardChance[class]) or 100
 				end
 				local party={members={},perc=0}
-				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
 				--@debug@
-				print(missionID,"  Requested",class,";",minimumChance,"Mission",party.perc,party.full)
+				print(self:GetMissionData(missionID,"name"),missionID,"  Requested",class,minimumChance,party.perc,party.full)
 				--@end-debug@
+				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
 				if ( party.full and party.perc >= minimumChance) then
 					--@debug@
-					print(missionID,"  Accepted",party)
+					print(missionID,"  Accepted",party.perc,minimumChance)
 					--@end-debug@
 					local mb=AceGUI:Create("GMCMissionButton")
 					if not blacklist[missionID] then
@@ -334,7 +346,6 @@ function module:GMC_OnClick_Start(this,button)
 		GMC.list.widget:SetTitleColor(C.Red())
 	end
 	self:RawHookScript(GMC.startButton,'OnUpdate',"GMCCalculateMissions")
-
 end
 local chestTexture
 local function buildDragging(frame,drawItemButtons)
