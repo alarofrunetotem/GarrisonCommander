@@ -64,12 +64,6 @@ function addon:GetContainedItems(itemID,spec)
 	if type(data)=="table" then
 		data=data[tostring(spec)] or data['*'] or false
 	end
-	--@debug@
-	if (data) then
-		print("Internal for itemID",itemID)
-		--DevTools_Dump(data)
-	end
-	--@end-debug@
 	return data
 end
 function module:OnInitialized()
