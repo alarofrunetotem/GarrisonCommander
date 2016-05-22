@@ -1186,9 +1186,6 @@ function addon:CreateHeader(module,PIN)
 	GCF:SetFrameStrata(main:GetFrameStrata())
 	GCF:SetFrameLevel(main:GetFrameLevel()-2)
 	if module == self then GCF:SetHeight(130) end
---@debug@
-print(GCF:GetHeight())
---@end-debug@
 	baseHeight=GCF:GetHeight()
 	minHeight=47
 	GCF.CloseButton:SetScript("OnClick",nil)
@@ -2604,9 +2601,6 @@ function addon:AddRewardExtraTooltip(this,...)
 				k=tonumber(k)
 				local _1,l,_3,_4,_5,_6,_7,_8,_9,t=GetItemInfo(k)
 				local buy,source=self:GetMarketValue(l or k)
-	--@debug@
-				print("Info for",k,"=",c,l,t,buy,source)
-	--@end-debug@
 				if l then
 					tip:AddDoubleLine(format("|T%s:32|t %s %3.2f%%",t,l,c/total*100),
 					--tip:AddDoubleLine(format("link:%s %s",t,l),
