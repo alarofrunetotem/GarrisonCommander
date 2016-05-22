@@ -161,7 +161,7 @@ function addon:cutePrint(scroll,level,k,v)
 	end
 	if (type(v)=="table") then
 		if (level:len()>6) then return end
-		self:AddRow(scroll,level..C(k,"Azure")..":" ..C("Table","Orange"))
+		self:AddRow(scroll,level..C(k,"Azure")..":" ..C("Table","Orange") .. " " .. tostring(#v))
 		for kk,vv in pairs(v) do
 			self:cutePrint(scroll,level .. "  ",kk,vv)
 		end
