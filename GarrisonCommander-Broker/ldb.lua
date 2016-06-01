@@ -68,7 +68,8 @@ local EMPTY=EMPTY -- "Empty"
 local GARRISON_CACHE=GARRISON_CACHE
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
-
+local LE_GARRISON_TYPE_6_0=_G.LE_GARRISON_TYPE_6_0
+local LE_GARRISON_TYPE_6_2=_G.LE_GARRISON_TYPE_6_2
 local dbversion=1
 local frequency=5
 local ldbtimer=nil
@@ -257,7 +258,7 @@ function addon:CountEmpty()
 end
 function addon:WorkUpdate(event,success,shipments_running,shipmentCapacity,plotID)
 
-	local buildings = G.GetBuildings();
+	local buildings = G.GetBuildings(LE_GARRISON_TYPE_6_0);
 	for i = 1, #buildings do
 		if plotID == buildings[i].plotID then
 			local buildingID,name=G.GetBuildingInfo(buildings[i].buildingID)
@@ -274,7 +275,7 @@ function addon:WorkUpdate(event,success,shipments_running,shipmentCapacity,plotI
 	end
 end
 function addon:DiscoverFarms()
-	local buildings = G.GetBuildings();
+	local buildings = G.GetBuildings(LE_GARRISON_TYPE_6_0);
 	for i = 1, #buildings do
 		local buildingID = buildings[i].buildingID;
 		if ( buildingID) then
