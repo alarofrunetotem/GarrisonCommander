@@ -411,7 +411,7 @@ print("Initialize")
 	self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
 	self:AddToggle("BIGSCREEN",true,L["Big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	self:AddToggle("PIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
-	self:AddLabel("Mission Panel")
+	self:AddLabel(L["Mission Panel"])
 	self:AddToggle("IGM",true,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
 	self:AddToggle("IGP",true,L['Ignore "maxed"'],L["Level 100 epic followers are not used for xp only missions."])
 	self:AddToggle("NOFILL",false,L["No mission prefill"],L["Disables automatic population of mission page screen. You can also press control while clicking to disable it for a single mission"])
@@ -428,12 +428,10 @@ print("Initialize")
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 	self:AddToggle("USEFUL",true,L["Enhance tooltip"],L["Adds a list of other useful followers to tooltip"])
 	self:AddToggle("NOTOOLTIP",false,L["No tooltips"],L["Totally removes mission tooltips"])
-	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Use /gac gui to change percentage. Default is 80%"])
+	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Change via Minimum needed chance slider"])
 	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
-	self:AddSlider("MINXPLEVEL",90,90,100,L["Minimum XP missions level"],L["Ignore XP missions under this level"])
-	self:AddSlider("MINGOLD",50,1,1000,L["Minimum Gold Value"],L["Gold missions wich returns less than this amount are ignored"])
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
-	self:AddLabel("Followers Panel")
+	self:AddLabel(L["Followers Panel"])
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown"],L["Mission shown for follower"],1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance"],L["Minimun chance success under which ignore missions"],5)
 	self:AddToggle("ILV",true,L["Show itemlevel"],L["When checked, show on each follower button weapon and armor level for maxed followers"])
@@ -566,9 +564,11 @@ function addon:ApplyFOLLOWERMISSIONLIST(value)
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	end
 end
-function addon:ApplyIXP(vale)
+function addon:ApplyIXP(value)
+	print(value)
 end
-function addon:ApplyILV(vale)
+function addon:ApplyILV(value)
+	print(value)
 end
 
 function addon:IsIgnored(followerID,missionID)
@@ -2584,10 +2584,6 @@ function addon:AddRewardExtraTooltip(this,...)
 	elseif itemID then
 		local creates=self:GetContainedItems(itemID)
 		if creates then
---@debug@
-			print("Tooltip for",itemID)
-			DevTools_Dump(creates)
---@end-debug@
 			tip:AddLine(REWARDS,C:Green())
 			local total=0
 			for k,v in pairs(creates) do
@@ -2611,7 +2607,7 @@ function addon:AddRewardExtraTooltip(this,...)
 						GetMoneyString(buy))
 				end
 			end
-			tip:AddDoubleLine(L["Drop rate updated"],date("%Y-%m-%d %H:%M:%S",tonumber(allRewards._lastupdate)))
+			tip:AddDoubleLine(L["Drop rate updated"],date("%Y-%m-%d %H:%M:%S",tonumber(ns.wowhead_update)))
 		end
 	else
 		return
