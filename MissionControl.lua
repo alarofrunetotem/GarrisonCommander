@@ -197,7 +197,7 @@ function module:RunMission(missionID,start)
 					PlaySound("UI_Garrison_CommandTable_MissionStart")
 					coroutine.yield(true)
 				else
-					self:ScheduleTimer("GMCRunMission",0.25,party.missionID,true)
+					self:ScheduleTimer("RunMission",0.25,party.missionID,true)
 					return
 				end
 			else
