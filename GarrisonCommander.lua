@@ -752,7 +752,10 @@ local function switch(flag)
 	end
 end
 function addon:RefreshParties()
-	addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
+	self:coroutineExecute(0.02,function()
+		addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) coroutine.yield(true) end)
+		end
+	)
 end
 function addon:RefreshMissions(missionID)
 	if (GMF:IsVisible()) then
@@ -1582,9 +1585,14 @@ print("Setup")
 	self:Trigger("MSORT")
 	local parties=self:GetParties()
 	if #parties==0 then
-		self:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
-	end
+		self:coroutineExecute(0.02,function()
+			addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) coroutine.yield(true) end)
+			addon:ScriptGarrisonMissionFrame_OnShow()
+			end
+		)
+	else
 	return self:ScriptGarrisonMissionFrame_OnShow()
+	end
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
@@ -2600,11 +2608,11 @@ function addon:AddRewardExtraTooltip(this,...)
 				if l then
 					tip:AddDoubleLine(format("|T%s:32|t %s %3.2f%%",t,l,c/total*100),
 					--tip:AddDoubleLine(format("link:%s %s",t,l),
-						GetMoneyString(buy))
+						GetMoneyString(buy) .. ' ' .. source)
 				else
 					tip:AddDoubleLine(format("%s (%s) %3.2f%%",UNKNOWN,k,c/total*100),
 					--tip:AddDoubleLine(format("link:%s %s",t,l),
-						GetMoneyString(buy))
+						GetMoneyString(buy) .. ' ' .. source)
 				end
 			end
 			tip:AddDoubleLine(L["Drop rate updated"],date("%Y-%m-%d %H:%M:%S",tonumber(ns.wowhead_update)))
@@ -2612,7 +2620,7 @@ function addon:AddRewardExtraTooltip(this,...)
 	else
 		return
 	end
-	if not GetAuctionBuyout then
+	if not self.AuctionPrices then
 		tip:AddLine(L["Using vendor prices\nInstall an auction management addon to get auction prices"],C:Red())
 	end
 	tip:Show()
