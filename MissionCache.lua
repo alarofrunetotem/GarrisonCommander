@@ -28,27 +28,7 @@ local index={}
 local classes
 -- Mission caching is a bit different fron follower caching mission appears and disappears on a regular basis
 local module=addon:NewSubClass('MissionCache') --#module
-local GetAuctionBuyout=GetAuctionBuyout
-if type(GetAuctionBuyout)=="function" then
-	function addon:GetMarketValue(item)
-		local rc,price=pcall(GetAuctionBuyout,item)
-		if not rc then
---@debug@
-			print("Error calling buyout for",item,":",price)
---@end-debug@
-		end
-		price=tonumber(price) or 0
-		if price>0 then
-			return price,true
-		else
-			return tonumber(select(11,GetItemInfo(item))) or 0,false
-		end
-	end
-else
-	function addon:GetMarketValue(item)
-		return tonumber(select(11,GetItemInfo(item))) or 0
-	end
-end
+
 function addon:GetContainedItems(itemID,spec)
 	spec=spec or GetSpecializationInfo(GetSpecialization())
 	itemID=tostring(itemID)
@@ -70,7 +50,44 @@ function module:OnInitialized()
 --@debug@
 	print("OnInitialized")
 --@end-debug@
-
+	--Building price function
+	--> has auction addons installed?
+	local appraisers={}
+	local trash={}
+	if _G.AucAdvanced then
+		appraisers.AUC=_G.AucAdvanced.API.GetMarketValue
+	end
+	if _G.Atr_GetAuctionBuyout then
+		appraisers.ATR=Atr_GetAuctionBuyout
+	end
+	if _G.TSMAPI then
+		appraisers.TSM=function(itemlink) return TSMAPI:GetItemValue(itemlink,"DBMarket") end
+	end
+	if _G.TUJMarketInfo then
+		appraisers.TUY=function(itemlink) TUJMarketInfo(itemlink,trash) return trash['market'] end
+	end
+	if _G.GetAuctionBuyout then
+		appraisers.AH=GetAuctionBuyout
+	end
+	local function GetMarketValue(self,itemId)
+		local rc,price,source=true,0,"Unk"
+		for i,k in pairs(appraisers) do
+			addon.AuctionPrices=true
+			rc,price=pcall(k,itemId)
+			if rc and price and price >0 then
+				source=i
+				break
+			end
+			price=0
+		end
+		local vendorprice=tonumber(select(11,GetItemInfo(item))) or 0
+		if price >vendorprice then
+			return price,source
+		else
+			return vendorprice,'VND'
+		end
+	end
+	addon.GetMarketValue=GetMarketValue
 end
 local function scan(t,s)
 	if type(t)=="table" then
