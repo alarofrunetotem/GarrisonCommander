@@ -300,6 +300,7 @@ function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 end
 function addon:MatchMaker(missionID,party,includeBusy,useCap,currentCap)
 	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
+	if not mission then return 0 end
 	missionID=mission.missionID
 	if (not party) then party=addon:GetParty(missionID) end
 	useCap=useCap or self:GetBoolean("MAXRES")
