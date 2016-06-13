@@ -240,6 +240,7 @@ function module:OnAllGarrisonMissions(func,inProgress,missionType)
 			func(tmp[i])
 		end
 	end
+	addon:DelTable(tmp)
 end
 
 -- Old cache to be removed
