@@ -230,9 +230,14 @@ print("Iterator called, list is",list)
 end
 function module:OnAllGarrisonMissions(func,inProgress,missionType)
 	local list=inProgress and GMFMissions.inProgressMissions or GMFMissions.availableMissions
+	local tmp=addon:NewTable()
 	if type(list)=='table' then
 		for i=1,#list do
-			func(list[i].missionID)
+			tinsert(tmp,list[i].missionID)
+		end
+		list=nil --we no longer need this reference
+		for i=1,#tmp do
+			func(tmp[i])
 		end
 	end
 end
