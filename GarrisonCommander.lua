@@ -1,4 +1,5 @@
 local me, ns = ...
+local toc=select(4,GetBuildInfo())
 ns.Configure()
 local _G=_G
 local HD=false
@@ -108,9 +109,9 @@ local GMFMissionsListScrollFrame=					GMF.MissionTab.MissionList.listScroll
 local GMFMissionListButtons=						GMF.MissionTab.MissionList.listScroll.buttons
 local GMFMissionsListScrollFrameScrollChild=		GMF.MissionTab.MissionList.listScroll.scrollChild
 local GMFFollowers=									GMF.FollowerTab.followerList
-local GMFMissionFrameFollowers=						GMF.FollowerTab.followerList
-local GMFFollowersListScrollFrame=					GMF.FollowerTab.followerList.listScroll
-local GMFFollowersListScrollFrameScrollChild=		GMF.FollowerTab.followerList.listScroll.scrollChild
+--local GMFMissionFrameFollowers=						GMF.FollowerTab.followerList
+--local GMFFollowersListScrollFrame=					GMF.FollowerTab.followerList.listScroll
+--local GMFFollowersListScrollFrameScrollChild=		GMF.FollowerTab.followerList.listScroll.scrollChild
 local GMFMissionPage=								GMF.MissionTab.MissionPage
 --dictionary
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE
@@ -752,10 +753,14 @@ local function switch(flag)
 	end
 end
 function addon:RefreshParties()
-	self:coroutineExecute(0.02,function()
-		addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) coroutine.yield(true) end)
-		end
-	)
+	if true then
+		addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID)end)
+	else
+		self:coroutineExecute(0.001,function()
+			addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) coroutine.yield(true) end)
+			end
+		)
+	end
 end
 function addon:RefreshMissions(missionID)
 	if (GMF:IsVisible()) then
@@ -1585,14 +1590,9 @@ print("Setup")
 	self:Trigger("MSORT")
 	local parties=self:GetParties()
 	if #parties==0 then
-		self:coroutineExecute(0.02,function()
-			addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) coroutine.yield(true) end)
-			addon:ScriptGarrisonMissionFrame_OnShow()
-			end
-		)
-	else
-	return self:ScriptGarrisonMissionFrame_OnShow()
+		addon:OnAllGarrisonMissions(function(missionID) addon:MatchMaker(missionID) end)
 	end
+	return self:ScriptGarrisonMissionFrame_OnShow()
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
@@ -3134,7 +3134,11 @@ do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
 	collectgarbage('step',200)
 	if not GMFMissions.showInProgress then
-		self.hooks.GarrisonMissionList_Update(t,...)
+		if toc==70000 then
+			GMF.MissionTab.MissionList.Update(t,...)
+		else
+			self.hooks.GarrisonMissionList_Update(t,...)
+		end
 		lasttime=0
 	else
 		local missions=GMFMissions.inProgressMissions
@@ -3161,7 +3165,11 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 end
 end
 --addon:SafeRawHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissionsListScroll_update")
-addon:SafeRawHook("GarrisonMissionList_Update")
+if toc==70000 then
+	addon:SecureHook(GMF.MissionTab.MissionList,"Update","HookedGarrisonMissionList_Update")
+else
+	addon:SafeRawHook("GarrisonMissionList_Update")
+end
 addon:SafeSecureHook("GarrisonMissionButton_SetRewards")
 addon:SafeRawHook("GarrisonMissionButton_OnEnter","ScriptGarrisonMissionButton_OnEnter")
 addon:SafeRawHook("GarrisonMissionPageFollowerFrame_OnEnter")
