@@ -26,8 +26,11 @@ local pin=false
 local baseHeight
 local minHeight
 local addon=addon --#addon
-local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_GARRISON_TYPE_6_0=_G.LE_GARRISON_TYPE_6_0
+local LE_GARRISON_TYPE_6_2=_G.LE_GARRISON_TYPE_6_2
+local LE_GARRISON_TYPE_7_0=_G.LE_GARRISON_TYPE_7_0
 ns.bigscreen=true
 local tprint=print
 local backdrop = {
@@ -109,9 +112,12 @@ local GMFMissionsListScrollFrame=					GMF.MissionTab.MissionList.listScroll
 local GMFMissionListButtons=						GMF.MissionTab.MissionList.listScroll.buttons
 local GMFMissionsListScrollFrameScrollChild=		GMF.MissionTab.MissionList.listScroll.scrollChild
 local GMFFollowers=									GMF.FollowerTab.followerList
---local GMFMissionFrameFollowers=						GMF.FollowerTab.followerList
---local GMFFollowersListScrollFrame=					GMF.FollowerTab.followerList.listScroll
---local GMFFollowersListScrollFrameScrollChild=		GMF.FollowerTab.followerList.listScroll.scrollChild
+if toc==70000 then
+	GMFFollowers=									GMF.FollowerList
+end
+local GMFMissionFrameFollowers=						GMFFollowers
+local GMFFollowersListScrollFrame=					GMFFollowers.listScroll
+local GMFFollowersListScrollFrameScrollChild=		GMFFollowers.listScroll.scrollChild
 local GMFMissionPage=								GMF.MissionTab.MissionPage
 --dictionary
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE
@@ -686,7 +692,7 @@ function addon:AddFollowersToTooltip(missionID,followerTypeID)
 	if self:GetBoolean("USEFUL") then
 		local useful=new()
 		local traited=G.GetFollowersTraitsForMission(missionID)
-		local buffed=G.GetBuffedFollowersForMission(missionID)
+		local buffed=G.GetBuffedFollowersForMission(missionID,true)
 		if (type(traited)=='table') then
 			self:AddIconsToFollower(missionID,useful,traited,members,followerTypeID)
 		end
@@ -764,7 +770,11 @@ function addon:RefreshParties()
 end
 function addon:RefreshMissions(missionID)
 	if (GMF:IsVisible()) then
-		GarrisonMissionList_UpdateMissions()
+		if toc==70000 then
+			GMF.MissionTab.MissionList:UpdateMissions()
+		else
+			GarrisonMissionList_UpdateMissions()
+		end
 	end
 end
 
@@ -866,7 +876,7 @@ function addon:SetClean()
 	dirty=false
 end
 function addon:HasSalvageYard()
-	local buildings=G.GetBuildings()
+	local buildings=G.GetBuildings(LE_GARRISON_TYPE_6_0)
 	for i =1,#buildings do
 		local building=buildings[i]
 		if building.texPrefix=="GarrBuilding_SalvageYard_1_A" then return true end
@@ -1192,7 +1202,7 @@ function addon:CreateHeader(module,PIN)
 	end
 	local main=module:GetMain()
 	GCF:SetFrameStrata(main:GetFrameStrata())
-	GCF:SetFrameLevel(main:GetFrameLevel()-2)
+	GCF:SetFrameLevel(max(0,main:GetFrameLevel()-2))
 	if module == self then GCF:SetHeight(130) end
 	baseHeight=GCF:GetHeight()
 	minHeight=47
@@ -1381,7 +1391,7 @@ function addon.ClonedGarrisonMissionMechanic_OnEnter(this)
 				end
 			end
 		else
-			local t=G.GetBuffedFollowersForMission(this.missionID)
+			local t=G.GetBuffedFollowersForMission(this.missionID,true)
 			for followerID,k in pairs(t) do
 				for i=1,#k do
 					if k[i].name==this.Name then
@@ -2091,7 +2101,11 @@ print("Unable to find follower",followerID)
 	local rc,message= pcall(GarrisonMissionFrame_SetFollowerPortrait,frame.PortraitFrame, info, false);
 --@end-non-debug@]===]
 --@debug@
-	GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false)
+	if toc==70000 then
+		GMF:SetFollowerPortrait(frame.PortraitFrame, info, false)
+	else
+		GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false)
+	end
 --@end-debug@
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
@@ -2439,7 +2453,8 @@ function addon:GarrisonMissionPageOnClose()
 	GarrisonMissionFrame.MissionTab.MissionList:Show();
 end
 function addon:AddRewards(frame, rewards, numRewards)
-	if (numRewards > 0) then
+	numRewards=numRewards or #rewards
+	if (numRewards and numRewards > 0) then
 		local index = 1;
 		local party=frame.party
 		local mission=frame.info
@@ -2671,7 +2686,8 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 	else
 		GameTooltip:SetText(this.info.name);
 		GameTooltip:AddLine(string.format(GARRISON_MISSION_TOOLTIP_NUM_REQUIRED_FOLLOWERS, this.info.numFollowers), 1, 1, 1);
-		local rc,message=pcall(GarrisonMissionButton_AddThreatsToTooltip,this.info.missionID, GarrisonMissionFrame:GetFollowerType());
+		local followertype=toc==70000 and LE_FOLLOWER_TYPE_GARRISON_6_0 or GarrisonMissionFrame:GetFollowerType()
+		local rc,message=pcall(GarrisonMissionButton_AddThreatsToTooltip,this.info.missionID, followertype);
 		--@debug@
 		if not rc then GameTooltip:AddLine(message) end
 		--@end-debug@
@@ -2684,7 +2700,7 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 			GameTooltip:AddDoubleLine(L["Not blacklisted"],L["Right-Click to blacklist"],0.125,1.0,0.125,C:Red())
 		end
 		GameTooltip:AddLine(this.info.offerTimeRemaining, 1, 1, 1);
-		addon:AddFollowersToTooltip(this.info.missionID,LE_FOLLOWER_TYPE_GARRISON_6_0 or 0)
+		addon:AddFollowersToTooltip(this.info.missionID,LE_FOLLOWER_TYPE_GARRISON_6_0  or 0)
 		if not C_Garrison.IsOnGarrisonMap() and not GMF:IsVisible() then
 			GameTooltip:AddLine(" ");
 			GameTooltip:AddLine(GARRISON_MISSION_TOOLTIP_RETURN_TO_START, nil, nil, nil, 1);
@@ -3027,7 +3043,8 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen,numReward
 	local party=button.party
 	local t,b
 	if not GMFMissions.showInProgress then
-		b=G.GetBuffedFollowersForMission(missionID)
+		--GarrisonFollowerOptions[LE_FOLLOWER_TYPE_GARRISON_6_0].displayCounterAbilityInPlaceOfMechanic)
+		b=G.GetBuffedFollowersForMission(missionID,true)
 		t=G.GetFollowersTraitsForMission(missionID)
 	end
 	for i=1,3 do
@@ -3059,7 +3076,7 @@ function addon:HookedGarrisonMissionList_SetTab(tab)
 	for i=1,#GMFMissionListButtons do
 		GMFMissionListButtons.lastMissionID=nil
 	end
-	self:RefreshMenu()
+	addon:RefreshMenu()
 	if (HD) then addon:ResetSinks() end
 end
 function addon:HookedClickOnTabs(tab)
@@ -3134,11 +3151,7 @@ do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
 	collectgarbage('step',200)
 	if not GMFMissions.showInProgress then
-		if toc==70000 then
-			GMF.MissionTab.MissionList.Update(t,...)
-		else
-			self.hooks.GarrisonMissionList_Update(t,...)
-		end
+		addon.hooks.GarrisonMissionList_Update(self,t,...)
 		lasttime=0
 	else
 		local missions=GMFMissions.inProgressMissions
@@ -3158,22 +3171,30 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 --@debug@
 			print("Aggiornamento",now,lasttime,delay,now-lasttime)
 --@end-debug@
-			self.hooks.GarrisonMissionList_Update(t,...)
+			addon.hooks.GarrisonMissionList_Update(self,t,...)
 			lasttime=now
 		end
 	end
 end
 end
 --addon:SafeRawHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissionsListScroll_update")
+addon.hooks=addon.hooks or {}
 if toc==70000 then
-	addon:SecureHook(GMF.MissionTab.MissionList,"Update","HookedGarrisonMissionList_Update")
+	addon.hooks.GarrisonMissionList_Update=GMF.MissionTab.MissionList.Update
+	GMF.MissionTab.MissionList.Update=addon.HookedGarrisonMissionList_Update
+	addon.hooks.GarrisonMissionList_SetTab=GMF.MissionTab.MissionList.SetTab
+	GMF.MissionTab.MissionList.SetTav=addon.HookedGarrisonMissionList_SetTab
+	DevTools_Dump(addon.hooks)
 else
 	addon:SafeRawHook("GarrisonMissionList_Update")
+	addon:SafeSecureHook("GarrisonMissionList_SetTab")
 end
 addon:SafeSecureHook("GarrisonMissionButton_SetRewards")
 addon:SafeRawHook("GarrisonMissionButton_OnEnter","ScriptGarrisonMissionButton_OnEnter")
-addon:SafeRawHook("GarrisonMissionPageFollowerFrame_OnEnter")
-addon:SafeSecureHook("GarrisonMissionList_SetTab")
+if toc <70000 then
+	addon:SafeRawHook("GarrisonMissionPageFollowerFrame_OnEnter")
+end
 addon:SafeSecureHook(GMF,"SelectTab","GarrisonMissionFrame_SelectTab")
 addon:SafeRawHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","GarrisonMissionPageOnClose")
+DevTools_Dump(addon.hooks)
 _G.GAC=addon
