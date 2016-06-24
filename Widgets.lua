@@ -118,7 +118,7 @@ print(follower)
 		local followerType=follower.followerTypeID
 		if xp < 0 then
 			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(follower),
-								format("%s was destroyed",follower.fullname))
+								format("%s was destroyed",follower.fullname or L["A ship"]))
 		end
 		if follower.maxed and not levelup then
 			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(follower),
