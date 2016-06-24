@@ -116,9 +116,13 @@ print(follower)
 --@end-debug@
 		local followerID=follower.followerID
 		local followerType=follower.followerTypeID
+		if xp < 0 then
+			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(follower),
+								format("%s was destroyed",follower.fullname))
+		end
 		if follower.maxed and not levelup then
-			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(followerID),
-								format("%s is already at maximum xp",addon:GetFollowerData(followerID,'fullname')))
+			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(follower),
+								format("%s is already at maximum xp",follower.fullname))
 		end
 		local quality=G.GetFollowerQuality(followerID) or follower.quality
 		local level=G.GetFollowerLevel(followerID) or follower.level
@@ -126,23 +130,25 @@ print(follower)
 			PlaySound("UI_Garrison_CommandTable_Follower_LevelUp");
 		end
 		return self:AddFollowerIcon(followerType,
-			addon:GetFollowerTexture(followerID,followerType),
+			addon:GetFollowerTexture(follower),
 			format("%s gained %d xp%s%s",
-				addon:GetAnyData(followerType,followerID,'fullname',UNKNOWN),
+				follower.fullname,
 				xp,
 				levelup and " |cffffed1a*** Level Up ***|r ." or ".",
-				format(" %d to go.",addon:GetAnyData(followerType,followerID,'levelXP')-addon:GetAnyData(followerType,followerID,'xp')))
+				format(" %d to go.",follower.levelXP-follower.xp))
 		)
 	end
 	function m:AddFollowerIcon(followerType,icon,text)
 		local l=self:AddIconText(icon,text)
 		if followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
-			local left,right,top,bottom
-			left=0
-			right=0.6
-			top=0
-			bottom=0.5
-			l:SetImage(icon,left,right,top,bottom)
+			if toc<70000 then
+				local left,right,top,bottom
+				left=0
+				right=0.6
+				top=0
+				bottom=0.5
+				l:SetImage(icon,left,right,top,bottom)
+			end
 			l:SetImageSize(36,36)
 			l:SetHeight(38)
 		end
@@ -378,7 +384,7 @@ local function GMCMissionButton()
 		if blacklisted then
 --@debug@
 			print("Blacklisting",mb:GetName())
---@end-debug@		
+--@end-debug@
 			mb.Overlay:Show()
 			mb.Overlay.Overlay:SetAlpha(1)
 			for i,v in pairs(mb.gcPANEL.Party) do

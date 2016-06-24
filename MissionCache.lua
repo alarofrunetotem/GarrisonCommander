@@ -383,7 +383,11 @@ local function isOilMission(self,id,reward)
 	if reward.currencyID and reward.currencyID==GARRISON_SHIP_OIL_CURRENCY then
 		return reward.quantity or 1
 	elseif reward.itemID and tContains(self.list,reward.itemID) then
-		return reward.quantity or 1
+		if reward.itemID==128316 then
+			return (reward.quantity or 1) * 250 -- barrel oil
+		else
+			return reward.quantity or 1
+		end
 	else
 		return false
 	end

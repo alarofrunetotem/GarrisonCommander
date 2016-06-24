@@ -138,6 +138,17 @@ local BUSY_MESSAGE_FORMAT=L["Only first %1$d missions with over %2$d%% chance of
 local BUSY_MESSAGE=format(BUSY_MESSAGE_FORMAT,MAXMISSIONS,MINPERC)
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local GarrisonFollowerPortrait_Set=GarrisonFollowerPortrait_Set
+if not GarrisonFollowerPortrait_Set then
+	GarrisonFollowerPortrait_Set=function(portrait, iconFileID)
+		if (iconFileID == nil or iconFileID == 0) then
+			-- unknown icon file ID; use the default silhouette portrait
+			portrait:SetTexture("Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait");
+		else
+			portrait:SetToFileData(iconFileID);
+		end
+	end
+end
 
 local function splitFormat(base)
 	local i,s=base:find("|4.*:.*;")
@@ -383,9 +394,9 @@ function addon:ApplyMSORT(value)
 end
 
 function addon:OnInitialized()
---@debug@
-print("Initialize")
---@end-debug@
+	--@debug@
+	print("Initialize")
+	--@end-debug@
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
@@ -891,6 +902,9 @@ end
 
 
 function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
+--@debug@
+	print(event,...)
+--@end-debug@
 	if (GCF) then
 		self:RemoveMenu()
 		GCF:Hide()
@@ -901,10 +915,13 @@ end
 --@param #number missionID Numeric mission id
 -- After this events fires also GARRISON_MISSION_LIST_UPDATE and GARRISON_FOLLOWER_LIST_UPDATE
 
-function addon:EventGARRISON_MISSION_STARTED(event,missionID,...)
+function addon:EventGARRISON_MISSION_STARTED(event,missionType,missionID,...)
 --@debug@
-	print(event,missionID,...)
+	print(event,missionType,missionID,...)
 --@end-debug@
+	if toc<70000 then
+		missionID=missionType
+	end
 	self:RefreshFollowerStatus()
 	if (not GMF:IsVisible()) then
 		-- Shipyard
@@ -930,7 +947,7 @@ end
 ---
 --@param #number missionID mission identifier
 --@param #boolean completed I suppose it always be true...
---@oaram #boolean success Mission was succesfull
+--@param #boolean success Mission was succesfull
 --Mission complete Sequence is:
 --GARRISON_MISSION_COMPLETE_RESPONSE
 --GARRISON_MISSION_BONUS_ROLL_LOOT missionID true
@@ -938,7 +955,10 @@ end
 --GARRISON_MISSION_NPC_OPENED ??
 --GARRISON_MISSION_BONUS_ROLL_LOOY missionID nil
 --
-function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards)
+function addon:EventGARRISON_MISSION_COMPLETE_RESPONSE(event,missionID,completed,rewards,...)
+--@debug@
+	print(event,missionID,completed,rewards,...)
+--@end-debug@
 	chardb.history[missionID][time()]={result=100,success=rewards}
 end
 -----------------------------------------------------
@@ -1004,7 +1024,13 @@ do
 		end
 	end
 	function addon:GetTotFollowers(status)
-		return s[status] or 0
+		if not status then
+			return s[AVAILABLE]+
+				s[GARRISON_FOLLOWER_WORKING]+
+				s[GARRISON_FOLLOWER_ON_MISSION]
+		else
+			return s[status] or 0
+		end
 	end
 end
 
@@ -1311,7 +1337,7 @@ function addon:HookedGarrisonFollowerButton_UpdateCounters(...)
 	return self:RenderFollowerPageFollowerButton(select(2,...))
 end
 function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
-
+	print(follower.name,frame)
 	if not frame.GCWep then
 		frame.GCWep=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 		frame.GCWep:SetPoint("BOTTOMLEFT",frame.Name,"TOPLEFT",0,2)
@@ -1319,24 +1345,26 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 		frame.GCArm:SetPoint("TOPLEFT",frame.GCWep,"TOPRIGHT")
 		frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
 	end
-	if not frame.isCollected then
+	if not frame.isCollected or type(frame.id)=="number" then
 		frame.GCXp:Hide()
 		frame.GCWep:Hide()
 		frame.GCArm:Hide()
 		return
 	end
-	if self:GetToggle("IXP") then
-		if (follower.level < GARRISON_FOLLOWER_MAX_LEVEL or follower.quality < GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) then
-			frame.GCXp:SetFormattedText(L["To go: %d"],follower.levelXP-follower.xp)
-			frame.GCXp:Show()
-		else
-			frame.GCXp:Hide()
-		end
+	if self:GetToggle("IXP") and
+			(follower.level < GARRISON_FOLLOWER_MAX_LEVEL or follower.quality < GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY) and
+			tonumber(follower.levelXP) and
+			tonumber(follower.xp) then
+		frame.GCXp:SetFormattedText(L["To go: %d"],tonumber(follower.levelXP,follower.xp)-follower.xp)
+		frame.GCXp:Show()
 	else
 		frame.GCXp:Hide()
 	end
 	if self:GetToggle("ILV") then
 		if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL) then
+			--@debug@
+			print(follower.followerID)
+			--@end-debug@
 			local c1=ITEM_QUALITY_COLORS[self:GetFollowerData(follower.followerID,"weaponQuality" ,1)]
 			local c2=ITEM_QUALITY_COLORS[self:GetFollowerData(follower.followerID,"armorQuality" ,1)]
 			frame.GCWep:SetFormattedText("W:%3d",self:GetFollowerData(follower.followerID,"weaponItemLevel",600))
@@ -1824,33 +1852,34 @@ end
 local converter=CreateFrame("Frame"):CreateTexture()
 local shipconv=CreateFrame("Frame",nil,nil,"GarrisonShipMissionCompleteFollowerTemplate")
 function addon:GetFollowerTexture(followerID,followerType)
+	local follower=type(followerID)=="table" and followerID or nil
 	followerType=followerType or LE_FOLLOWER_TYPE_GARRISON_6_0
-	if (followerType==LE_FOLLOWER_TYPE_GARRISON_6_0) then
-		local rc,iconID=pcall(self.GetAnyData,self,followerType,followerID,"portraitIconID")
-		if rc then
-			if iconID then
-				converter:SetToFileData(iconID)
-				return converter:GetTexture()
-			end
+	if not follower then follower=self:GetAnyData(followerType,follower) end
+	if toc >=70000 then
+		local iconID=follower and follower.portraitIconID or nil
+		print(followerType,followerID,iconID,self:GetAnyData(followerType,followerID))
+		if iconID then
+			return iconID
 		end
 	else
-		local rc,texPrefix=pcall(self.GetAnyData,self,followerType,followerID,"texPrefix")
-
---@debug@
-print(rc,texPrefix)
---@end-debug@
-		if rc then
-			if texPrefix then
-				shipconv.Portrait:SetAtlas(texPrefix.."-List")
-
---@debug@
-print(shipconv.Portrait:GetTexture())
---@end-debug@
-				return shipconv.Portrait:GetTexture()
+		if follower and follower.followerID then
+			followerType=follower.followerTypeID
+			if followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 then
+				local iconID=follower.portraitIconID
+				if iconID then
+					converter:SetToFileData(iconID)
+					return converter:GetTexture()
+				end
+			elseif followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+				local texPrefix=follower.texPrefix
+				if texPrefix then
+					shipconv.Portrait:SetAtlas(texPrefix.."-List")
+					return shipconv.Portrait:GetTexture()
+				end
 			end
 		end
 	end
-		return followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
+	return followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and "Interface\\Garrison\\Portraits\\FollowerPortrait_NoPortrait"
 				or "Interface\\Garrison\\Portraits\\Ships_CargoShip-Portrait"
 end
 
@@ -1916,12 +1945,16 @@ function addon:FillMissionPage(missionInfo)
 	local missionType=missionInfo.followerTypeID
 	if missionType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 and not missionInfo.canStart then return end
 	local stage=missionType==LE_FOLLOWER_TYPE_GARRISON_6_0 and  GMF.MissionTab.MissionPage.Stage or GSF.MissionTab.MissionPage.Stage
+	local missionenv=stage.MissionEnv
+	if toc >=70000 then
+		missionenv=stage.MissionInfo.MissionEnv
+	end
 	if not stage.MissionSeen then
 		if not stage.expires then
 			stage.expires=stage:CreateFontString()
-			stage.expires:SetFontObject(stage.MissionEnv:GetFontObject())
-			stage.expires:SetDrawLayer(stage.MissionEnv:GetDrawLayer())
-			stage.expires:SetPoint("TOPLEFT",stage.MissionEnv,"BOTTOMLEFT")
+			stage.expires:SetFontObject(missionenv:GetFontObject())
+			stage.expires:SetDrawLayer(missionenv:GetDrawLayer())
+			stage.expires:SetPoint("TOPLEFT",missionenv,"BOTTOMLEFT")
 		end
 		stage.expires:SetFormattedText(GARRISON_MISSION_AVAILABILITY2,missionInfo.offerTimeRemaining or "")
 		stage.expires:SetTextColor(self:GetAgeColor(missionInfo.offerEndTime))
@@ -1931,8 +1964,8 @@ function addon:FillMissionPage(missionInfo)
 --@debug@
 	if not stage.missionid then
 		stage.missionid=stage:CreateFontString()
-		stage.missionid:SetFontObject(stage.MissionEnv:GetFontObject())
-		stage.missionid:SetDrawLayer(stage.MissionEnv:GetDrawLayer())
+		stage.missionid:SetFontObject(missionenv:GetFontObject())
+		stage.missionid:SetDrawLayer(missionenv:GetDrawLayer())
 		stage.missionid:SetPoint("TOPLEFT",stage.expires,"BOTTOMLEFT")
 	end
 	stage.missionid:SetFormattedText(GARRISON_MISSION_ID,missionInfo.missionID)
@@ -2184,6 +2217,7 @@ end
 function addon:OnShow_FollowerPage(frame)
 	if not GCFMissions then return end
 	if type(GCFMissions.Header.info)=="table" then
+		GCFMissions.Header.missionInfo=GCFMissions.Header.info
 		self:HookedGarrisonFollowerPage_ShowFollower(frame,GCFMissions.Header.info.followerID,true)
 --		local s =self:GetScroller("GFCMissions.Header")
 --		self:cutePrint(s,GCFMissions.Header)
@@ -2830,6 +2864,7 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 	-- Mission Contro narrow is 385 almost no space left source ="Control"
 	-- Follower page is 267 2 rows here is mandatory source = "Followers"
 	button.Summary:Show()
+	button.info.numRewards=button.info.numRewards or #button.info.rewards
 	if source=="control" then
 		local extra=80*(button.info.numRewards-1) +  70 * (button.info.numFollowers-1)
 		local allowed=ns.bigscreen and 305- extra or 0
@@ -3044,7 +3079,7 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen,numReward
 	local t,b
 	if not GMFMissions.showInProgress then
 		--GarrisonFollowerOptions[LE_FOLLOWER_TYPE_GARRISON_6_0].displayCounterAbilityInPlaceOfMechanic)
-		b=G.GetBuffedFollowersForMission(missionID,true)
+		b=G.GetBuffedFollowersForMission(missionID,false)
 		t=G.GetFollowersTraitsForMission(missionID)
 	end
 	for i=1,3 do
@@ -3184,7 +3219,6 @@ if toc==70000 then
 	GMF.MissionTab.MissionList.Update=addon.HookedGarrisonMissionList_Update
 	addon.hooks.GarrisonMissionList_SetTab=GMF.MissionTab.MissionList.SetTab
 	GMF.MissionTab.MissionList.SetTav=addon.HookedGarrisonMissionList_SetTab
-	DevTools_Dump(addon.hooks)
 else
 	addon:SafeRawHook("GarrisonMissionList_Update")
 	addon:SafeSecureHook("GarrisonMissionList_SetTab")
@@ -3196,5 +3230,4 @@ if toc <70000 then
 end
 addon:SafeSecureHook(GMF,"SelectTab","GarrisonMissionFrame_SelectTab")
 addon:SafeRawHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","GarrisonMissionPageOnClose")
-DevTools_Dump(addon.hooks)
 _G.GAC=addon

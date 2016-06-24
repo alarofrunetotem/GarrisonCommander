@@ -415,7 +415,7 @@ local function buildDragging(frame,drawItemButtons)
 				--@end-debug@
 			end
 			drawItemButtons()
-			--module:Refresh()
+			module:Refresh()
 	end)
 	frame:SetScript('OnLeave', function() GameTooltip:Hide() end)
 

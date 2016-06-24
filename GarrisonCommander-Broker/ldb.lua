@@ -1,4 +1,5 @@
 local me, ns = ...
+local toc=select(4,GetBuildInfo())
 local LDB=LibStub:GetLibrary("LibDataBroker-1.1",true)
 if not LDB then
 	--@debug@
@@ -127,7 +128,10 @@ function addon:ldbUpdate()
 	dataobj:Update()
 	cacheobj:Update()
 end
-function addon:GARRISON_MISSION_STARTED(event,missionID)
+function addon:GARRISON_MISSION_STARTED(event,missionType,missionID)
+	if toc<70000 then
+		missionID=missionType
+	end
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
 	local followerType=self.db.global.missionType[missionID]
 	if not followerType then

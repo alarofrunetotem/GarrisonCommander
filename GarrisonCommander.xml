@@ -118,7 +118,23 @@
 			<OnDragStart/>
 			<OnDragStop />
 			<OnReceiveDrag/>
-			<OnEnter function="GarrisonMissionPageFollowerFrame_OnEnter"/>
+			<!--OnEnter function="GarrisonMissionPageFollowerFrame_OnEnter"/-->
+			<OnEnter>
+				local f=self:GetParent()
+				if f then
+					for i,v in pairs(f) do
+						print(i,type(v),v)
+					end
+					print(f:GetName(),f.missionInfo)
+					if not f.missionInfo then
+						f.missionInfo={missionID=131}
+					end
+				end
+				local rc,message=pcall(GarrisonMissionPageFollowerFrame_OnEnter,self)
+				if not rc then
+					print("Error:",message)
+				end
+			</OnEnter>
 			<OnLeave function="GarrisonMissionPageFollowerFrame_OnLeave"/>
 			<OnMouseUp />
 		</Scripts>
