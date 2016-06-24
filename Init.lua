@@ -143,10 +143,10 @@ end
 -- my implementation of tonumber which accounts for nan and inf
 ---@function [parent=#ns] tonumber
 
-function ns.tonumber(value)
-	if value~=value then return nil
-	elseif value==math.huge then return nil
-	else return tonumber(value) or nil
+function ns.tonumber(value,default)
+	if value~=value then return default
+	elseif value==math.huge then return default
+	else return tonumber(value) or default
 	end
 end
 -- my implementation of type which accounts for nan and inf

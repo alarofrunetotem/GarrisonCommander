@@ -10,12 +10,14 @@ local GSFMissions=GarrisonMissionFrameMissions
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY
 local SEAL_CURRENCY=994
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2 -- 2
+local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 or 4
 local pairs=pairs
 local format=format
 local strsplit=strsplit
 local generated
+local shipsnumber=0
 local salvages={
 114120,114119,114116}
 local module=addon:NewSubClass('MissionCompletion') --#Module
@@ -110,8 +112,21 @@ function module:MissionComplete(this,button,skiprescheck)
 	followerType=this.missionType
 	missions=G.GetCompleteMissions(followerType)
 	shipyard=addon:GetModule("ShipYard")
-	local missionsFrame=followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMFMissions or GSFMissions
-	local panel=followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 and GMF or GSF
+	shipsnumber=shipyard:GetTotFollowers()
+	local missionsFrame
+	local panel
+	if followerType == LE_FOLLOWER_TYPE_GARRISON_6_0 then
+		missionsFrame=GMFMissions
+		panel=GMF
+	elseif followerType == LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+		missionsFrame=GSFMissions
+		panel=GSF
+	elseif followerType == LE_FOLLOWER_TYPE_GARRISON_7_0 then
+		missionsFrame=GHFMissions
+		panel=GHF
+	else
+		return
+	end
 	if (missions and #missions > 0) then
 		this:SetEnabled(false)
 		missionsFrame.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
@@ -121,6 +136,7 @@ function module:MissionComplete(this,button,skiprescheck)
 		wipe(rewards.items)
 		local message=C("WARNING",'red')
 		local wasted={}
+
 		for i=1,#missions do
 			for k,v in pairs(missions[i].followers) do
 				rewards.followerBase[v]=self:GetAnyData(followerType,v,'qLevel',0)
@@ -136,7 +152,6 @@ function module:MissionComplete(this,button,skiprescheck)
 
 			local _
 			_,_,m.isMissionTimeImproved,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
-
 		end
 		local stop
 		for id,qt in pairs(wasted) do
@@ -188,11 +203,11 @@ function module:GetMission(missionID)
 		end
 	end
 end
-function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
+function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4,...)
 -- C_Garrison.MarkMissionComplete Mark mission as complete and prepare it for bonus roll, da chiamare solo in caso di successo
 -- C_Garrison.MissionBonusRoll
 --@debug@
-	--print("evt",event,ID,arg1 or'',arg2 or '',arg3 or '')
+	print("evt",event,ID,arg1 or'',arg2 or '',arg3 or '',...)
 --@end-debug@
 	if event=="LOOT" then
 		return self:MissionsPrintResults()
@@ -202,7 +217,11 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4)
 	local missionID=currentMission and currentMission.missionID or 0
 	-- GARRISON_FOLLOWER_XP_CHANGED: followerID, xpGained, actualXp, newLevel, quality
 	if (event=="GARRISON_FOLLOWER_XP_CHANGED") then
-		if (arg1 > 0) then
+		if toc>=70000 then
+			ID=arg1
+			arg1=arg2
+		end
+		if tonumber(arg1,0) then
 			--report:AddFollower(ID,arg1,arg2)
 			rewards.followerXP[ID]=rewards.followerXP[ID]+tonumber(arg1) or 0
 		end
@@ -339,13 +358,23 @@ function module:MissionsPrintResults(success)
 	for k,v in pairs(rewards.followerXP) do
 		reported=true
 		followers=true
-		report:AddFollower(self:GetAnyData(followerType,k),v,self:GetAnyData(followerType,k,'qLevel') > rewards.followerBase[k])
+		report:AddFollower(self:GetAnyData(followerType,k),v,self:GetAnyData(followerType,k,'qLevel',0) > tonumber(rewards.followerBase[k],0))
 	end
 	if not reported then
 		report:AddRow(L["Nothing to report"])
 	end
 	if not followers then
 		report:AddRow(L["No follower gained xp"])
+	end
+	if followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+		local shipyard=addon:GetModule("ShipYard")
+		local newshipsnumber=shipyard:GetTotFollowers()
+		if shipsnumber ~= newshipsnumber then
+			report:AddRow(L["You lost %d ships"],shipsnumber - newshipsnumber)
+			for k,v in pairs(rewards.followerBase) do
+				report:AddFollower(self:GetAnyData(followerType,k),-1)
+			end
+		end
 	end
 	if ns.quick then
 		self:ScheduleTimer("CloseReport",1)

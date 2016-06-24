@@ -1,4 +1,5 @@
 local me, ns = ...
+local toc=select(4,GetBuildInfo())
 local LDB=LibStub:GetLibrary("LibDataBroker-1.1",true)
 if not LDB then
 	--@debug@
@@ -70,6 +71,7 @@ local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local LE_GARRISON_TYPE_6_0=_G.LE_GARRISON_TYPE_6_0
 local LE_GARRISON_TYPE_6_2=_G.LE_GARRISON_TYPE_6_2
+local LE_GARRISON_TYPE_7_0=_G.LE_GARRISON_TYPE_7_0
 local dbversion=1
 local frequency=5
 local ldbtimer=nil
@@ -126,7 +128,10 @@ function addon:ldbUpdate()
 	dataobj:Update()
 	cacheobj:Update()
 end
-function addon:GARRISON_MISSION_STARTED(event,missionID)
+function addon:GARRISON_MISSION_STARTED(event,missionType,missionID)
+	if toc<70000 then
+		missionID=missionType
+	end
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
 	local followerType=self.db.global.missionType[missionID]
 	if not followerType then
