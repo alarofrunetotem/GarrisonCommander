@@ -3182,6 +3182,23 @@ function addon:HookedGMFMissionsListScroll_update(frame)
 		self:HookedGarrisonMissionList_Update(frame,false)
 	end
 end
+function addon:GarrisonMissionPageFollowerFrame_OnEnter(this)
+	local f=this:GetParent()
+	if f then
+--@debug@
+		print(f:GetName(),f.missionInfo)
+--@end-debug@
+		if not f.missionInfo then
+			f.missionInfo={missionID=0}
+		end
+	end
+	local rc,message=pcall(GarrisonMissionPageFollowerFrame_OnEnter,this)
+--@debug@
+	if not rc then
+		print("Error:",message)
+	end
+--@end-debug@
+end
 do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
 	collectgarbage('step',200)
@@ -3230,4 +3247,5 @@ if toc <70000 then
 end
 addon:SafeSecureHook(GMF,"SelectTab","GarrisonMissionFrame_SelectTab")
 addon:SafeRawHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","GarrisonMissionPageOnClose")
+_G.GarrisonCommander=addon
 _G.GAC=addon
