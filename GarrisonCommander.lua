@@ -112,9 +112,12 @@ local GMFMissionsListScrollFrame=					GMF.MissionTab.MissionList.listScroll
 local GMFMissionListButtons=						GMF.MissionTab.MissionList.listScroll.buttons
 local GMFMissionsListScrollFrameScrollChild=		GMF.MissionTab.MissionList.listScroll.scrollChild
 local GMFFollowers=									GMF.FollowerTab.followerList
---local GMFMissionFrameFollowers=						GMF.FollowerTab.followerList
---local GMFFollowersListScrollFrame=					GMF.FollowerTab.followerList.listScroll
---local GMFFollowersListScrollFrameScrollChild=		GMF.FollowerTab.followerList.listScroll.scrollChild
+if toc==70000 then
+	GMFFollowers=									GMF.FollowerList
+end
+local GMFMissionFrameFollowers=						GMFFollowers
+local GMFFollowersListScrollFrame=					GMFFollowers.listScroll
+local GMFFollowersListScrollFrameScrollChild=		GMFFollowers.listScroll.scrollChild
 local GMFMissionPage=								GMF.MissionTab.MissionPage
 --dictionary
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE
