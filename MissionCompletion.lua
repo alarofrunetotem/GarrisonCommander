@@ -370,7 +370,7 @@ function module:MissionsPrintResults(success)
 		local shipyard=addon:GetModule("ShipYard")
 		local newshipsnumber=shipyard:GetTotFollowers()
 		if shipsnumber ~= newshipsnumber then
-			report:AddRow(L["You lost %d ships"],shipsnumber - newshipsnumber)
+			report:AddRow(format(L["You lost %d ships"],shipsnumber - newshipsnumber))
 			for k,v in pairs(rewards.followerBase) do
 				report:AddFollower(self:GetAnyData(followerType,k),-1)
 			end
