@@ -139,7 +139,8 @@ function module:MissionComplete(this,button,skiprescheck)
 
 		for i=1,#missions do
 			for k,v in pairs(missions[i].followers) do
-				rewards.followerBase[v]=self:GetAnyData(followerType,v,'qLevel',0)
+--				rewards.followerBase[v]=self:GetAnyData(followerType,v,'qLevel',0)
+				rewards.followerBase[v]=self:GetAnyData(followerType,v)
 			end
 			for k,v in pairs(missions[i].rewards) do
 				if v.itemID then GetItemInfo(v.itemID) end -- tickling server
@@ -358,7 +359,7 @@ function module:MissionsPrintResults(success)
 	for k,v in pairs(rewards.followerXP) do
 		reported=true
 		followers=true
-		report:AddFollower(self:GetAnyData(followerType,k),v,self:GetAnyData(followerType,k,'qLevel',0) > tonumber(rewards.followerBase[k],0))
+		report:AddFollower(self:GetAnyData(followerType,k),v,self:GetAnyData(followerType,k,'qLevel',0) > tonumber(rewards.followerBase[k].qLevel,0))
 	end
 	if not reported then
 		report:AddRow(L["Nothing to report"])
@@ -370,9 +371,11 @@ function module:MissionsPrintResults(success)
 		local shipyard=addon:GetModule("ShipYard")
 		local newshipsnumber=shipyard:GetTotFollowers()
 		if shipsnumber ~= newshipsnumber then
-			report:AddRow(format(L["You lost %d ships"],shipsnumber - newshipsnumber))
+			report:AddRow(C(format(L["You lost %d ships"],shipsnumber - newshipsnumber),"red"))
 			for k,v in pairs(rewards.followerBase) do
-				report:AddFollower(self:GetAnyData(followerType,k),-1)
+				if not self:GetAnyData(followerType,k) then
+					report:AddFollower(v,-1)
+				end
 			end
 		end
 	end
