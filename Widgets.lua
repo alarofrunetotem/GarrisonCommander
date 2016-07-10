@@ -121,8 +121,8 @@ print(follower)
 								format("%s was destroyed",follower.fullname or L["A ship"]))
 		end
 		if follower.maxed and not levelup then
-			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(follower),
-								format("%s is already at maximum xp",follower.fullname))
+			return
+--			return self:AddFollowerIcon(followerType,addon:GetFollowerTexture(follower),format("%s is already at maximum xp",follower.fullname))
 		end
 		local quality=G.GetFollowerQuality(followerID) or follower.quality
 		local level=G.GetFollowerLevel(followerID) or follower.level
