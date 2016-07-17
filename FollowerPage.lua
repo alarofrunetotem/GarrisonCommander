@@ -184,11 +184,9 @@ function module:ShowUpgradeButtons(force)
 							reuse=true
 						end
 					end
-					print("      ","used")
 					if (not binded[tipo]) then
 						binded[tipo]=true
 						local kb=GetBindingKey("GC" .. tipo:upper())
-						print("Binding",kb,"from","GC" .. tipo:upper(),"to",tipo)
 						if (kb ) then
 							SetOverrideBindingClick(gf,false,kb,A:GetName())
 							A.Shortcut:SetText(GetBindingText(kb,"",true))
@@ -222,7 +220,11 @@ function module:ShowUpgradeButtons(force)
 					A.Level:SetTextColor(C[c]())
 					A.Quantity:SetFormattedText("%d",qt)
 					A.Quantity:SetTextColor(C.Yellow())
-					A:SetFrameLevel(gf.Model:GetFrameLevel()+1)
+					if toc <70000 then
+						A:SetFrameLevel(gf.Model:GetFrameLevel()+1)
+					else
+						A:SetFrameLevel(20)
+					end
 					A.Quantity:Show()
 					A.Level:Show()
 					A:EnableMouse(true)
