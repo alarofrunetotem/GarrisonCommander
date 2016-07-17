@@ -105,6 +105,17 @@ function module:Events(on)
 end
 function module:CloseReport()
 	if report then pcall(report.Close,report) report=nil end
+	if GSF:IsVisible() then
+	--@debug@
+		print "Ship close mission"
+	--@end-debug@
+		GSF:CloseMissionComplete()
+	elseif GMF:IsVisible() then
+	--@debug@
+		print "Garr close mission"
+	--@end-debug@
+		GMF:CloseMissionComplete()
+	end
 	addon:RefreshParties()
 	addon:RefreshMissions()
 end
@@ -378,12 +389,21 @@ function module:MissionsPrintResults(success)
 				end
 			end
 		end
+		local fogFrames = GSF.MissionTab.MissionList.FogFrames
+		for j=1, #fogFrames do
+			fogFrames[j]:Hide()
+		end
+		GarrisonShipyardMap_UpdateMissions()
 	end
 	if ns.quick then
 		self:ScheduleTimer("CloseReport",1)
 		local qm=addon:GetModule("Quick")
 		addon.ScheduleTimer(qm,"RunQuick",1.1)
 	end
+
+
+
+GarrisonShipyardMap_UpdateMissions()
 end
 function addon:MissionComplete(...)
 	return module:MissionComplete(...)
