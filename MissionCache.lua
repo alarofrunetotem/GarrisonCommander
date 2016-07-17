@@ -71,20 +71,27 @@ function module:OnInitialized()
 	end
 	local function GetMarketValue(self,itemId)
 		local rc,price,source=true,0,"Unk"
-		for i,k in pairs(appraisers) do
-			addon.AuctionPrices=true
-			rc,price=pcall(k,itemId)
-			if rc and price and price >0 then
-				source=i
-				break
+		local itemlink=select(2,GetItemInfo(itemId))
+		if itemlink then
+			if not I:IsBop(itemlink) then
+				for i,k in pairs(appraisers) do
+					addon.AuctionPrices=true
+					rc,price=pcall(k,itemId)
+					if rc and price and price >0 then
+						source=i
+						break
+					end
+					price=0
+				end
 			end
-			price=0
-		end
-		local vendorprice=tonumber(select(11,GetItemInfo(item))) or 0
-		if price >vendorprice then
-			return price,source
+			local vendorprice=tonumber(select(11,GetItemInfo(itemId))) or 0
+			if price >vendorprice then
+				return price,source
+			else
+				return vendorprice,'Vendor'
+			end
 		else
-			return vendorprice,'VND'
+			return price,source
 		end
 	end
 	addon.GetMarketValue=GetMarketValue
