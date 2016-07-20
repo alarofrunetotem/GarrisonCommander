@@ -2134,10 +2134,10 @@ print("Unable to find follower",followerID)
 	local rc,message= pcall(GarrisonMissionFrame_SetFollowerPortrait,frame.PortraitFrame, info, false);
 --@end-non-debug@]===]
 --@debug@
-	if toc==70000 then
-		GMF:SetFollowerPortrait(frame.PortraitFrame, info, false)
-	else
+	if toc<70000 then
 		GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false)
+	else
+		GMF:SetFollowerPortrait(frame.PortraitFrame, info, false)
 	end
 --@end-debug@
 	-- Counters icon
