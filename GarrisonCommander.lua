@@ -2130,16 +2130,7 @@ print("Unable to find follower",followerID)
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		showItemLevel = false;
 	end
---[===[@non-debug@
-	local rc,message= pcall(GarrisonMissionFrame_SetFollowerPortrait,frame.PortraitFrame, info, false);
---@end-non-debug@]===]
---@debug@
-	if toc<70000 then
-		GarrisonMissionFrame_SetFollowerPortrait(frame.PortraitFrame, info, false)
-	else
-		GMF:SetFollowerPortrait(frame.PortraitFrame, info, false)
-	end
---@end-debug@
+	GMF:SetFollowerPortrait(frame.PortraitFrame, info, false)
 	-- Counters icon
 	if (frame.Name and frame.Threats) then
 		if (missionID and not GMFMissions.showInProgress) then
