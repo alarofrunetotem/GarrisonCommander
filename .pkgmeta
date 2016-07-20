@@ -22,9 +22,9 @@ move-folders:
 	GarrisonCommander/GarrisonCommander-Broker: GarrisonCommander-Broker
 #	GarrisonCommander/GarrisonCommander-Auction: GarrisonCommander-Auction
 
-manual-changelog:
-		filename: CHANGELOG.txt
-		markup-type: textile
+#manual-changelog:
+#		filename: CHANGELOG.txt
+#		markup-type: textile
 
 ignore:
 - .buildpath
