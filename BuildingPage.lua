@@ -54,7 +54,6 @@ function module:AddFollowerToPlot(plot)
 		return frame:Hide()
 	end
 	if plot.followerTooltip then
-		pp(plot.plotID)
 		local followerName, level, quality, followerID, garrFollowerID, status, portraitIconID = G.GetFollowerInfoForBuilding(plot.plotID)
 		if followerName then
 			if (level == GARRISON_FOLLOWER_MAX_LEVEL) then
@@ -72,8 +71,6 @@ function module:AddFollowerToPlot(plot)
 			info.displayID=portraitIconID
 			info.followerTypeID=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 			GMF:SetFollowerPortrait(frame.PortraitFrame, info, false)
-
-
 			frame.PortraitFrame.Empty:Hide()
 			del(info)
 		else
