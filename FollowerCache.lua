@@ -23,7 +23,7 @@ local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 or 4
 local maxrank=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY*1000+GARRISON_FOLLOWER_MAX_LEVEL
-local module=addon:NewSubClass('FollowerCache')
+local module=addon:NewSubClass('FollowerCache') --#module
 local cache={} --#cache
 local followerTypes={}
 local EMPTY={}
@@ -35,25 +35,23 @@ function module:OnInitialized()
 	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","OnEvent")
 	self.followerCache=cache:new(LE_FOLLOWER_TYPE_GARRISON_6_0)
 	self.shipCache=cache:new(LE_FOLLOWER_TYPE_SHIPYARD_6_2)
-	if toc==70000 then
-		self.hallCache=cache:new(LE_FOLLOWER_TYPE_GARRISON_7_0)
-	end
+	self.hallCache=cache:new(LE_FOLLOWER_TYPE_GARRISON_7_0)
 end
 function module:OnEvent(event,...)
 --@debug@
 print(event,...)
 --@end-debug@
 	local followerType,followerID=...
-	if toc < 70000 then
-		followerID=followerType
-	end
 	if self.shipCache.cache[followerID].followerID then
 		self.shipCache:OnEvent(event,...)
 	elseif self.followerCache.cache[followerID].followerID then
 		self.followerCache:OnEvent(event,...)
+	elseif self.hallCache.cache[followerID].followerID then
+		self.hallCache:OnEvent(event,...)
 	else
 		self.followerCache:Wipe()
 		self.shipCache:Wipe()
+		self.hallCache:Wipe()
 	end
 
 end
