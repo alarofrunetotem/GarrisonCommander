@@ -429,5 +429,3 @@ function ns.Configure()
 		end
 		setfenv(2, ENV)
 end
-
-
