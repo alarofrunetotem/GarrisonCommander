@@ -116,6 +116,7 @@ function module:CloseReport()
 	--@end-debug@
 		GMF:CloseMissionComplete()
 	end
+	addon:OpenMissionsTab()
 	addon:RefreshParties()
 	addon:RefreshMissions()
 end
@@ -395,10 +396,11 @@ function module:MissionsPrintResults(success)
 		end
 		GarrisonShipyardMap_UpdateMissions()
 	end
+	report:AddRow(DONE)
 	if ns.quick then
-		self:ScheduleTimer("CloseReport",1)
+		self:ScheduleTimer("CloseReport",0.1)
 		local qm=addon:GetModule("Quick")
-		addon.ScheduleTimer(qm,"RunQuick",1.1)
+		addon.ScheduleTimer(qm,"RunQuick",0.2)
 	end
 
 
