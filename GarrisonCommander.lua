@@ -1,5 +1,6 @@
 local me, ns = ...
 local toc=select(4,GetBuildInfo())
+local pp=print
 ns.Configure()
 local _G=_G
 local HD=false
@@ -14,7 +15,7 @@ local format=format
 local tostring=tostring
 local collectgarbage=collectgarbage
 --@debug@
-local collectgarbage=function() end
+--local collectgarbage=function() end
 --@end-debug@
 local GMM=false
 local MP=false
@@ -1576,7 +1577,13 @@ print("Setup")
 --@end-debug@
 	SIZEV=GMF:GetHeight()
 	self:CheckMP()
-	if MP then self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switch between Garrison Commander and Master Plan interface for missions"]) end
+	if MP then
+		self:AddToggle("CKMP",true,L["Use GC Interface"],L["Switch between Garrison Commander and Master Plan interface for missions"])
+		local t= G.GetCompleteMissions(LE_FOLLOWER_TYPE_GARRISON_6_0)
+		if #t > 0 then
+			C_Timer.After(0.4,function() GarrisonMissionFrameMissions.CompleteDialog:Show() end)
+		end
+	end
 	self:CheckGMM()
 	GCF=self:CreateHeader(self,"PIN")
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
@@ -2323,6 +2330,10 @@ function addon:OpenFollowersTab()
 end
 function addon:OpenMissionsTab()
 	lastTab=1
+	return self:OpenLastTab()
+end
+function addon:OpenProgressTab()
+	lastTab=3
 	return self:OpenLastTab()
 end
 function addon:OpenMissionControlTab()
