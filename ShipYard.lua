@@ -256,11 +256,8 @@ function module:RefrreshCurrency()
 	end
 end
 function module:EventGARRISON_MISSION_STARTED(event,missionType,missionID,...)
-	if toc<70000 then
-		missionID=missionType
-	end
 	--@debug@
-	pp(event,missionID)
+	print(event,missionID)
 	--@end-debug@
 	self:RefreshFollowerStatus()
 	self:ScheduleTimer("RefrreshCurrency",0.2)
