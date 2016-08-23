@@ -230,10 +230,8 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4,...)
 	local missionID=currentMission and currentMission.missionID or 0
 	-- GARRISON_FOLLOWER_XP_CHANGED: followerID, xpGained, actualXp, newLevel, quality
 	if (event=="GARRISON_FOLLOWER_XP_CHANGED") then
-		if toc>=70000 then
-			ID=arg1
-			arg1=arg2
-		end
+		ID=arg1
+		arg1=arg2
 		if tonumber(arg1,0) then
 			--report:AddFollower(ID,arg1,arg2)
 			rewards.followerXP[ID]=rewards.followerXP[ID]+tonumber(arg1) or 0
