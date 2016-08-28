@@ -21,7 +21,7 @@ local tostring=tostring
 local GetItemInfo=GetItemInfo
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
-local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 or 4
+local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0
 local maxrank=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY*1000+GARRISON_FOLLOWER_MAX_LEVEL
 local module=addon:NewSubClass('FollowerCache') --#module
 local cache={} --#cache
@@ -35,7 +35,7 @@ function module:OnInitialized()
 	self:RegisterEvent("GARRISON_FOLLOWER_XP_CHANGED","OnEvent")
 	self.followerCache=cache:new(LE_FOLLOWER_TYPE_GARRISON_6_0)
 	self.shipCache=cache:new(LE_FOLLOWER_TYPE_SHIPYARD_6_2)
-	self.hallCache=cache:new(LE_FOLLOWER_TYPE_GARRISON_7_0)
+	self.heroCache=cache:new(LE_FOLLOWER_TYPE_GARRISON_7_0)
 end
 function module:OnEvent(event,...)
 --@debug@
@@ -46,12 +46,12 @@ print(event,...)
 		self.shipCache:OnEvent(event,...)
 	elseif self.followerCache.cache[followerID].followerID then
 		self.followerCache:OnEvent(event,...)
-	elseif self.hallCache.cache[followerID].followerID then
-		self.hallCache:OnEvent(event,...)
+	elseif self.heroCache.cache[followerID].followerID then
+		self.heroCache:OnEvent(event,...)
 	else
 		self.followerCache:Wipe()
 		self.shipCache:Wipe()
-		self.hallCache:Wipe()
+		self.heroCache:Wipe()
 	end
 
 end
@@ -67,9 +67,6 @@ print(event,...)
 --@end-debug@
 	if event=="GARRISON_FOLLOWER_UPGRADED" or event=="GARRISON_FOLLOWER_XP_CHANGED" then
 		local followerType,followerID=...
-		if toc < 70000 then
-			followerID=followerType
-		end
 		if (self.cache[followerID]) then
 			self.cache[followerID]['level']=G.GetFollowerLevel(followerID)
 			self.cache[followerID]['xp']=G.GetFollowerXP(followerID)
@@ -94,7 +91,13 @@ end
 function cache:Refresh()
 	if next(self.cache) then return end
 	self:Wipe()
-	for _,follower in pairs(G.GetFollowers(self.type)) do
+	print(self.type)
+	local list=G.GetFollowers(self.type)
+	if type(list) ~="table" then
+		print("Requested",self.type, " no follower found")
+		return
+	end
+	for _,follower in pairs(list) do
 		followerTypes[follower.followerID]=follower.followerTypeID
 		if follower.isCollected then
 			self:AddExtraData(follower)
@@ -104,7 +107,6 @@ function cache:Refresh()
 			tinsert(self.sorted,i)
 			self.cache[i]=follower
 		end
-
 	end
 end
 function cache:AddAbilities(follower)
@@ -148,6 +150,9 @@ function cache:AddExtraData(follower)
 	follower.coloredname=C(follower.name,tostring(follower.quality))
 	follower.fullname=format("%3d %s",follower.rank,follower.coloredname)
 	follower.maxed=follower.qLevel>=maxrank
+	if follower.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_7_0 then
+		follower.maxed=false
+	end
 	local weaponItemID, weaponItemLevel, armorItemID, armorItemLevel = G.GetFollowerItems(follower.followerID);
 	follower.weaponItemID=weaponItemID
 	follower.weaponItemLevel=weaponItemLevel
@@ -232,9 +237,14 @@ function addon:GetAnyData(followerType,...)
 	end
 	if followerType== LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 		return self:GetShipData(...)
+	elseif followerType== LE_FOLLOWER_TYPE_GARRISON_7_0 then
+		return self:GetHeroData(...)
 	else
 		return self:GetFollowerData(...)
 	end
+end
+function addon:GetHeroData(followerID,key,default)
+	return module.heroCache:GetFollowerData(followerID,key,default)
 end
 function addon:GetFollowerData(followerID,key,default)
 	return module.followerCache:GetFollowerData(followerID,key,default)
@@ -254,11 +264,16 @@ end
 function addon:GetShipsIterator(func)
 	return module.shipCache:GetFollowersIterator(func)
 end
+function addon:GetHeroesIterator(func)
+	return module.heroCache:GetFollowersIterator(func)
+end
 function addon:GetAnyIterator(followerType,func)
 	if followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 		return self:GetFollowersIterator(func)
-	else
+	elseif followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 		return self:GetShipsIterator(func)
+	else
+		return self:GetHeroesIterator(func)
 	end
 end
 function addon:GetFollowerType(followerID)
