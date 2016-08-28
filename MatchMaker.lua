@@ -23,6 +23,9 @@ local hearthStoneProTrait=236 -- all followers +36
 local scavengerTrait=79 -- More resources
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2 -- 2
+local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 -- 4
 local dbg
 local useCap=false
 local currentCap=100
@@ -184,6 +187,9 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	local missionID=mission.missionID
 	local filterOut=filters[class] or filters.other
 	filters.skipMaxed=self:GetBoolean("IGP")
+	if mission.followerTypeID==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+		filters.skipMaxed=false
+	end
 	if (includeBusy==nil) then
 		filters.skipBusy=self:GetBoolean("IGM")
 	else
