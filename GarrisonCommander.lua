@@ -403,6 +403,9 @@ end
 function addon:GetBigScreen()
 	return ns.bigscreen
 end
+function addon:GetMissionModule(followertype)
+	return ns.custom[followertype]
+end
 function addon:OnInitialized()
 	--@debug@
 	print("Initialize")
@@ -2869,7 +2872,7 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 	else
 		button.LocBG:Hide();
 	end
-	ns.custom[mission.followerTypeID]:AddLevel(source,button,mission,missionID,bigscreen)
+	self:GetMissionModule(mission.followerTypeID):AddLevel(source,button,mission,missionID,bigscreen)
 	button:Enable()
 	button.MissionType:SetPoint("TOPLEFT",5,-2)
 	-- From here on, I am in my own buttons context
@@ -3153,7 +3156,7 @@ end
 function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 	collectgarbage("step",300)
 	local mission=frame.info
-	local module=ns.custom[mission.followerTypeID]
+	local module=self:GetMissionModule(mission.followerTypeID)
 	local main=module:GetMain()
 	if not main or not main:IsVisible() then return end
 	local Missions=module:GetMissions()
