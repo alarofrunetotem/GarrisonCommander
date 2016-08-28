@@ -141,7 +141,6 @@ function module:EventGARRISON_MISSION_STARTED(event,missionType,missionID,...)
 	print(event,missionID)
 	--@end-debug@
 	self:RefreshFollowerStatus()
-	self:ScheduleTimer("RefreshCurrency",0.2)
 end
 function module:RefreshParties()
 	if true then
