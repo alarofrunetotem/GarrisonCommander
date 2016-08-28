@@ -14,7 +14,7 @@ local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY
 local SEAL_CURRENCY=994
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2 -- 2
-local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 or 4
+local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 -- 4
 local pairs=pairs
 local format=format
 local strsplit=strsplit
@@ -135,20 +135,9 @@ function module:MissionComplete(this,button,skiprescheck)
 	missions=G.GetCompleteMissions(followerType)
 	shipyard=addon:GetModule("ShipYard")
 	shipsnumber=shipyard:GetTotFollowers()
-	if followerType == LE_FOLLOWER_TYPE_GARRISON_6_0 then
-		missionsFrame=GMFMissions
-		panel=GMF
-	elseif followerType == LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
-		missionsFrame=GSFMissions
-		panel=GSF
-	elseif followerType == LE_FOLLOWER_TYPE_GARRISON_7_0 then
-		GHF=_G.OrderHallMissionFrame
-		GHFMissions=GHF.MissionTab.MissionList
-		missionsFrame=GHFMissions
-		panel=GHF
-	else
-		return
-	end
+	local module=self:GetMissionModule(followerType)
+	missionsFrame=module:GetMissions()
+	panel=module:GetMain()
 	if (missions and #missions > 0) then
 		this:SetEnabled(false)
 		missionsFrame.CompleteDialog.BorderFrame.ViewButton:SetEnabled(false) -- Disabling standard Blizzard Completion
@@ -403,6 +392,7 @@ function module:MissionsPrintResults(success)
 			fogFrames[j]:Hide()
 		end
 		GarrisonShipyardMap_UpdateMissions()
+		addon:ScheduleTimer(GarrisonShipyardMap_UpdateMissions,0.1)
 	end
 	report:AddRow(DONE)
 	if ns.quick then
@@ -410,10 +400,6 @@ function module:MissionsPrintResults(success)
 		local qm=addon:GetModule("Quick")
 		addon.ScheduleTimer(qm,"RunQuick",0.2)
 	end
-
-
-
-GarrisonShipyardMap_UpdateMissions()
 end
 function addon:MissionComplete(...)
 	return module:MissionComplete(...)
