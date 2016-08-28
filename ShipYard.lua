@@ -7,6 +7,7 @@ local addon=addon --#addon
 local over=over --#over
 local _G=_G
 local GSF=GSF
+local GSFMissions=GSFMissions
 local G=C_Garrison
 local pairs=pairs
 local format=format
@@ -77,6 +78,12 @@ end
 function module:GetMain()
 	return GSF
 end
+function module:GetMissions()
+	return GSFMissions
+end
+function module:GetBigScreen()
+	return false
+end
 ---
 --Invoked on every mission display, only for available missions
 --
@@ -91,10 +98,6 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		if mission.inProgress then return end
 		i=i+1
 		addendum=CreateFrame("Frame",nil,frame)
-		if toc < 70000 then
-			addendum:SetFrameStrata("MEDIUM")
-			addendum:SetFrameLevel(GSF:GetFrameLevel()+5)
-		end
 		addendum:SetPoint("TOPLEFT",frame,"TOPRIGHT",-10,-15)
 
 		AddBackdrop(addendum)
