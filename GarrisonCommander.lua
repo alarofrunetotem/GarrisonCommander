@@ -662,7 +662,6 @@ function addon:AddLine(name,status)
 	GameTooltip:AddDoubleLine(name, status,nil,nil,nil,r2,g2,b2)
 end
 function addon:SetThreatColor(obj,threat)
-	print(threat)
 	if type(threat)=="string" then
 		local _,_,bias,follower,name=strsplit(":",threat)
 		local color=self:GetBiasColor(tonumber(bias) or -1,nil,"Green")
@@ -803,11 +802,7 @@ function addon:RefreshParties()
 end
 function addon:RefreshMissions(missionID)
 	if (GMF:IsVisible()) then
-		if toc==70000 then
-			GMF.MissionTab.MissionList:UpdateMissions()
-		else
-			GarrisonMissionList_UpdateMissions()
-		end
+		GMF.MissionTab.MissionList:UpdateMissions()
 	end
 end
 
@@ -2256,6 +2251,7 @@ do
 	{ text=CLOSE, notClickable=true,notCheckable=true,isTitle=true },
 	}
 	function addon:OnClick_PartyMember(frame,button,down,...)
+		--if not GMF:IsVisible() then return end
 		local followerID=frame.info and frame.info.followerID or nil
 		local missionID=frame.missionID
 		if (not followerID) then return end
@@ -2816,7 +2812,9 @@ function addon:DrawSlimButton(source,frame,progressing,bigscreen)
 		local numRewards=self:AddRewards(frame, mission.rewards, mission.numRewards);
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 			self:AddFollowersToButton(frame,mission,missionID,bigscreen,numRewards)
-		else
+		elseif mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_7_0 then
+			self:AddFollowersToButton(frame,mission,missionID,false,numRewards)
+		elseif  mission.followerTypeID==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 			self:AddShipsToButton(frame,mission,missionID,bigscreen,numRewards)
 		end
 		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,-5)
@@ -2947,8 +2945,8 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 			button.Env:Show()
 			button.Env.Icon:SetTexture(mission.typeIcon)
 			button.Env.texture=mission.typeIcon
-			button.Env.countered=party.isEnvMechanicCountered.environmentMechanicCountered
-			if (party.isEnvMechanicCountered.environmentMechanicCountered) then
+			button.Env.countered=type(party.isEnvMechanicCountered)=="table" and party.isEnvMechanicCountered.environmentMechanicCountered or false
+			if (button.Env.countered) then
 				button.Env.Border:SetVertexColor(C.Green())
 			else
 				button.Env.Border:SetVertexColor(C.Red())
@@ -3070,7 +3068,7 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen,numReward
 		local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
 		bg:SetPoint("RIGHT")
 		bg.button=button
-		bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
+		bg:SetScript("OnEnter",function(this) pcall(GarrisonMissionButton_OnEnter,this.button) end)
 		bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
 		bg:RegisterForClicks("AnyUp")
 		bg:SetScript("OnClick",function(...) self:OnClick_GCMissionButton(...) end)
@@ -3222,15 +3220,13 @@ function addon:GarrisonMissionPageFollowerFrame_OnEnter(this)
 end
 do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
---@debug@
-	print(self,t,...)
---@end-debug@
 	collectgarbage('step',200)
-	if not GMFMissions.showInProgress then
-		addon.hooks.GarrisonMissionList_Update(self,t,...)
+	local this=self
+	if not this.showInProgress then
+		addon.hooks.GarrisonMissionList_Update(this,t,...)
 		lasttime=0
 	else
-		local missions=GMFMissions.inProgressMissions
+		local missions=this.inProgressMissions
 		local now=time()
 		local delay=120
 		table.sort(missions,sorters.EndTime)
@@ -3247,7 +3243,7 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 --@debug@
 			print("Aggiornamento",now,lasttime,delay,now-lasttime)
 --@end-debug@
-			addon.hooks.GarrisonMissionList_Update(self,t,...)
+			addon.hooks.GarrisonMissionList_Update(this,t,...)
 			lasttime=now
 		end
 	end
