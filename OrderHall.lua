@@ -25,9 +25,6 @@ local GCS
 local GHF
 local GHFMissions
 function module:OnInitialize(...)
---@debug@
-	print("OrderHall Init",GHF,ns.GHF)
---@end-debug@
 	if not ns.GHF then return end -- Waiting to be late initialized by init routine
 	GHF=ns.GHF
 	GHFMissions=ns.GHFMissions
@@ -68,7 +65,6 @@ function module:OnInitialize(...)
 	GHF.MissionTab.MissionList.SetTab=addon.HookedGarrisonMissionList_SetTab
 end
 function module:AddLevel(source,button,mission,missionID,bigscreen)
-	print("Hall")
 	button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
 	local quality=math.min(math.max(mission.level-UnitLevel("player")+3,0),6)
 	button.Level:SetText(mission.level)
