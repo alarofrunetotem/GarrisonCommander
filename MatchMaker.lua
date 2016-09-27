@@ -76,7 +76,7 @@ end
 
 function addon:FollowerScore(mission,followerID)
 	local score,chance=self:MissionScore(mission)
-	return format("%s %04d",score,followerID and math.min(1000-self:GetAnyData(0,followerID,'rank',90),999)),chance
+	return format("%s %d %04d",score,self:GetAnyData(0,followerID,'durability',0),followerID and math.min(1000-self:GetAnyData(0,followerID,'rank',90),999)),chance
 end
 local filters={skipMaxed=false,skipBusy=false}
 function filters.nop(followerID)
@@ -143,6 +143,7 @@ local filterTypes = setmetatable({}, {__index=function(self, missionClass)
 	return filterOut
 end})
 local function AddMoreFollowers(self,mission,scores,justdo)
+	if #scores==0 then return end
 	local missionID=mission.missionID
 	local filterOut=filters[mission.class] or filters.other
 	local missionScore=self:MissionScore(mission)
@@ -187,39 +188,26 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	local missionID=mission.missionID
 	local filterOut=filters[class] or filters.other
 	filters.skipMaxed=self:GetBoolean("IGP")
-	if mission.followerTypeID==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
+	local followerType=mission.followerTypeID
+	local hallMission=followerType==LE_FOLLOWER_TYPE_GARRISON_7_0
+	if followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 		filters.skipMaxed=false
 	end
+
 	if (includeBusy==nil) then
 		filters.skipBusy=self:GetBoolean("IGM")
 	else
 		filters.skipBusy=not includeBusy
 	end
 	local scores=new()
-	local fillers=new()
+	local troops=new()
 	P:Open(missionID,mission.numFollowers)
-	--[[
-	local buffed=G.GetBuffedFollowersForMission(missionID)
-	local traits=G.GetFollowersTraitsForMission(missionID)
-	local buffeds=0
-	local mechanics=G.GetMissionUncounteredMechanics(missionID)
-	--G.GetFollowerBiasForMission(missionID,followerID)
-	for followerID,_ in pairs(buffed) do
-		P:AddFollower(followerID)
-		-- dirty trick to avoid issue with integer overflow
-		local followerScore=self:FollowerScore(mission,followerID)
-		tinsert(scores,format("%s1|%s",self:FollowerScore(mission,followerID),followerID))
-		P:RemoveFollower(followerID)
-		buffeds=buffeds+1
-	end
-	--]]
-	local minchance=floor(currentCap/mission.numFollowers)-mission.numFollowers*mission.numFollowers
 	for _,followerID in self:GetAnyIterator(mission.followerTypeID) do
 		if self:IsFollowerAvailableForMission(followerID,filters.skipBusy) then
 			if P:AddFollower(followerID) then
 				local score,chance=self:FollowerScore(mission,followerID)
-				if (score~=self:FollowerScore(nil,followerID) and chance >minchance) then
-					tinsert(scores,format("%s@%s",score,followerID))
+				if hallMission and self:GetHeroData(followerID,'isTroop') then
+					tinsert(troops,format("%s@%s",score,followerID))
 				else
 					tinsert(scores,format("%s@%s",score,followerID))
 				end
@@ -231,9 +219,10 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	if dbg then
 		scroller=self:GetScroller("Score for " .. mission.name .. " Class " .. mission.class)
 	end
+	table.sort(scores)
+	table.sort(troops)
+	local firstmember
 	if #scores > 0 then
-		local firstmember
-		table.sort(scores)
 		if (dbg) then
 			scroller:addRow("Cap Res Cha Xp T Vra Ran")
 			for i=1,#scores do
@@ -246,7 +235,7 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 		end
 		for i=#scores,1,-1 do
 			local score,followerID=strsplit('@',scores[i])
-			if not firstmember and not filterOut(followerID,missionID) then
+			if not filterOut(followerID,missionID) then
 				firstmember=followerID
 				break
 			end
@@ -257,7 +246,7 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 			end
 			if mission.numFollowers > 1 then
 				AddMoreFollowers(self,mission,scores)
-				AddMoreFollowers(self,mission,fillers)
+				AddMoreFollowers(self,mission,troops)
 			end
 		end
 	end
@@ -265,15 +254,13 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 		if not onlyBest then
 			filters.skipMaxed=false
 			AddMoreFollowers(self,mission,scores)
+			AddMoreFollowers(self,mission,troops)
 		end
 	end
 	if P:FreeSlots() > 0 then
 		filters.skipMaxed=false
 		AddMoreFollowers(self,mission,scores,true)
-	end
-	if P:FreeSlots() > 0 then
-		filters.skipMaxed=false
-		AddMoreFollowers(self,mission,fillers,true)
+		AddMoreFollowers(self,mission,troops,true)
 	end
 	if dbg then
 		P:Dump()
@@ -294,7 +281,8 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	end
 	P:StoreFollowers(party.members)
 	P:Close(party)
-	--del(buffed)
+	del(scores)
+	del(troops)
 end
 function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
