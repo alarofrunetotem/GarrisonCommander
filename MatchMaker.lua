@@ -142,7 +142,7 @@ local filterTypes = setmetatable({}, {__index=function(self, missionClass)
 	rawset(self, missionClass, CreateFilter(missionClass))
 	return filterOut
 end})
-local function AddMoreFollowers(self,mission,scores,justdo)
+local function AddMoreFollowers(self,mission,scores,justdo,justone)
 	if #scores==0 then return end
 	local missionID=mission.missionID
 	local filterOut=filters[mission.class] or filters.other
@@ -178,6 +178,7 @@ local function AddMoreFollowers(self,mission,scores,justdo)
 			local slot=P:CurrentSlot()
 			if P:AddFollower(candidate) and dbg then
 				scroller:addRow(C("Slot " .. slot..":","Green").. " " .. addon:GetAnyData(0,candidate,'fullname'))
+				if justone then return end
 			end
 			candidate=nil
 		end
@@ -214,7 +215,6 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 				P:RemoveFollower(followerID)
 			end
 		end
-		--end
 	end
 	if dbg then
 		scroller=self:GetScroller("Score for " .. mission.name .. " Class " .. mission.class)
@@ -245,26 +245,29 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 				scroller:AddRow(C("Slot 1:","Green").. " " .. addon:GetAnyData(0,firstmember,'fullname'))
 			end
 			if mission.numFollowers > 1 then
+				local onetroop=(#scores==2)
+				if #scores ~= 3 then
+					AddMoreFollowers(self,mission,troops,false,onetroop)
+				end
+				AddMoreFollowers(self,mission,scores)
+			end
+		end
+		if P:FreeSlots() > 0 then
+			if not onlyBest then
+				filters.skipMaxed=false
 				AddMoreFollowers(self,mission,scores)
 				AddMoreFollowers(self,mission,troops)
 			end
 		end
-	end
-	if P:FreeSlots() > 0 then
-		if not onlyBest then
+		if P:FreeSlots() > 0 then
 			filters.skipMaxed=false
-			AddMoreFollowers(self,mission,scores)
-			AddMoreFollowers(self,mission,troops)
+			AddMoreFollowers(self,mission,scores,true)
+			AddMoreFollowers(self,mission,troops,true)
 		end
-	end
-	if P:FreeSlots() > 0 then
-		filters.skipMaxed=false
-		AddMoreFollowers(self,mission,scores,true)
-		AddMoreFollowers(self,mission,troops,true)
-	end
-	if dbg then
-		P:Dump()
-		scroller:AddRow("Final score: " .. self:MissionScore(mission))
+		if dbg then
+			P:Dump()
+			scroller:AddRow("Final score: " .. self:MissionScore(mission))
+		end
 	end
 	if not party.class then
 		party.class=class
