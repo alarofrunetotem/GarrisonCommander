@@ -57,18 +57,23 @@ function module:OnInitialized()
 	local appraisers={}
 	local trash={}
 	if _G.AucAdvanced then
+		addon.AuctionPrices=true
 		appraisers.AUC=_G.AucAdvanced.API.GetMarketValue
 	end
 	if _G.Atr_GetAuctionBuyout then
+		addon.AuctionPrices=true
 		appraisers.ATR=Atr_GetAuctionBuyout
 	end
 	if _G.TSMAPI then
+		addon.AuctionPrices=true
 		appraisers.TSM=function(itemlink) return TSMAPI:GetItemValue(itemlink,"DBMarket") end
 	end
 	if _G.TUJMarketInfo then
+		addon.AuctionPrices=true
 		appraisers.TUY=function(itemlink) TUJMarketInfo(itemlink,trash) return trash['market'] end
 	end
 	if _G.GetAuctionBuyout then
+		addon.AuctionPrices=true
 		appraisers.AH=GetAuctionBuyout
 	end
 	local function GetMarketValue(self,itemId)
@@ -77,7 +82,6 @@ function module:OnInitialized()
 		if itemlink then
 			if not I:IsBop(itemlink) then
 				for i,k in pairs(appraisers) do
-					addon.AuctionPrices=true
 					rc,price=pcall(k,itemId)
 					if rc and price and price >0 then
 						source=i
