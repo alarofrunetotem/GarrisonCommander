@@ -26,6 +26,27 @@ local GHF
 local GHFMissions
 function module:OnInitialize(...)
 	if not ns.GHF then return end -- Waiting to be late initialized by init routine
+	GarrisonLandingPageMinimapButton:HookScript("OnEnter",function(this)
+			if this.description==MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP then
+				GameTooltip:AddLine(WARDROBE_NEXT_VISUAL_KEY .. " " .. MINIMAP_GARRISON_LANDING_PAGE_TOOLTIP)
+			end
+			GameTooltip:Show()
+	end
+	)
+	GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
+	GarrisonLandingPageMinimapButton:SetScript("OnClick",
+		 function (this,button)
+				if (GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
+					 HideUIPanel(GarrisonLandingPage);
+				else
+					 if button=="RightButton" then
+							ShowGarrisonLandingPage(2)
+					 else
+							ShowGarrisonLandingPage(C_Garrison.GetLandingPageGarrisonType());
+					 end
+				end
+		 end
+	)
 	GHF=ns.GHF
 	GHFMissions=ns.GHFMissions
 	--GARRISON_SHIPYARD_NPC_OPEN
@@ -47,9 +68,10 @@ function module:OnInitialize(...)
 	--GarrisonShipyardFrameFollowersListScrollFrameButton1
 	--GarrisonShipyardMapMission1
 	addon:AddLabel(L["OrderHall Appearance"])
-	addon:AddToggle("HALLMOVEPANEL",true,L["Unlock Panel"],L["Makes shipyard panel movable"])
+	addon:AddToggle("HALLMOVEPANEL",true,L["Unlock Panel"],L["Makes Order Hall Mission panel movable"])
 	--addon:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	addon:AddToggle("HALLPIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
+	--addon:HallSort()
 	for _,b in ipairs(GHF.MissionTab.MissionList.listScroll.buttons) do
 		local scale=0.8
 		local f,h,s=b.Title:GetFont()
@@ -166,7 +188,7 @@ print("Adding Menu",GCS.Menu,GHF.MissionTab:IsVisible(),GHF.FollowerTab:IsVisibl
 
 	if GHF.MissionTab:IsVisible() then
 		self.currentmenu=GHF.MissionTab
-		menu,size=self:CreateOptionsLayer('HALLMOVEPANEL')
+		menu,size=self:CreateOptionsLayer('HALLMOVEPANEL','MHSORT')
 	elseif GHF.FollowerTab:IsVisible() then
 		self.currentmenu=GHF.FollowerTab
 		menu,size=self:CreateOptionsLayer('HALLMOVEPANEL')
