@@ -394,6 +394,17 @@ function addon:ApplyMSORT(value)
 	end
 	self:RefreshMissions()
 end
+function addon:ApplyMHSORT(value)
+	local func=self[value]
+	if (type(func)=="function") then
+		Garrison_SortMissions=self[value]
+	else
+--@debug@
+		print("Could not found ",value," in addon")
+--@end-debug@
+	end
+	self:RefreshMissions()
+end
 function addon:GetMain()
 	return GMF
 end
@@ -406,6 +417,7 @@ end
 function addon:GetMissionModule(followertype)
 	return ns.custom[followertype]
 end
+
 function addon:OnInitialized()
 	--@debug@
 	print("Initialize")
@@ -513,6 +525,7 @@ function addon:OnInitialized()
 	tabCO.Quantity:SetFormattedText("%d",GetItemCount(missionCompleteOrder))
 	tabCO:SetAttribute("type","item")
 	tabCO:SetAttribute("item",select(2,GetItemInfo(missionCompleteOrder)))
+	self:loadHelp()
 	--return true
 end
 function addon:showdata(fullargs,action,missionid)
@@ -3217,6 +3230,19 @@ function addon:GarrisonMissionPageFollowerFrame_OnEnter(this)
 		print("Error:",message)
 	end
 --@end-debug@
+end
+function addon:HallSort()
+	self:AddSelect("MHSORT","Garrison_SortMissions_Original",
+	{
+		Garrison_SortMissions_Original=L["Original method"],
+		Garrison_SortMissions_Chance=L["Success Chance"],
+		Garrison_SortMissions_Followers=L["Number of followers"],
+		Garrison_SortMissions_Age=L["Expiration Time"],
+		Garrison_SortMissions_Xp=L["Global approx. xp reward"],
+		Garrison_SortMissions_Duration=L["Duration Time"],
+		Garrison_SortMissions_Class=L["Reward type"],
+	},
+	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 end
 do local lasttime=0
 function addon:HookedGarrisonMissionList_Update(t,...)
