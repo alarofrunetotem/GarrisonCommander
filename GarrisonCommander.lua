@@ -61,7 +61,7 @@ local function tcopy(obj, seen)
 	for k, v in pairs(obj) do res[tcopy(k, s)] = tcopy(v, s) end
 	return res
 end
-
+local widgetsForKey={}
 local parties
 local missionCompleteOrder=122514
 
@@ -591,8 +591,16 @@ function addon:ApplyBIGSCREEN(value)
 		end
 		self:Popup(L["Must reload interface to apply"],0,
 			function(this)
+				pp("BIGSCREEN",value,this)
+				print("BIGSCREEN",value,this)
 				addon:SetBoolean("BIGSCREEN",value)
 				ReloadUI()
+			end,
+			function(this)
+				pp("BIGSCREEN",value,this)
+				print("BIGSCREEN",value,this)
+				addon:SetBoolean("BIGSCREEN",not value)
+				widgetsForKey['BIGSCREEN']:SetValue(not value)
 			end
 		)
 end
@@ -1165,12 +1173,12 @@ function addon:Toggle(button)
 		button:SetChecked(f:IsShown())
 	end
 end
-
 function addon:CreateOptionsLayer(...)
 	local o=AceGUI:Create("SimpleGroup") -- a transparent frame
 	o:SetLayout("Flow")
 	o:SetCallback("OnClose",function(widget) widget:Release() end)
 	local totsize=0
+	wipe(widgetsForKey)
 	for i=1,select('#',...) do
 		totsize=totsize+self:AddOptionToOptionsLayer(o,select(i,...))
 	end
@@ -1235,6 +1243,7 @@ function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 			GameTooltip:FadeOut()
 		end)
 		o:AddChildren(widget)
+		widgetsForKey[flag]=widget
 	end
 	return maxsize
 end
@@ -2923,7 +2932,6 @@ function addon:AddStandardDataToButton(source,button,mission,missionID,bigscreen
 
 end
 function addon:AddLevel(source,button,mission,missionID,bigscreen)
-	print("base")
 	button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
 	local level= (mission.level == GARRISON_FOLLOWER_MAX_LEVEL and mission.iLevel > 0) and mission.iLevel or mission.level
 	local quality=1

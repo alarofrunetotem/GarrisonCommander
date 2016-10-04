@@ -22,11 +22,12 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
 ]])
-self:RelNotes(2,15,0,[[
+self:RelNotes(2,15,'0-beta1',[[
 Feature: Right clicking minimap Icon opens Garrison Report
 Fix: Troops should now be used more wisely in Class Hall Missions
 Fix: Should not raise errors when clicking on followers
 Fix: No longer showing "Install an auction addon" even with auction addon installed
+Feature: Switch to bigscreen can bow be canceled
 ]])
 end
 
