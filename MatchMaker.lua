@@ -29,6 +29,7 @@ local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0 -- 4
 local dbg
 local useCap=false
 local currentCap=100
+local testID=0
 
 local function formatScore(c,r,x,t,maxres,cap)
 	c=tonumber(c) or 0
@@ -142,23 +143,42 @@ local filterTypes = setmetatable({}, {__index=function(self, missionClass)
 	rawset(self, missionClass, CreateFilter(missionClass))
 	return filterOut
 end})
-local function AddMoreFollowers(self,mission,scores,justdo,justone)
+local function AddMoreFollowers(self,mission,scores,justdo,max)
 	if #scores==0 then return end
 	local missionID=mission.missionID
 	local filterOut=filters[mission.class] or filters.other
 	local missionScore=self:MissionScore(mission)
-
-	for p=1,P:FreeSlots() do
+--@debug@
+	if missionID==testID then
+		print("AddMoreFollowers called with ",#scores,justdo,justone,P:FreeSlots())
+	end
+	if dbg then
+		scroller:AddRow("AddMore")
+	end
+--@end-debug@
+	max=max or P:FreeSlots()
+	for p=1,math.min(max,P:FreeSlots()) do
+--@debug@
 		if dbg then
 			scroller:AddRow("--------------------- Slot " .. P:CurrentSlot() .. " ------------------")
 		end
+--@end-debug@
 		local candidate=nil
 		local candidateScore=missionScore
 		for i=1,#scores do
-			local score,followerID,chance=strsplit('@',scores[i])
+			local score,followerID,name=strsplit('@',scores[i])
+--@debug@
+			if missionID==testID then
+				print("Checking",i,followerID,name,score)
+			end
+--@end-debug@
 			if (not filterOut(followerID,missionID) and not P:IsIn(followerID)) then
 				P:AddFollower(followerID)
 				local newScore=self:MissionScore(mission)
+--@debug@
+				if missionID==testID then
+					print("Temp add",followerID,P:FreeSlots())
+				end
 				if dbg then
 					local c1,c2="green","red"
 					if newScore > candidateScore or justdo then
@@ -167,24 +187,34 @@ local function AddMoreFollowers(self,mission,scores,justdo,justone)
 					end
 					scroller:AddRow(addon:GetAnyData(0,followerID,'fullname') .." changes score from " .. C(candidateScore,c1).." to "..C(newScore,c2))
 				end
+--@end-debug@
 				if (newScore > candidateScore or justdo) then
 					candidate=followerID
 					candidateScore=newScore
 				end
 				P:RemoveFollower(followerID)
+--@debug@
+				if missionID==testID then
+					print("Remove:",followerID,P:FreeSlots())
+				end
+--@end-debug@
 			end
 		end
 		if candidate then
 			local slot=P:CurrentSlot()
-			if P:AddFollower(candidate) and dbg then
-				scroller:addRow(C("Slot " .. slot..":","Green").. " " .. addon:GetAnyData(0,candidate,'fullname'))
-				if justone then return end
+			if P:AddFollower(candidate,scroller) and dbg then
+--@debug@
+				if missionID==testID then
+					print("Added",candidate,addon:GetAnyData(0,candidate,'fullname'))
+				end
+--@end-debug@
 			end
 			candidate=nil
 		end
 	end
 end
 local function MatchMaker(self,mission,party,includeBusy,onlyBest)
+
 	local class=mission.class
 	local missionID=mission.missionID
 	local filterOut=filters[class] or filters.other
@@ -203,26 +233,36 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	local scores=new()
 	local troops=new()
 	P:Open(missionID,mission.numFollowers)
-	for _,followerID in self:GetAnyIterator(mission.followerTypeID) do
+	local missionTypeID=mission.followerTypeID
+	for _,followerID in self:GetAnyIterator(missionTypeID) do
 		if self:IsFollowerAvailableForMission(followerID,filters.skipBusy) then
 			if P:AddFollower(followerID) then
 				local score,chance=self:FollowerScore(mission,followerID)
 				if hallMission and self:GetHeroData(followerID,'isTroop') then
-					tinsert(troops,format("%s@%s",score,followerID))
+					tinsert(troops,format("%s@%s@%s",score,followerID,self:GetAnyData(missionTypeID,followerID,'fullname')))
 				else
-					tinsert(scores,format("%s@%s",score,followerID))
+					tinsert(scores,format("%s@%s@%s",score,followerID,self:GetAnyData(missionTypeID,followerID,'fullname')))
 				end
 				P:RemoveFollower(followerID)
 			end
 		end
 	end
+--@debug@
 	if dbg then
 		scroller=self:GetScroller("Score for " .. mission.name .. " Class " .. mission.class)
 	end
+	if missionID == testID then
+		print("Scores")
+		for i=1,#scores do print(scores[i]) end
+		print("Troops")
+		for i=1,#troops do print(troops[i]) end
+	end
+--@end-debug@
 	table.sort(scores)
 	table.sort(troops)
 	local firstmember
 	if #scores > 0 then
+--@debug@
 		if (dbg) then
 			scroller:addRow("Cap Res Cha Xp T Vra Ran")
 			for i=1,#scores do
@@ -233,6 +273,7 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 		else
 			scroller=nop
 		end
+--@end-debug@
 		for i=#scores,1,-1 do
 			local score,followerID=strsplit('@',scores[i])
 			if not filterOut(followerID,missionID) then
@@ -242,14 +283,31 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 		end
 		if firstmember then
 			if P:AddFollower(firstmember) and dbg then
-				scroller:AddRow(C("Slot 1:","Green").. " " .. addon:GetAnyData(0,firstmember,'fullname'))
+--@debug@
+				scroller:addRow(C("Slot 1:","Green").. " " .. addon:GetAnyData(0,firstmember,'fullname'))
+--@end-debug@
 			end
 			if mission.numFollowers > 1 then
-				local onetroop=(#scores==2)
-				if #scores ~= 3 then
-					AddMoreFollowers(self,mission,troops,false,onetroop)
+				if missionTypeID== LE_FOLLOWER_TYPE_GARRISON_7_0 then
+					local nf=#scores
+					local nt=#troops
+					local total=#GHFMissions.availableMissions
+					local maxtroops=0
+					if total==1 then
+						AddMoreFollowers(self,mission,scores)
+						AddMoreFollowers(self,mission,troops)
+					else
+						local mm=math.floor((nt+nt)/3)
+						if mm==1 then
+							maxtroops=0
+						else
+							maxtroops=1
+						end
+						AddMoreFollowers(self,mission,troops,false,maxtroops)
+					end
+				else
+					AddMoreFollowers(self,mission,scores)
 				end
-				AddMoreFollowers(self,mission,scores)
 			end
 		end
 		if P:FreeSlots() > 0 then
@@ -264,10 +322,11 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 			AddMoreFollowers(self,mission,scores,true)
 			AddMoreFollowers(self,mission,troops,true)
 		end
+--@debug@
 		if dbg then
-			P:Dump()
-			scroller:AddRow("Final score: " .. self:MissionScore(mission))
+			scroller:addRow("Final score: " .. self:MissionScore(mission))
 		end
+--@end-debug@
 	end
 	if not party.class then
 		party.class=class
@@ -309,14 +368,29 @@ function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 	return party.perc
 end
 function addon:MatchMaker(missionID,party,includeBusy,useCap,currentCap)
+	self:SetTest(1052)
 	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
 	if not mission then return 0 end
 	missionID=mission.missionID
 	if (not party) then party=addon:GetParty(missionID) end
 	useCap=useCap or self:GetBoolean("MAXRES")
 	currentCap=currentCap or self:GetNumber("MAXRESCHANCE")
+--@debug@
+	if missionID==testID then
+		print("Matchmaker start",missionID,mission.name,mission.class,useCap,currentCap)
+		pcall(party)
+	end
+--@end-debug@
 	MatchMaker(self,mission,party,includeBusy)
+	if (missionID==testID) then
+		for i=1,#party.members do
+			print(party.members[i],self:GetAnyData(0,party.members[i],'fullname'))
+		end
+	end
 	return party.perc
+end
+function addon:SetTest(num)
+	testID=num
 end
 function addon:TestMission(missionID,includeBusy)
 	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
@@ -325,9 +399,6 @@ function addon:TestMission(missionID,includeBusy)
 	local party=new()
 	party.members=new()
 	self:MatchMaker(mission,party,includeBusy)
---@debug@
-	DevTools_Dump(party)
---@end-debug@
 	del(party.members)
 	del(party)
 	scroller=nop
@@ -340,9 +411,6 @@ function addon:MCTestMission(missionID,includeBusy,chance)
 	local party=new()
 	party.members=new()
 	self:MCMatchMaker(mission,party,includeBusy,true,chance)
---@debug@
-	DevTools_Dump(party)
---@end-debug@
 	del(party.members)
 	del(party)
 	scroller=nop
