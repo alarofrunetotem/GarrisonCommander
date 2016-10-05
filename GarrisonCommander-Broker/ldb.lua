@@ -1,12 +1,5 @@
 local me, ns = ...
 local toc=select(4,GetBuildInfo())
-local LDB=LibStub:GetLibrary("LibDataBroker-1.1",true)
-if not LDB then
-	--@debug@
-	print("Missing libdatabroker")
-	--@end-debug@
-	return
-end
 local pp=print
 --@debug@
 LoadAddOn("Blizzard_DebugTools")
@@ -21,6 +14,13 @@ local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
 --local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
 local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0","AceHook-3.0") --#addon
 local C=addon:GetColorTable()
+local LDB=LibStub:GetLibrary("LibDataBroker-1.1",true)
+if not LDB then
+	LDB={fake=true}
+	function LDB:NewDataObject(dummy,init)
+		return init
+	end
+end
 local dataobj --#Missions
 local farmobj --#Farms
 local workobj --#Works
@@ -130,9 +130,6 @@ function addon:ldbUpdate()
 	cacheobj:Update()
 end
 function addon:GARRISON_MISSION_STARTED(event,missionType,missionID)
-	if toc<70000 then
-		missionID=missionType
-	end
 	local duration=select(2,G.GetPartyMissionInfo(missionID)) or 0
 	local followerType=self.db.global.missionType[missionID]
 	if not followerType then
@@ -355,7 +352,12 @@ function addon:OnInitialized()
 			addon.db.realm.cachesize[k]=500
 		end
 	end
-
+	print("initing",LDB)
+	--@debug@
+	if LDB.fake then
+		self:Print("Missing LibDataBroker-1.1, still collecting data but no display possibile")
+	end
+	--@end-debug@
 	ns.me=GetUnitName("player",false)
 	self:RegisterEvent("GARRISON_MISSION_STARTED")
 	self:RegisterEvent("GARRISON_MISSION_NPC_OPENED","ldbCleanup")
@@ -375,6 +377,27 @@ function addon:OnInitialized()
 	self:AddSlider("FREQUENCY",5,1,60,L["Update frequency"])
 	frequency=self:GetNumber("FREQUENCY",5)
 	self:ScheduleTimer("DelayedInit",1)
+	GarrisonLandingPageMinimapButton:HookScript("OnEnter",function(this)
+			if this.description==MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP then
+				GameTooltip:AddLine(WARDROBE_NEXT_VISUAL_KEY .. " " .. MINIMAP_GARRISON_LANDING_PAGE_TOOLTIP)
+			end
+			GameTooltip:Show()
+	end
+	)
+	GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
+	GarrisonLandingPageMinimapButton:SetScript("OnClick",
+		function (this,button)
+				if (GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
+					HideUIPanel(GarrisonLandingPage);
+				else
+					if button=="RightButton" then
+							ShowGarrisonLandingPage(2)
+					else
+							ShowGarrisonLandingPage(C_Garrison.GetLandingPageGarrisonType());
+					end
+				end
+		end
+	)
 	return self:ResBuyer()
 end
 function addon:ApplyFREQUENCY(value)
@@ -757,6 +780,8 @@ local satchel_name
 local satchel_link
 local satchel_index
 local button
+--@do-not-package@
+--[[
 function addon:ResBuyer()
 	button=CreateFrame("Button",nil,UIParent,"SecureActionButtonTemplate")
 	button:SetAttribute("type1","item")
@@ -815,6 +840,8 @@ function addon:Buygold(args,...)
 	end
 	self:coroutineExecute(0.2,buyer)
 end
+--]]
+--@end-do-not-package@
 local function convert(perc,numeric)
 	perc=max(0,min(10,perc))
 	if numeric then
