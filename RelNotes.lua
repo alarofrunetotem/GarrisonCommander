@@ -10,7 +10,7 @@ self:Wiki([[
 * Mission panel is movable (position not saved, it's jus to see things, panel is so huge...)
 * Success chance extimation shown in mission list (optionally considering only available followers)
 * Proposed party button
-* each follower can bew ignored individually for each mission
+* each follower can be ignored individually for each mission
 * you can ignore maxed followers
 * you can ignore busy followers
 * you can sort missions
@@ -20,14 +20,14 @@ self:Wiki([[
 * every follower line has now the icon for countered trait/ability
 * final success chance (optionally considering only available followers)
 == Silent mode ==
-typing /gac silent in chat will eliminate every chat messag from GarrisonCommander
+typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
-self:RelNotes(2,15,'0-beta1',[[
+self:RelNotes(2,15,'0-beta3',[[
 Feature: Right clicking minimap Icon opens Garrison Report
+Feature: Switch to bigscreen can now be canceled
 Fix: Troops should now be used more wisely in Class Hall Missions
 Fix: Should not raise errors when clicking on followers
 Fix: No longer showing "Install an auction addon" even with auction addon installed
-Feature: Switch to bigscreen can bow be canceled
 ]])
 end
 
