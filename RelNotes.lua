@@ -22,7 +22,7 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
-self:RelNotes(2,15,'0-rc1',[[
+self:RelNotes(2,15,0,[[
 Feature: Right clicking minimap Icon opens Garrison Report
 Feature: Switch to bigscreen can now be canceled
 Fix: Troops should now be used more wisely in Class Hall Missions
