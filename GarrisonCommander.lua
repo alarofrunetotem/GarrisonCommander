@@ -503,7 +503,6 @@ function addon:OnInitialized()
 	self:AddOpenCmd("show","showdata","Prints a mission score")
 --@end-debug@
 	self:Trigger("MSORT")
-	LoadAddOn("GarrisonCommander-Broker")
 	if (not IsAddOnLoaded("GarrisonCommander-Broker")) then
 		GarrisonLandingPageMinimapButton:HookScript("OnEnter",function(this)
 				if this.description==MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP then

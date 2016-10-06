@@ -26,27 +26,6 @@ local GHF
 local GHFMissions
 function module:OnInitialize(...)
 	if not ns.GHF then return end -- Waiting to be late initialized by init routine
-	GarrisonLandingPageMinimapButton:HookScript("OnEnter",function(this)
-			if this.description==MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP then
-				GameTooltip:AddLine(WARDROBE_NEXT_VISUAL_KEY .. " " .. MINIMAP_GARRISON_LANDING_PAGE_TOOLTIP)
-			end
-			GameTooltip:Show()
-	end
-	)
-	GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
-	GarrisonLandingPageMinimapButton:SetScript("OnClick",
-		 function (this,button)
-				if (GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
-					 HideUIPanel(GarrisonLandingPage);
-				else
-					 if button=="RightButton" then
-							ShowGarrisonLandingPage(2)
-					 else
-							ShowGarrisonLandingPage(C_Garrison.GetLandingPageGarrisonType());
-					 end
-				end
-		 end
-	)
 	GHF=ns.GHF
 	GHFMissions=ns.GHFMissions
 	--GARRISON_SHIPYARD_NPC_OPEN
