@@ -398,7 +398,6 @@ function addon:OnInitialized()
 				end
 		end
 	)
-	return self:ResBuyer()
 end
 function addon:ApplyFREQUENCY(value)
 	frequency=value
