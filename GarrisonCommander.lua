@@ -352,12 +352,16 @@ sorters.Xp=function (mission1, mission2)
 		return p2 < p1
 	end
 end
-addon.Garrison_SortMissions_Original=_G.Garrison_SortMissions
-local Garrison_SortMissions=_G.Garrison_SortMissions
+local MyGarrison_SortMissions=_G.Garrison_SortMissions
+--[[
 _G.Garrison_SortMissions= function(missionsList)
 	if GMF:IsVisible() then
 		Garrison_SortMissions(missionsList)
 	end
+end
+--]]
+function addon:SortMissions(missionsList)
+	MyGarrison_SortMissions(missionsList)
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
 	addon:RefreshParties()
@@ -386,7 +390,7 @@ end
 function addon:ApplyMSORT(value)
 	local func=self[value]
 	if (type(func)=="function") then
-		Garrison_SortMissions=self[value]
+		MyGarrison_SortMissions=self[value]
 	else
 --@debug@
 		print("Could not found ",value," in addon")
@@ -394,17 +398,7 @@ function addon:ApplyMSORT(value)
 	end
 	self:RefreshMissions()
 end
-function addon:ApplyMHSORT(value)
-	local func=self[value]
-	if (type(func)=="function") then
-		Garrison_SortMissions=self[value]
-	else
---@debug@
-		print("Could not found ",value," in addon")
---@end-debug@
-	end
-	self:RefreshMissions()
-end
+
 function addon:GetMain()
 	return GMF
 end
@@ -514,7 +508,7 @@ function addon:OnInitialized()
 		GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
 		GarrisonLandingPageMinimapButton:SetScript("OnClick",
 			function (this,button)
-					if (GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
+					if (_G.GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
 						HideUIPanel(GarrisonLandingPage);
 					else
 						if button=="RightButton" then
@@ -548,6 +542,8 @@ function addon:OnInitialized()
 	tabCO:SetAttribute("type","item")
 	tabCO:SetAttribute("item",select(2,GetItemInfo(missionCompleteOrder)))
 	self:loadHelp()
+	self:SecureHook("Garrison_SortMissions","SortMissions")
+
 	--return true
 end
 function addon:showdata(fullargs,action,missionid)
@@ -844,9 +840,7 @@ function addon:RefreshParties()
 	end
 end
 function addon:RefreshMissions(missionID)
-	if (GMF:IsVisible()) then
-		GMF.MissionTab.MissionList:UpdateMissions()
-	end
+	self:GetMissions():UpdateMissions()
 end
 
 --[[
@@ -1038,9 +1032,9 @@ function addon:ActivateButton(button,OnClick,Tooltiptext,persistent)
 		button.tooltip=Tooltiptext
 		button:SetScript("OnEnter",ShowTT)
 		if persistent then
-			button:SetScript("OnLeave",ns.OnLeave)
+			button:SetScript("OnLeave",GameTooltip.Hide)
 		else
-			button:SetScript("OnLeave",ns.OnLeave)
+			button:SetScript("OnLeave",GameTooltip.Hide)
 		end
 	else
 		button:SetScript("OnEnter",nil)
@@ -1535,7 +1529,7 @@ do
 		lastTab=2
 	end
 	function addon:RenderFollowerPageMissionList(dummy,followerID,force)
-		--print(ns.bigscreen,GMFFollowers:IsVisible())
+		print(ns.bigscreen,GMFFollowers:IsVisible())
 		--if not ns.bigscreen then return end
 		if not ns.bigscreen and not self:GetBoolean("FOLLOWERMISSIONLIST") then
 			if mh then mh:Hide() end
@@ -1827,7 +1821,7 @@ function addon:RaiseCompleteDialog()
 	if f:GetFrameLevel() < 80 then
 		f:SetFrameLevel(80)
 	end
-	--print("Dialog:",GMFMissions.CompleteDialog:GetFrameLevel())
+	print("Dialog:",GMFMissions.CompleteDialog:GetFrameLevel())
 	--C_Timer.After(0.1,function() local f=GMFMissions.CompleteDialog print("Dialog:",f:GetFrameLevel()) if f:GetFrameLevel() < 45 then f:SetFrameLevel(45) end print("Dialog:",f:GetFrameLevel()) end)
 end
 
