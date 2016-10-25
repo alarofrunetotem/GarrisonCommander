@@ -93,7 +93,6 @@ end
 function cache:Refresh()
 	if next(self.cache) then return end
 	self:Wipe()
-	print(self.type)
 	local list=G.GetFollowers(self.type)
 	if type(list) ~="table" then
 		print("Requested",self.type, " no follower found")
