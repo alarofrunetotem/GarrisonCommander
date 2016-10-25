@@ -26,7 +26,7 @@ local GHF
 local GHFMissions
 function module:OnInitialize(...)
 	if not ns.GHF then return end -- Waiting to be late initialized by init routine
-	if GetAddOnEnableState(UnitName("player","OrderHallCommander")) > 0 then
+	if GetAddOnEnableState(UnitName("player"),"OrderHallCommander") > 0 then
 		self:Print("Delegating hall management to OrderHallCommander")
 		return
 	end
