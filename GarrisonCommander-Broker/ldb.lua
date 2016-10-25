@@ -389,7 +389,7 @@ function addon:OnInitialized()
 		GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
 		GarrisonLandingPageMinimapButton:SetScript("OnClick",
 			function (this,button)
-					if (GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
+					if (_G.GarrisonLandingPage and GarrisonLandingPage:IsShown()) then
 						HideUIPanel(GarrisonLandingPage);
 					else
 						if button=="RightButton" then
