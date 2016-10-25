@@ -113,10 +113,7 @@ local GMFRewardSplash=								GMF.MissionTab.MissionList.CompleteDialog
 local GMFMissionsListScrollFrame=					GMF.MissionTab.MissionList.listScroll
 local GMFMissionListButtons=						GMF.MissionTab.MissionList.listScroll.buttons
 local GMFMissionsListScrollFrameScrollChild=		GMF.MissionTab.MissionList.listScroll.scrollChild
-local GMFFollowers=									GMF.FollowerTab.followerList
-if toc==70000 then
-	GMFFollowers=									GMF.FollowerList
-end
+local GMFFollowers=									GMF.FollowerList
 local GMFMissionFrameFollowers=						GMFFollowers
 local GMFFollowersListScrollFrame=					GMFFollowers.listScroll
 local GMFFollowersListScrollFrameScrollChild=		GMFFollowers.listScroll.scrollChild
