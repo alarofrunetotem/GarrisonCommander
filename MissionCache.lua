@@ -231,6 +231,9 @@ function module:AddExtraData(mission)
 	if mission.missionID == dbg then print("Final gold",mission.gold) DevTools_Dump(mission.moreClasses)end
 --@end-debug@
 	if not mission.class then mission.class="other" end
+	local xp=select(2,G.GetMissionInfo(mission.missionID))
+	if not mission.xp or mission.xp==0 then mission.xp=xp end
+	mission.globalXp=tonumber(mission.xp) or 0 + tonumber(mission.xpBonus) or 0
 end
 function module:GetMissionIterator(followerType)
 	local list
