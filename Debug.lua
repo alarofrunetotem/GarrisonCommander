@@ -1,6 +1,8 @@
 --@do-not-package@
 local _G=_G
+--@debug@
 LoadAddOn("Blizzard_DebugTools")
+--@end-debug@
 local me, ns = ...
 if (me=="doc") then
 	local mt={
