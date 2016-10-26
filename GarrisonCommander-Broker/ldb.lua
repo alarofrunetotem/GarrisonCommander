@@ -12,7 +12,7 @@ print=function() end
 --@end-non-debug@]===]
 local L=LibStub("AceLocale-3.0"):GetLocale(me,true)
 --local addon=LibStub("AceAddon-3.0"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0") --#addon
-local addon=LibStub("LibInit"):NewAddon(me,"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0","AceHook-3.0") --#addon
+local addon=LibStub("LibInit"):NewAddon(ns,me,{profile='Default',enhancedProfile=true},"AceTimer-3.0","AceEvent-3.0","AceConsole-3.0","AceHook-3.0") --#addon
 local C=addon:GetColorTable()
 local LDB=LibStub:GetLibrary("LibDataBroker-1.1",true)
 if not LDB then
@@ -401,6 +401,7 @@ function addon:OnInitialized()
 			end
 		)
 	end
+	self:loadHelp()
 end
 function addon:ApplyFREQUENCY(value)
 	frequency=value
@@ -611,7 +612,7 @@ function dataobj:OnTooltipShow()
 					t=tonumber(t) or 0
 					followerType=tonumber(followerType) or LE_FOLLOWER_TYPE_GARRISON_6_0
 					local name= (followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2) and C(G.GetMissionName(missionID),"cyan") or
-									(followerType==LE_FOLLOWER_TYPE_GARRISON_7_0) and C(G.GetMissionName(missionID),"orange") or
+									(followerType==LE_FOLLOWER_TYPE_GARRISON_7_0) and C(G.GetMissionName(missionID),"epic") or
 									G.GetMissionName(missionID)
 					if name then
 						if not remove and pc==ns.me then
@@ -870,6 +871,19 @@ local function highdebug(tb)
 		end
 	end
 end
+
+function addon:loadHelp()
+self:HF_Title(me,"RELNOTES")
+self:HF_Paragraph("Description")
+self:HF_Pre([[
+Data broker for Garrison stuff.
+]])
+self:RelNotes(2,15,2,[[
+Feature: Order hall mission are now purple
+Feature: Extended profile management enabled
+]])
+end
+
 --highdebug(addon)
 --highdebug(dataobj)
 --highdebug(farmobj)
