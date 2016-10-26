@@ -1,10 +1,10 @@
-## Interface: 70000
+## Interface: 70100
 ## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
 ## Notes-frFR: Data-Broker pour GarrisonCommander
-## Author: Alar of Daggerspine
-## Version: @project-version@ 6.2.4
+## Author: Alar of Runetotem
+## Version: @project-version@ 1.1.0
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
