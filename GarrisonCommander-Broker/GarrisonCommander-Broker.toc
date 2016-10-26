@@ -21,4 +21,5 @@
 embeds.xml
 localization.lua
 ldb.lua
+RelNotes.lua
 

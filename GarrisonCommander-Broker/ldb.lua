@@ -871,19 +871,6 @@ local function highdebug(tb)
 		end
 	end
 end
-
-function addon:loadHelp()
-self:HF_Title(me,"RELNOTES")
-self:HF_Paragraph("Description")
-self:HF_Pre([[
-Data broker for Garrison stuff.
-]])
-self:RelNotes(2,15,2,[[
-Feature: Order hall mission are now purple
-Feature: Extended profile management enabled
-]])
-end
-
 --highdebug(addon)
 --highdebug(dataobj)
 --highdebug(farmobj)
