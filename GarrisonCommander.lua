@@ -165,6 +165,12 @@ local function ShowTT(this)
 	GameTooltip:SetText(this.tooltip)
 	GameTooltip:Show()
 end
+local function FadeTT(this)
+	GameTooltip:Fade()
+end
+local function HideTT(this)
+	GameTooltip:Hide()
+end
 
 local GARRISON_DURATION_DAY,GARRISON_DURATION_DAYS=splitFormat(GARRISON_DURATION_DAYS) -- "%d |4day:days;";
 local GARRISON_DURATION_DAY_HOURS,GARRISON_DURATION_DAYS_HOURS=splitFormat(GARRISON_DURATION_DAYS_HOURS) -- "%d |4day:days; %d hr";
@@ -1029,9 +1035,9 @@ function addon:ActivateButton(button,OnClick,Tooltiptext,persistent)
 		button.tooltip=Tooltiptext
 		button:SetScript("OnEnter",ShowTT)
 		if persistent then
-			button:SetScript("OnLeave",GameTooltip.Hide)
+			button:SetScript("OnLeave",HideTT)
 		else
-			button:SetScript("OnLeave",GameTooltip.Hide)
+			button:SetScript("OnLeave",HideTT)
 		end
 	else
 		button:SetScript("OnEnter",nil)

@@ -22,6 +22,12 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(2,15,2,[[
+Fix: Quick mission button was disappearing if not clicked before moving mouse out of it
+]])
+self:RelNotes(2,15,1,[[
+Fix: Now works with 7.1.0
+]])
 self:RelNotes(2,15,0,[[
 Feature: Right clicking minimap Icon opens Garrison Report
 Feature: Switch to bigscreen can now be canceled
