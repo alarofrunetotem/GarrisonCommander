@@ -284,8 +284,8 @@ function module:Setup()
 --[===[@non-debug@
 	self:GarrisonTraitCountersFrame_OnLoad(GarrisonTraitCountersFrame, L["%s |4follower:followers; with %s"])
 --@end-non-debug@]===]
-	self:SafeHookScript(GarrisonTraitCountersFrame,"OnEvent","GarrisonTraitCountersFrame_OnEvent")
-	self:SafeHookScript(GarrisonTraitCountersFrame,"OnShow","GarrisonTraitCountersFrame_OnShow")
+	self:SafeSecureHookScript(GarrisonTraitCountersFrame,"OnEvent","GarrisonTraitCountersFrame_OnEvent")
+	self:SafeSecureHookScript(GarrisonTraitCountersFrame,"OnShow","GarrisonTraitCountersFrame_OnShow")
 	self:ShowUpgradeButtons()
 end
 function module:Cleanup()
