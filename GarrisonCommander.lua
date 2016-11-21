@@ -2012,7 +2012,7 @@ function addon:FillMissionPage(missionInfo)
 	end
 	local main=_G[mainframes[missionType]]
 	if not main then return end
-	local missionpage=main.MissionTab.MissionPage
+	local missionpage=main:GetMissionPage()
 	local stage=main.MissionTab.MissionPage.Stage
 	local missionenv=stage.MissionInfo.MissionEnv
 	if missionType==LE_FOLLOWER_TYPE_GARRISON_7_0 then
@@ -2048,9 +2048,10 @@ function addon:FillMissionPage(missionInfo)
 	if (party) then
 		local members=party.members
 		for i=1,missionInfo.numFollowers do
+			local followerframe=missionpage.Followers[i]
 			local followerID=members[i]
 			if followerID then
-				missionpage:AddFollower(followerID)
+				main:AssignFollowerToMission(followerframe,self:GetAnyData(missionInfo.followerTypeID,followerID))
 			end
 		end
 	else
