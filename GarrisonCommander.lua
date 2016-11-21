@@ -1343,7 +1343,6 @@ function addon:CreateHeader(module,PIN)
 		GCF.Pin:SetScript("OnEnter",ShowTT)
 		GCF.Pin:SetScript("OnClick",function(this)
 			local value=this:GetChecked()
-			this:SetChecked(value)
 			addon:SetBoolean(PIN,value)
 			if (value) then grow(GCF) else shrink(GCF) end
 		end)
@@ -1419,9 +1418,6 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 	end
 	if self:GetToggle("ILV") then
 		if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL) then
-			--@debug@
-			print(follower.followerID)
-			--@end-debug@
 			local c1=ITEM_QUALITY_COLORS[self:GetAnyData(follower.followerTypeID,follower.followerID,"weaponQuality" ,1)]
 			local c2=ITEM_QUALITY_COLORS[self:GetAnyData(follower.followerTypeID,follower.followerID,"armorQuality" ,1)]
 			frame.GCWep:SetFormattedText("W:%3d",self:GetAnyData(follower.followerTypeID,follower.followerID,"weaponItemLevel",600))
@@ -2046,16 +2042,15 @@ function addon:FillMissionPage(missionInfo)
 	if( IsControlKeyDown()) then self:Print("Ctrl key, ignoring mission prefill") return end
 	if (self:GetBoolean("NOFILL")) then return end
 	local missionID=missionInfo.missionID
-	holdEvents()
+	--holdEvents()
 	main:ClearParty()
 	local party=self:GetParty(missionID)
 	if (party) then
 		local members=party.members
 		for i=1,missionInfo.numFollowers do
-			local followerframe=missionpage.Followers[i]
 			local followerID=members[i]
-			if (followerID) then
-				main:AssignFollowerToMission(followerframe,self:GetAnyData(missionInfo.followerTypeID,followerID))
+			if followerID then
+				missionpage:AddFollower(followerID)
 			end
 		end
 	else
@@ -2067,7 +2062,7 @@ function addon:FillMissionPage(missionInfo)
 	main:UpdateMissionData(main.MissionTab.MissionPage)
 	--self:Dump(GMF.MissionTab.MissionPage.Followers,"Selected followers")
 	--GarrisonMissionPage_UpdateEmptyString()
-	releaseEvents()
+	--releaseEvents()
 end
 local firstcall=true
 
