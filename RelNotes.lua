@@ -22,7 +22,8 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
-self:RelNotes(2,15,6,[[
+self:RelNotes(2,15,7,[[
+Fix: 2.15.6 zip was corrupted, repackaged
 Fix: Pushed a new version hoping to trigger Curse packager
 Fix: Shipyard equipment buitton were appearing out of follower panel frame and not disappearing with follower panel
 Fix: Whem mission were filled, followers were not marked "In party"
