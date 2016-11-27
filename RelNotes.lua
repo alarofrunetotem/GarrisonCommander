@@ -22,6 +22,9 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(2,15,8,[[
+Fix: Lua error: FollowerPage.lua line 329:    attempt to call global 'kpairs' (a nil value)
+]])
 self:RelNotes(2,15,7,[[
 Fix: 2.15.6 zip was corrupted, repackaged
 Fix: Pushed a new version hoping to trigger Curse packager
