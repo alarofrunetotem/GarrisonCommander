@@ -6,6 +6,7 @@ local addon=ns.addon --#addon
 local factory=addon:GetFactory()
 local wipe=wipe
 local pairs=pairs
+local kpairs=addon:GetKpairs()
 local tinsert=tinsert
 local coroutine=coroutine
 local GetItemInfo=GetItemInfo
@@ -326,6 +327,7 @@ function module:GarrisonTraitCountersFrame_OnLoad(this, tooltipString)
 		if #list > 0 then wipe(list) end
 		local done
 		local i=0
+		print("Using",kpairs)
 		for k,v in kpairs(ns.catTable) do
 			if not done then
 				done=true
