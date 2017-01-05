@@ -12,7 +12,6 @@ local aMissions={}
 local choosenby={}
 local priority={}
 local GMF=GarrisonMissionFrame
-local GSF=Garris
 local GMCUsedFollowers={}
 local wipe=wipe
 local pairs=pairs
@@ -592,7 +591,7 @@ end
 function module:OnInitialized()
 	local bigscreen=ns.bigscreen
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
-	local GMC = CreateFrame('FRAME', nil, GSF)
+	local GMC = CreateFrame('FRAME', nil, GMF)
 	GMF.MissionControlTab=GMC
 	settings=addon.privatedb.profile.missionControl
 	self:RefreshConfig("Init")
