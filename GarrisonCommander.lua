@@ -430,6 +430,7 @@ function addon:OnInitialized()
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
 	self:SafeRegisterEvent("ADDON_LOADED")
+	self:SafeRegisterEvent("QUEST_TURNED_IN")
 	for _,b in ipairs(GMF.MissionTab.MissionList.listScroll.buttons) do
 		local scale=0.8
 		local f,h,s=b.Title:GetFont()

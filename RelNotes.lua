@@ -22,6 +22,10 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(2,16,0,[[
+Feature: Mission control added to Shipyard. Send your naval mission with one click!
+Feature: Adds reward icons to shipyard missions
+]])
 self:RelNotes(2,15,9,[[
 Fix: Non latin languages localization should now work
 ]])
