@@ -25,6 +25,7 @@ typing /gac silent in chat will eliminate every chat message from GarrisonComman
 self:RelNotes(2,16,0,[[
 Feature: Mission control added to Shipyard. Send your naval mission with one click!
 Feature: Adds reward icons to shipyard missions
+Feature: Includes OrderHallCommander
 ]])
 self:RelNotes(2,15,9,[[
 Fix: Non latin languages localization should now work
