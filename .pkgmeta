@@ -17,9 +17,6 @@ externals:
 	libs/LibItemUpgradeInfo-1.0:
 		url: git://git.wowace.com/wow/libitemupgradeinfo-1-0/mainline.git
 		tag: latest
-	OrderHallCommander:
-		url: git://git.curseforge.net/wow/orderhallcommander/mainline.git
-		tag: latest
 
 move-folders:
 	GarrisonCommander/OrderHallCommander: OrderHallCommander
@@ -36,3 +33,4 @@ ignore:
 - Debug.lua
 - info.txt
 - wowhead.sh
+- ohc.sh
