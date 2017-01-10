@@ -1,0 +1,12 @@
+tag f427ed9f65556847fd2a9781443fb52ffa6e6eab 0.2.4
+Author:	Alar of Runetotem <alar@aspide.it>
+Date:	Tue Jan 10 23:22:16 2017 +0100
+
+Fixed various lua error and cache issues
+
+commit 8556b794a81a3e02cc916ec4116a91ace33dc63c
+Author: Alar of Runetotem <alar@aspide.it>
+Date:   Tue Jan 10 23:17:36 2017 +0100
+
+    Notes updated
+
