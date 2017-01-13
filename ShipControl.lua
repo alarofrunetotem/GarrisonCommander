@@ -39,7 +39,7 @@ for _,data in ipairs(addon:GetRewardClasses()) do
 	tItems[data.key]=data
 end
 local classlist={} ---#table local reference to settings.rewardList
-local class2order={} ---#table maps a classname to its priority
+local class2order=setmetatable({},{__index=function(t,v) return 999 end}) ---#table maps a classname to its priority
 local settings ---#table Pointer to settings in saved var
 local module=addon:NewSubClass("ShipControl") --#module
 local shipyard=addon:GetModule("ShipYard")
@@ -62,6 +62,9 @@ local function chooseBestClass(class,moreClasses)
 
 end
 function module:AcceptMission(missionID,class,value,name,choosenby)
+--@debug@
+	print("Validating",name)
+--@end-debug@
 	local ar=settings.allowedRewards
 	value=tonumber(value)
 	if not value then
@@ -91,6 +94,7 @@ function module:AcceptMission(missionID,class,value,name,choosenby)
 		end
 	end
 	tinsert(choosenby,format("%05d@%010d@%d@%s@%s",class2order[class],99999999-value,missionID,class,name))
+	print("Adding ",name,class)
 	return true
 end
 ---
@@ -114,8 +118,12 @@ function module:CreateMissionList(workList)
 		repeat
 			if not addon:GetMissionData(missionID,"canStart") then break end
 			--@debug@
-			print("|cffff0000Examining|r",missionID,name,class,self:GetMissionData(missionID,class))
+			print("|cffff0000Examining|r",missionID,name,class,self:GetMissionData(missionID,class),self:GetMissionData(missionID,'type'))
 			--@end-debug@
+			if self:GetMissionData(missionID,"type"):find("Siege")==6 then
+				self:AcceptMission(missionID,'blockade',10,name,choosenby)
+				break
+			end
 			local durationSeconds=addon:GetMissionData(missionID,'durationSeconds')
 			if (durationSeconds > settings.maxDuration * 3600 or durationSeconds <  settings.minDuration * 3600) then
 				--@debug@
@@ -141,7 +149,6 @@ function module:CreateMissionList(workList)
 						print("  ",missionID,"refused for",testclass)
 				--@end-debug@
 					end
-
 				end
 			end
 		until true
