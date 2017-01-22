@@ -879,9 +879,9 @@ function addon:SetDbDefaults(default)
 	default.global=default.global or {}
 	default.global["*"]={}
 	default.profile=default.profile or {}
+	default.profile.blacklist={}
 	default.profile.missionControl={
-		blacklist={},
-		version=3,
+		version=1,
 		allowedRewards = {
 			['*']=true,
 		},
@@ -900,8 +900,7 @@ function addon:SetDbDefaults(default)
 		minUpgrade=600
 	}
 	default.profile.shipControl={
-		blacklist={},
-		version=3,
+		version=1,
 		allowedRewards = {
 			['*']=true,
 		},
@@ -1720,6 +1719,51 @@ print("Setup")
 	--collectgarbage("step",10)
 --/Interface/FriendsFrame/UI-Toast-FriendOnlineIcon
 end
+function addon:RefreshConfig(event,settings,oldsettings,classlist,class2order,followerType)
+	if #settings.rewardList==0 and oldsettings and #oldsettings.rewardList>0 then
+		clone(oldsettings,settings)
+	end
+	--self:ShowList()
+	-- 1) Check for removed category
+	local validKeys={}
+	for _,v in ipairs(addon:GetRewardClasses(followerType)) do
+		validKeys[v.key]=true
+	end
+	local good=new()
+	for index=1,#classlist do
+		local key=classlist[index]
+		if key then
+			if validKeys[key] then
+				tinsert(good,key)
+			end
+		end
+	end
+	if #good > 0 then
+		wipe(classlist)
+		for i=1,#good do
+			tinsert(classlist,good[i])
+		end
+	end
+	del(good)
+	wipe(class2order)
+	for index,key in ipairs(classlist) do
+		class2order[key]=index
+	end
+	-- 2) Check for added categories
+	if #classlist < #addon:GetRewardClasses(followerType) then
+		self:Print("Check for additions")
+		for _,v in ipairs(addon:GetRewardClasses(followerType)) do
+			if not rawget(class2order,v.key) then
+				tinsert(classlist,v.key)
+			end
+		end
+		wipe(class2order)
+		for index,key in ipairs(classlist) do
+			class2order[key]=index
+		end
+	end
+end
+
 local function frametoname(m)
 	if m==GMF.MissionTab then
 		return "MissionTab"

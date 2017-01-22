@@ -11,42 +11,26 @@ local factory=addon:GetFactory()
 local aMissions={}
 local choosenby={}
 local priority={}
+local forceRig=false
 local GSF=GSF
 local GSFMissions=GSFMissions
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local GMCUsedFollowers={}
+local OILRIG=745
 local wipe=wipe
 local pairs=pairs
 local tinsert=tinsert
 local tremove=tremove
 local dbg
-local tItems ={
-	--[[
-	{t = 'Enable/Disable money rewards.', i = 'Interface\\Icons\\inv_misc_coin_01', key = 'gold'},
-	{t = 'Enable/Disable resource awards. (Resources/Seals)', i= 'Interface\\Icons\\inv_garrison_resource', key = 'resources'},
-	{t = 'Enable/Disable oil awards.', i= 'Interface\\Icons\\garrison_oil', key = 'oil'},
-	{t = 'Enable/Disable rush scroll.', i= 'Interface\\ICONS\\INV_Scroll_12', key = 'rush'},
-	{t = 'Enable/Disable Follower XP Bonus rewards.', i = 'Interface\\Icons\\XPBonus_Icon', key = 'xp'},
-	{t = 'Enable/Disable Follower equip upgrade.', i = 'Interface\\ICONS\\Garrison_ArmorUpgrade', key = 'followerUpgrade'},
-	{t = 'Enable/Disable item tokens.', i = "Interface\\ICONS\\INV_Bracer_Cloth_Reputation_C_01", key = 'itemLevel'},
-	{t = 'Enable/Disable apexis.', i = "Interface\\Icons\\inv_apexis_draenor", key = 'apexis'},
-	{t = 'Enable/Disable generc rewards.', i = "Interface\\ICONS\\INV_Box_02", key = 'other'},
-	{t = 'Enable/Disable Seal of Tempered Fate.', i = "Interface\\Icons\\ability_animusorbs", key = 'seal'},
-	{t = 'Enable/Disable Primal Spirit.', i = "Interface\\Icons\\6BF_Explosive_shard", key = 'primalspirit'},
-	--]]
-	}
-for _,data in ipairs(addon:GetRewardClasses()) do
+local tItems ={}
+for _,data in ipairs(addon:GetRewardClasses(LE_FOLLOWER_TYPE_SHIPYARD_6_2)) do
 	tItems[data.key]=data
 end
-local classlist={} ---#table local reference to settings.rewardList
-local class2order=setmetatable({},{__index=function(t,v) return 999 end}) ---#table maps a classname to its priority
+local classlist ---#table local reference to settings.rewardList
+local class2order=setmetatable({},{__index=function(t,v) if v=="rig" then return 0 else return 999 end end}) ---#table maps a classname to its priority
 local settings ---#table Pointer to settings in saved var
 local module=addon:NewSubClass("ShipControl") --#module
 local shipyard=addon:GetModule("ShipYard")
-function module:Busy(followerID)
-	return GMCUsedFollowers[followerID]
-end
-addon.GMCBusy=module.Busy
 
 local function chooseBestClass(class,moreClasses)
 	local i=class2order[class] or 999
@@ -93,6 +77,9 @@ function module:AcceptMission(missionID,class,value,name,choosenby)
 			return false
 		end
 	end
+	if missionID==OILRIG then
+		class="rig"
+	end
 	tinsert(choosenby,format("%05d@%010d@%d@%s@%s",class2order[class],99999999-value,missionID,class,name))
 	print("Adding ",name,class)
 	return true
@@ -101,6 +88,7 @@ end
 -- Builds a mission list based on user preferences
 -- @param #module self self
 -- @param #table workList table to be filled with mission list
+-- 
 function module:CreateMissionList(workList)
 	local ar=settings.allowedRewards
 	wipe(priority)
@@ -120,8 +108,12 @@ function module:CreateMissionList(workList)
 			--@debug@
 			print("|cffff0000Examining|r",missionID,name,class,self:GetMissionData(missionID,class),self:GetMissionData(missionID,'type'))
 			--@end-debug@
-			if self:GetMissionData(missionID,"type"):find("Siege")==6 then
-				self:AcceptMission(missionID,'blockade',10,name,choosenby)
+			if missionID==OILRIG and settings.rig then
+				self:AcceptMission(missionID,class,10,name,choosenby)
+				break
+			end		
+			if class=='blockade' then
+				self:AcceptMission(missionID,class,10,name,choosenby)
 				break
 			end
 			local durationSeconds=addon:GetMissionData(missionID,'durationSeconds')
@@ -165,7 +157,7 @@ function module:CreateMissionList(workList)
 			tinsert(workList,tonumber(missionId))
 			used[missionId]=true
 			--@debug@
-				print(missionId,_1,99999999-tonumber(_2))
+				print(strjoin(" ",tostringall(missionId,_1,99999999-tonumber(_2))))
 			--@end-debug@
 		end
 	end
@@ -231,10 +223,11 @@ do
 	local timeElapsed=0
 	local currentMission=0
 	local x=0
+	local availableShips=0
 	function module:CalculateMissions(this,elapsed)
 		local GMC=GSF.MissionControlTab
+		if currentMission==0 then availableShips=shipyard:GetTotFollowers(AVAILABLE) end
 		addon.db.global.news.MissionControl=true
-
 		timeElapsed = timeElapsed + elapsed
 		if (#aMissions == 0 ) then
 			if timeElapsed >= 1 then
@@ -243,7 +236,7 @@ do
 				self:Unhook(this,"OnUpdate")
 				GMC.list.widget:SetTitle(READY)
 				GMC.list.widget:SetTitleColor(C.Green())
-				wipe(GMCUsedFollowers)
+				addon:GMCBusy()
 				this:Enable()
 				GMC.runButton:Enable()
 				if (#GMC.list.Parties>0) then
@@ -261,6 +254,13 @@ do
 				timeElapsed=0.5
 			else
 				local missionID=aMissions[currentMission]
+				local nextMissionID=aMissions[currentMission+1]
+				if missionID==OILRIG and nextMissionID then
+					aMissions[currentMission]=nextMissionID
+					aMissions[currentMission+1]=OILRIG
+					missionID=nextMissionID
+					nextMissionID=OILRIG
+				end
 				GMC.list.widget:SetFormattedTitle("Processing mission %d of %d (%s)",currentMission,#aMissions,G.GetMissionName(missionID))
 				local class=self:GetMissionData(missionID,"class")
 				--print(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
@@ -276,13 +276,24 @@ do
 				--@end-debug@
 				self:MCMatchMaker(missionID,party,settings.skipEpic,minimumChance)
 				if ( party.full and party.perc >= minimumChance) then
+					if nextMissionID==OILRIG then
+						-- check if this mission is using last ships
+						if (availableShips-addon:GMCBusyCount()-#party.members) < 2 then
+							aMissions[currentMission+1]=missionID
+							missionID=OILRIG
+							wipe(party.members)
+							party.perc=0
+							party.full=nil
+							self:MCMatchMaker(missionID,party,false,100)
+						end	 
+					end
 					--@debug@
 					print(missionID,"  Accepted",party.perc,minimumChance)
 					--@end-debug@
 					local mb=AceGUI:Create("GMCMissionButton")
 					if not blacklist[missionID] then
 						for i=1,#party.members do
-							GMCUsedFollowers[party.members[i]]=true
+							addon:GMCBusy(party.members[i],true)
 						end
 					end
 					party.missionID=missionID
@@ -436,6 +447,7 @@ local function drawItemButtons(frame)
 	local single=settings.useOneChance
 	--for j = 1, #tItems do
 	--local i=tOrder[j]
+	print("ShipControl",classlist)
 	local wrap=math.ceil(#classlist/2 +1)
 	for frameIndex,i in ipairs(classlist) do
 		local row = GMC.ignoreFrames[frameIndex]
@@ -520,7 +532,7 @@ local function drawItemButtons(frame)
 		info:SetFontObject('GameFontHighlight')
 		info:SetText("Click to enable/disable a reward. Drag to reorder")
 		info:SetTextColor(1, 1, 1)
-		info:SetPoint("BOTTOM",0,-5)
+		info:SetPoint("BOTTOM",0,20)
 	end
 	return GMC.ignoreFrames[#tItems]
 end
@@ -578,7 +590,7 @@ local function dbfixV2()
 	for index,key in ipairs(a) do
 		class2order[key]=index
 	end
-	for _,v in ipairs(addon:GetRewardClasses()) do
+	for _,v in ipairs(addon:GetRewardClasses(LE_FOLLOWER_TYPE_SHIPYARD_6_2)) do
 		if not class2order[v.key] then
 			tinsert(a,v.key)
 		end
@@ -654,6 +666,7 @@ function module:OnInitialized()
 	addon.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
 	addon.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
 	addon.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
+
 	return GMC
 end
 function module:ShowList()
@@ -671,29 +684,9 @@ local function clone(from,to)
 	end
 end
 function module:RefreshConfig(event)
-	settings=addon.db.profile.missionControl
-	local oldsettings=addon.privatedb.profile.missionControl
-	if #settings.rewardList==0 and oldsettings and #oldsettings.rewardList>0 then
-		clone(oldsettings,settings)
-	end
-	--self:ShowList()
-	blacklist=settings.blacklist
-	classlist=settings.rewardList
-	wipe(class2order)
-	for index,key in ipairs(classlist) do
-		class2order[key]=index
-	end
-	if #classlist < #addon:GetRewardClasses() then
-		for _,v in ipairs(addon:GetRewardClasses()) do
-			if not class2order[v.key] then
-				tinsert(classlist,v.key)
-			end
-		end
-		wipe(class2order)
-		for index,key in ipairs(classlist) do
-			class2order[key]=index
-		end
-	end
+	settings=addon.db.profile.shipControl
+	classlist=settings.rewardList	
+	addon:RefreshConfig(event,settings,nil,classlist,class2order,LE_FOLLOWER_TYPE_SHIPYARD_6_2)
 	if event ~="Init" then -- Initialization routine, we cant design yet
 		drawItemButtons()
 	end
@@ -782,6 +775,10 @@ function addon:ApplySGCSKIPEPIC(value)
 	toggleEpicWarning()
 	module:Refresh()
 end
+function addon:ApplySGCRIG(value)
+	settings.rig=value
+	module:Refresh()
+end
 function module:BuildFlags()
 	local GMC=GSF.MissionControlTab
 	local warning=GMC:CreateFontString(nil,"ARTWORK",ns.bigscreen and "GameFontNormalHuge" or "GameFontNormal")
@@ -794,7 +791,11 @@ function module:BuildFlags()
 	addon:AddLabel(L["Shipyard Control"])
 	addon:AddSlider("SGCMINLEVEL",settings.minLevel,535,715,L["Item minimum level"],L['Minimum requested level for equipment rewards'],15)
 	addon:AddToggle("SGCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
+	addon:AddToggle("SGCRIG",settings.rig,L["Oil Rig."],L["Always send Oil Rig: Pickup mission as last mission if available"])
 	addon:AddToggle("SAUTOLOGOUT",false,L["Auto Logout"],L["Automatically logout after sending missions"])
+	addon:Trigger('SGCMINLEVEL')
+	addon:Trigger('SGCSKIPEPIC')
+	
 end
 function module:BuildDuration()
 	-- Duration
