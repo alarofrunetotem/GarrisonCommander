@@ -785,7 +785,6 @@ local satchel_link
 local satchel_index
 local button
 --@do-not-package@
---[[
 function addon:ResBuyer()
 	button=CreateFrame("Button",nil,UIParent,"SecureActionButtonTemplate")
 	button:SetAttribute("type1","item")
@@ -844,7 +843,6 @@ function addon:Buygold(args,...)
 	end
 	self:coroutineExecute(0.2,buyer)
 end
---]]
 --@end-do-not-package@
 local function convert(perc,numeric)
 	perc=max(0,min(10,perc))
