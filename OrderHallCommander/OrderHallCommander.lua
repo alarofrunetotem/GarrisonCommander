@@ -4,7 +4,7 @@ local function pp(...) print(GetTime(),"|cff009900",__FILE__:sub(-15),strjoin(",
 --*CONFIG noswitch=false,profile=true,enhancedProfile=true
 --*MIXINS "AceHook-3.0","AceEvent-3.0","AceTimer-3.0"
 --*MINOR 35
--- Generated on 11/12/2016 23:26:42
+-- Generated on 20/01/2017 08:15:04
 local me,ns=...
 local LibInit,minor=LibStub("LibInit",true)
 assert(LibInit,me .. ": Missing LibInit, please reinstall")
@@ -19,6 +19,7 @@ local L=addon:GetLocale()
 local new=addon.NewTable
 local del=addon.DelTable
 local kpairs=addon:GetKpairs()
+--local empty=addon:GetEmpty()
 local OHF=OrderHallMissionFrame
 local OHFMissionTab=OrderHallMissionFrame.MissionTab --Container for mission list and single mission
 local OHFMissions=OrderHallMissionFrame.MissionTab.MissionList -- same as OrderHallMissionFrameMissions Call Update on this to refresh Mission Listing
@@ -33,7 +34,7 @@ local FAKE_FOLLOWERID="0x0000000000000000"
 local MAXLEVEL=110
 local dprint=print
 local ddump
---[===[@debug@
+--@debug@
 LoadAddOn("Blizzard_DebugTools")
 ddump=DevTools_Dump
 LoadAddOn("LibDebug")
@@ -57,17 +58,21 @@ addon.safeG=setmetatable({},{
 	end
 })
 
---@end-debug@]===]
---@non-debug@
+--@end-debug@
+--[===[@non-debug@
 dprint=function() end
 ddump=function() end
 local print=function() end
---@end-non-debug@
+--@end-non-debug@]===]
 
 -- End Template - DO NOT MODIFY ANYTHING BEFORE THIS LINE
 --*BEGIN
 local MISSING=ITEM_MISSING:format('|cff'..C.Red.c)..'|r'
 local ctr=0
+-- Sometimes matchmakimng starts before these are defined, so I put here a sensible default (actually, this values are constans)
+addon.MAXLEVEL=110
+addon.MAXQUALITY=4
+addon.MAXQLEVEL=addon.MAXLEVEL+addon.MAXQUALITY
 function addon.resolve(frame) 
 	local name
 	if type(frame)=="table" and frame.GetName then
@@ -187,9 +192,9 @@ end
 function MixinThreats:AddIconsAndCost(mechanics,biases,cost,color,notEnoughResources)
 	local icons=OHF.abilityCountersForMechanicTypes
 	if not icons then
-		--[===[@debug@
+		--@debug@
 		print("Empty icons")
-		--@end-debug@ ]===]
+		--@end-debug@ 
 		return false 
 	end
 	for i=1,#self.usedPool do
@@ -239,7 +244,7 @@ function MixinThreats:AddIconsAndCost(mechanics,biases,cost,color,notEnoughResou
 	return true
 end
 
-function MixinFollowerIcon:SetFollower(followerID)
+function MixinFollowerIcon:SetFollower(followerID,checkStatus)
 	local info=addon:GetFollowerData(followerID)
 	if not info or not info.followerID then
 		local rc
@@ -250,11 +255,20 @@ function MixinFollowerIcon:SetFollower(followerID)
 	end
 	self.followerID=followerID
 	self:SetupPortrait(info)
-	local status=(followerID and not OHFMissions.showInProgress) and G.GetFollowerStatus(followerID) or nil
-	if not status and info.isMaxLevel then
-		self:SetILevel(info.iLevel)
+	local status=(followerID and checkStatus) and G.GetFollowerStatus(followerID) or nil
+	if status then 
+		self:SetILevel(0) --CHAT_FLAG_DND
+		self.Level:SetText(status);		
+		self.Portrait:SetDesaturated(true)
+		self:SetQuality(1)
+		self:GetParent():SetNotReady(true)
 	else
-		self:SetLevel(status and CHAT_FLAG_DND or info.level)
+		self.Portrait:SetDesaturated(false)
+		if info.isMaxLevel then
+			self:SetILevel(info.iLevel)
+		else
+			self:SetLevel(info.level)
+		end
 	end
 end
 function MixinFollowerIcon:SetEmpty(message)
@@ -262,15 +276,16 @@ function MixinFollowerIcon:SetEmpty(message)
 	self:SetLevel(message or MISSING)
 	self:SetPortraitIcon()
 	self:SetQuality(1)
+	self:GetParent():SetNotReady(true)
 end
 function MixinFollowerIcon:ShowTooltip()
 	if not self.followerID then
---[===[@debug@
+--@debug@
 		return self:Dump()
---@end-debug@]===]
---@non-debug@
+--@end-debug@
+--[===[@non-debug@
 		return
---@end-non-debug@	
+--@end-non-debug@]===]	
 	end
 	local link = C_Garrison.GetFollowerLink(self.followerID);
 	if link then
@@ -304,13 +319,25 @@ function Mixin:MembersOnLoad()
 			self.Champions[1]:SetPoint("RIGHT")
 		else
 			self.Champions[i]=CreateFrame("Frame",nil,self,"OHCFollowerIcon")
-			self.Champions[i]:SetPoint("RIGHT",self.Champions[i-1],"LEFT",-5,0)
+			self.Champions[i]:SetPoint("RIGHT",self.Champions[i-1],"LEFT",-15,0)
 		end
-		self.Champions[i]:SetFrameLevel(self:GetFrameLevel()+10)
+		self.Champions[i]:SetFrameLevel(self:GetFrameLevel()+1)
 		self.Champions[i]:Show()
 		self.Champions[i]:SetEmpty()
 	end
-	self:SetWidth(self.Champions[1]:GetWidth()*3+10)
+	self:SetWidth(self.Champions[1]:GetWidth()*3+30)
+	self.NotReady.Text:SetFormattedText(RAID_MEMBER_NOT_READY,STATUS_TEXT_PARTY)
+	self.NotReady.Text:SetTextColor(C.Orange())
+end
+function Mixin:MembersOnShow()
+	self:SetNotReady()
+end
+function Mixin:SetNotReady(show)
+	if show then
+		self.NotReady:Show()
+	else
+		self.NotReady:Hide()
+	end
 end
 function MixinMenu:OnLoad()
 	self.Top:SetAtlas("_StoneFrameTile-Top", true);
@@ -323,5 +350,27 @@ function MixinMenu:OnLoad()
 	self.GarrCorners.BottomRightGarrCorner:SetAtlas("StoneFrameCorner-TopLeft", true);
 	self.CloseButton:SetScript("OnClick",function() MixinMenu.OnClick(self) end)
 end	
-
+if not addon.GetEmpty then -- Will be moved into LibInit
+--@debug@
+	print("Used internal GetEmpty")
+--@end-debug@
+	local type=type
+	local function empty(obj)
+		if not obj then return true end -- Simplest case, obj evaluates to false in boolean context
+		local t=type(obj)
+		if t=="number" then
+			return obj==0
+		elseif t=="bool" then
+			return true
+		elseif t=="string" then
+			return obj=='' or obj==tostring(nil)
+		elseif t=="table" then
+			return not next(obj)
+		end
+		return false -- Userdata and threads can never be empty
+	end
+	function addon:GetEmpty()
+		return empty
+	end
+end
 

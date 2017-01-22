@@ -31,7 +31,9 @@
 			</Layer>
 		</Layers>	
 		<Scripts>
+<!--@debug@-->				
 			<OnEnter method="Dump"/>
+<!--@end-debug@-->				
 			<OnLeave method="HideTT"/>
 		</Scripts>
 	</Frame>
@@ -55,22 +57,39 @@
 		</Layers> 		
 		<Scripts>
 			<OnLoad method="ThreatsOnLoad"/>
-<!--@debug@				
+<!--@debug@-->				
 			<OnEnter>
 				self:Dump(self:GetParent())
 			</OnEnter>
-@end-debug@-->				
+<!--@end-debug@-->				
 			<OnLeave method="HideTT"/>
 		</Scripts>
 	</Frame>
 	<Frame name="OHCMembers" mixin="OrderHallCommanderMixin" virtual="true" enableMouse="false">
 		<Size x="1" y="70"/>
 		<Frames>
+			<Frame parentKey="NotReady" strata="HIGH">
+				<Anchors>
+					<Anchor point="TOPLEFT" x="-5" y="0"/>
+					<Anchor point="BOTTOMRIGHT" x="5" y="0"/>
+				</Anchors>					
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString parentKey="Text" justifyV="TOP" justifyH="CENTER" inherits="GameFontNormalOutline" text="GARRISON_PARTY_NOT_ENOUGH_CHAMPIONS">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="5" y="0"/>
+								<Anchor point="BOTTOMRIGHT" x="-5" y="0"/>
+							</Anchors>					
+						</FontString>
+					</Layer>
+				</Layers> 		
+			</Frame>				
 			<Frame parentArray="Champions" inherits="OHCFollowerIcon" />
 		</Frames>
 		<Scripts>
 			<OnLoad method="MembersOnLoad"/>
 			<OnLeave method="HideTT"/>
+			<OnShow methot="MembersOnShow"/>
 		</Scripts>
 	</Frame>
 	<Frame name="OHCFollowerIcon" mixin="OrderHallCommanderMixin,OrderHallCommanderMixinFollowerIcon" enableMouse="true" inherits="GarrisonFollowerPortraitTemplate" virtual="true" >
@@ -175,7 +194,7 @@
 		</Scripts>
 	</Frame>
 	<Frame name="OHCAlertFrameTemplate" inherits="GarrisonStandardFollowerAlertFrameTemplate" virtual="true"/>
-<!--@debug@	
+<!--@debug@-->	
 	<Frame name="OHCDebug" mixin="OrderHallCommanderMixin" visible="true" enableMouse="true" movable="true">
 		<Size x="240" y="160"/>
 		<KeyValues>
@@ -264,7 +283,7 @@
 			<OnDragStop method="DragStop"/>
 		</Scripts>
 	</Frame>
-@end-debug@-->	
+<!--@end-debug@-->	
 	<!--
 	GarrisonFollowerXPGainTemplate
 	GarrisonFollowerXPBarTemplate

@@ -4,7 +4,7 @@ local function pp(...) print(GetTime(),"|cff009900",__FILE__:sub(-15),strjoin(",
 --*CONFIG noswitch=false,profile=true,enhancedProfile=true
 --*MIXINS "AceHook-3.0","AceEvent-3.0","AceTimer-3.0"
 --*MINOR 35
--- Generated on 11/12/2016 23:26:42
+-- Generated on 20/01/2017 08:15:04
 local me,ns=...
 local addon=ns --#Addon (to keep eclipse happy)
 ns=nil
@@ -19,6 +19,7 @@ local L=addon:GetLocale()
 local new=addon.NewTable
 local del=addon.DelTable
 local kpairs=addon:GetKpairs()
+local empty=addon:GetEmpty()
 local OHF=OrderHallMissionFrame
 local OHFMissionTab=OrderHallMissionFrame.MissionTab --Container for mission list and single mission
 local OHFMissions=OrderHallMissionFrame.MissionTab.MissionList -- same as OrderHallMissionFrameMissions Call Update on this to refresh Mission Listing
@@ -37,7 +38,7 @@ local HideTT=OrderHallCommanderMixin.HideTT
 
 local dprint=print
 local ddump
---[===[@debug@
+--@debug@
 LoadAddOn("Blizzard_DebugTools")
 ddump=DevTools_Dump
 LoadAddOn("LibDebug")
@@ -45,12 +46,12 @@ LoadAddOn("LibDebug")
 if LibDebug then LibDebug() dprint=print end
 local safeG=addon.safeG
 
---@end-debug@]===]
---@non-debug@
+--@end-debug@
+--[===[@non-debug@
 dprint=function() end
 ddump=function() end
 local print=function() end
---@end-non-debug@
+--@end-non-debug@]===]
 
 -- End Template - DO NOT MODIFY ANYTHING BEFORE THIS LINE
 --*BEGIN 
@@ -90,11 +91,11 @@ end
 function addon:OnInitialized()
   _G.dbOHCperChar=_G.dbOHCperChar or {}
 	menu=CreateFrame("Frame")
---[===[@debug@
+--@debug@
 	local f=menu
 	f:RegisterAllEvents()
 	self:RawHookScript(f,"OnEvent","ShowGarrisonEvents")
---@end-debug@]===]
+--@end-debug@
 	self:AddLabel(L["General"])
 	self:AddBoolean("MOVEPANEL",true,L["Make Order Hall Mission Panel movable"],L["Position is not saved on logout"])
 	self:AddBoolean("TROOPALERT",true,L["Troop ready alert"],L["Notifies you when you have troops ready to be collected"])
@@ -152,18 +153,19 @@ function addon:ActivateButton(button,OnClick,Tooltiptext,persistent)
 end
 --- Helpers
 -- 
-function addon:SetBackdrop(frame,r,g,b)
+function addon:SetBackdrop(frame,r,g,b,a)
 	r=r or 1
 	g=g or 0
 	b=b or 0
+	a=a or 1
    frame:SetBackdrop({
          bgFile = "Interface/Tooltips/UI-Tooltip-Background", 
-         edgeFile = "Interface/Tooltips/UI-Tooltip-Border", 
+         xedgeFile = "Interface/Tooltips/UI-Tooltip-Border", 
          tile = true, tileSize = 16, edgeSize = 16, 
          insets = { left = 4, right = 4, top = 4, bottom =   4}
       }
    )	
-   frame:SetBackdropColor(r,g,b,1)
+   frame:SetBackdropColor(r,g,b,a)
 end
 function addon:GetDifficultyColors(...)
 	local q=self:GetDifficultyColor(...)
@@ -262,7 +264,7 @@ function addon:Reward2Class(mission)
 	end
 	return mission.missionSort
 end
---[===[@debug@
+--@debug@
 local events={}
 function addon:Trace(frame, method)
 	if true then return end
@@ -288,7 +290,6 @@ function addon:ShowGarrisonEvents(this,event,...)
 			local _,_,_,followers=...
 			if type(followers)=="table" then
 				tinsert(dbOHCperChar,followers)			
-				DevTools_Dump(followers)
 			end
 		end
 		lastevent=event
@@ -306,4 +307,4 @@ function addon:DumpEvents()
 end
 addon:PushEvent("ADDON_LOADED")
 _G.OHC=addon
---@end-debug@]===]
+--@end-debug@

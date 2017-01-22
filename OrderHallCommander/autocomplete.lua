@@ -4,7 +4,7 @@ local function pp(...) print(GetTime(),"|cff009900",__FILE__:sub(-15),strjoin(",
 --*CONFIG noswitch=false,profile=true,enhancedProfile=true
 --*MIXINS "AceHook-3.0","AceEvent-3.0","AceTimer-3.0"
 --*MINOR 35
--- Generated on 11/12/2016 23:26:42
+-- Generated on 20/01/2017 08:15:04
 local me,ns=...
 local addon=ns --#Addon (to keep eclipse happy)
 ns=nil
@@ -19,6 +19,7 @@ local L=addon:GetLocale()
 local new=addon.NewTable
 local del=addon.DelTable
 local kpairs=addon:GetKpairs()
+local empty=addon:GetEmpty()
 local OHF=OrderHallMissionFrame
 local OHFMissionTab=OrderHallMissionFrame.MissionTab --Container for mission list and single mission
 local OHFMissions=OrderHallMissionFrame.MissionTab.MissionList -- same as OrderHallMissionFrameMissions Call Update on this to refresh Mission Listing
@@ -37,7 +38,7 @@ local HideTT=OrderHallCommanderMixin.HideTT
 
 local dprint=print
 local ddump
---[===[@debug@
+--@debug@
 LoadAddOn("Blizzard_DebugTools")
 ddump=DevTools_Dump
 LoadAddOn("LibDebug")
@@ -45,12 +46,12 @@ LoadAddOn("LibDebug")
 if LibDebug then LibDebug() dprint=print end
 local safeG=addon.safeG
 
---@end-debug@]===]
---@non-debug@
+--@end-debug@
+--[===[@non-debug@
 dprint=function() end
 ddump=function() end
 local print=function() end
---@end-non-debug@
+--@end-non-debug@]===]
 
 -- End Template - DO NOT MODIFY ANYTHING BEFORE THIS LINE
 --*BEGIN 
@@ -73,9 +74,9 @@ end
 
 function module:GenerateMissionCompleteList(title,anchor)
 	local w=AceGUI:Create("OHCMissionsList")
---[===[@debug@
+--@debug@
 	title=format("%s %s %s",title,w.frame:GetName(),GetTime()*1000)
---@end-debug@]===]
+--@end-debug@
 	w:SetTitle(title)
 	w:SetCallback("OnClose",function(widget) return module:MissionsCleanup() end)
 	--report:SetPoint("TOPLEFT",GMFMissions.CompleteDialog.BorderFrame)
@@ -88,11 +89,11 @@ function module:GenerateMissionCompleteList(title,anchor)
 	w.frame:SetFrameStrata("HIGH")
 	return w
 end
---[===[@debug@
+--@debug@
 function addon:ShowRewards()
 	return module:GenerateMissionCompleteList("Test",UIParent)
 end
---@end-debug@]===]
+--@end-debug@
 local cappedCurrencies={
 	GARRISON_CURRENCY,
 	GARRISON_SHIP_OIL_CURRENCY
@@ -123,9 +124,9 @@ local function startTimer(delay,event,...)
 	event=event or "LOOP"
 	stopTimer()
 	timer=module:ScheduleRepeatingTimer("MissionAutoComplete",delay,event,...)
-	--[===[@debug@
+	--@debug@
 	print("Timer rearmed for",event,delay)
-	--@end-debug@]===]
+	--@end-debug@
 end
 function module:MissionsCleanup()
 	local f=OHF
@@ -176,9 +177,9 @@ end
 function module:MissionComplete(this,button,skiprescheck)
 	missions=G.GetCompleteMissions(followerType)
 	fillMyStatus(mebefore)	
---[===[@debug@
+--@debug@
 	addon:PushEvent("Starting autocomplete")
---@end-debug@]===]
+--@end-debug@
 
 	if (missions and #missions > 0) then
 		this:SetEnabled(false)
@@ -211,13 +212,14 @@ function module:MissionComplete(this,button,skiprescheck)
 			local m=missions[i]
 --totalTimeString, totalTimeSeconds, isMissionTimeImproved, successChance, partyBuffs, isEnvMechanicCountered, xpBonus, materialMultiplier, goldMultiplier = C_Garrison.GetPartyMissionInfo(MISSION_PAGE_FRAME.missionInfo.missionID);
 			_,_,m.isMissionTimeImproved,m.successChance,_,_,m.xpBonus,m.resourceMultiplier,m.goldMultiplier=G.GetPartyMissionInfo(m.missionID)
+			addon:GetCacheModule():SetMissionStatus(m.missionID,'completed')			
 		end
 		local stop
 		for id,qt in pairs(wasted) do
 			local name,current,_,_,_,cap=GetCurrencyInfo(id)
-			--[===[@debug@
+			--@debug@
 			print(name,current,qt,cap)
-			--@end-debug@]===]
+			--@end-debug@
 			current=current+qt
 			if current+qt > cap then
 				message=message.."\n"..format(L["Capped %1$s. Spend at least %2$d of them"],name,current+qt-cap)
@@ -284,9 +286,9 @@ function module:MissionAutoComplete(event,...)
 	local current=report:GetUserData('current')
 	local currentMission=report:GetUserData('missions')[current]
 	local missionID=currentMission and currentMission.missionID or 0
---[===[@debug@
+--@debug@
 	print("evt",missionID,event,...)
---@end-debug@]===]
+--@end-debug@
 	-- GARRISON_FOLLOWER_XP_CHANGED: followerType,followerID, xpGained, oldXp, oldLevel, oldQuality
 	if (event=="GARRISON_FOLLOWER_XP_CHANGED") then
 		local followerType,followerID, xpGained, oldXp, oldLevel, oldQuality=...
@@ -350,26 +352,26 @@ function module:MissionAutoComplete(event,...)
 				report:AddMissionButton(currentMission,currentMission.followers,currentMission.successChance,"report")
 			end
 			if (step==0) then
---[===[@debug@
+--@debug@
 				print("Fired MarkMissionCompleter",currentMission.missionID)
 				addon:PushEvent("MarkMissionComplete",currentMission.missionID)
---@end-debug@]===]
+--@end-debug@
 
 				G.MarkMissionComplete(currentMission.missionID)
 				startTimer(2)
 			elseif (step==1) then
---[===[@debug@
+--@debug@
 				print("Fired MissionBonusRoll",currentMission.missionID)
 				addon:PushEvent("MissionBonusRoll",currentMission.missionID)
---@end-debug@]===]
+--@end-debug@
 
 				G.MissionBonusRoll(currentMission.missionID)
 				startTimer(2)
 			elseif (step>=2) then
---[===[@debug@
+--@debug@
 				print("Advanced to next mission  last:",currentMission.missionID,step)
 				addon:PushEvent("Next mission last:",currentMission.missionID)
---@end-debug@]===]
+--@end-debug@
 
 				self:GetMissionResults(step,currentMission)
 				--addon:RefreshFollowerStatus()
@@ -381,9 +383,9 @@ function module:MissionAutoComplete(event,...)
 			end
 			currentMission.state=step
 		else
---[===[@debug@
+--@debug@
 			addon:PushEvent("Building final report")
---@end-debug@]===]
+--@end-debug@
 
 			report:AddButton(L["Building Final report"])
 			startTimer(1,"LOOT")
@@ -444,9 +446,9 @@ function module:MissionsPrintResults(success)
 	stopTimer()
 	local reported
 	local followers
-	--[===[@debug@
+	--@debug@
 	_G["testrewards"]=rewards
-	--@end-debug@]===]
+	--@end-debug@
 	for k,v in pairs(rewards.currencies) do
 		reported=true
 		if k == 0 then
@@ -505,10 +507,10 @@ function module:MissionsPrintResults(success)
 	end
 	if mebefore.level < 110 then
 		fillMyStatus(meafter)
-		--[===[@debug@
-		printMyStatus(mebefore)
-		printMyStatus(meafter)
-		--@end-debug@]===]
+		--@debug@
+		--printMyStatus(mebefore)
+		--printMyStatus(meafter)
+		--@end-debug@
 		local xpgain=0
 		if meafter.level>mebefore.level then
 			xpgain=mebefore.xpMax-mebefore.xp + meafter.xp
