@@ -881,7 +881,7 @@ function addon:SetDbDefaults(default)
 	default.profile=default.profile or {}
 	default.profile.missionControl={
 		blacklist={},
-		version=1,
+		version=3,
 		allowedRewards = {
 			['*']=true,
 		},
@@ -896,6 +896,26 @@ function addon:SetDbDefaults(default)
 		epicExp = false,
 		skipRare=true,
 		skipEpic=not addon:HasSalvageYard(),
+		minLevel=540,
+		minUpgrade=600
+	}
+	default.profile.shipControl={
+		blacklist={},
+		version=3,
+		allowedRewards = {
+			['*']=true,
+		},
+		rewardChance={
+			['*']=100,
+		},
+		rewardList={},
+		useOneChance=true,
+		minimumChance = 100,
+		minDuration = 0,
+		maxDuration = 24,
+		epicExp = false,
+		skipRare=true,
+		skipEpic=true,
 		minLevel=540,
 		minUpgrade=600
 	}
