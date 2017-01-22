@@ -1290,12 +1290,11 @@ end
 function addon:GetMain()
 	return GMF
 end
-function addon:CreateHeader(module,PIN)
+function addon:CreateHeader(module,MOVEPANEL,PIN)
 	if not module then module=self end
 	-- Main Garrison Commander Header
 	local GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
 	local signature=me .. " " .. self.version
-	local MOVEPANEL =module and "SHIPMOVEPANEL" or "MOVEPANEL"
 	GCF.Signature:SetText(signature)
 --@alpha@
 	GCF.Warning:SetText("Alpha Version")
@@ -1371,11 +1370,15 @@ function addon:CreateHeader(module,PIN)
 	GCF:EnableMouse(true)
 	GCF:SetMovable(true)
 	GCF:RegisterForDrag("LeftButton")
-	GCF:SetScript("OnDragStart",function(frame)if self:GetBoolean(MOVEPANEL) then frame:StartMoving() end end)
+--[===[@non-debug@
+	GCF:SetScript("OnDragStart",function(frame) print(MOVEPANEL,self:GetBoolean(MOVEPANEL)) if self:GetBoolean(MOVEPANEL) then frame:StartMoving() end end)
+--@end-non-debug@]===]	
+--@debug@
+	GCF:SetScript("OnDragStart",function(frame) print(self,MOVEPANEL,self:GetBoolean(MOVEPANEL)) frame:StartMoving() end)
+--@end-debug@
 	GCF:SetScript("OnDragStop",function(frame) frame:StopMovingOrSizing() end)
 	GCF:Show()
-	self:Trigger(MOVEPANEL)
-	return GCF
+return GCF
 end
 
 function addon:ScriptTrace(hook,frame,...)
@@ -1661,7 +1664,7 @@ print("Setup")
 		end
 	end
 	self:CheckGMM()
-	GCF=self:CreateHeader(self,"PIN")
+	GCF=self:CreateHeader(self,"MOVEPANEL","PIN")
 	local tabMC=CreateFrame("CheckButton",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabMC=tabMC
 	tabMC.tooltip=L["Open Garrison Commander Mission Control"]
