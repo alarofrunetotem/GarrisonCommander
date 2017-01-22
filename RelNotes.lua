@@ -22,6 +22,12 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(2,16,1,[[
+Fix: Mission control was reusing followers
+Feature: Option to always fill Oil Rig mission when available
+Feature: Blockade Missions are always enabled when needed 
+Feature: OrderHallCommander 1.0.0 
+]])
 self:RelNotes(2,16,0,[[
 Feature: Mission control added to Shipyard. Send your naval mission with one click!
 Feature: Adds reward icons to shipyard missions
