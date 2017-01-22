@@ -33,7 +33,7 @@ function module:OnInitialize(...)
 	if not ns.GHF then return end -- Waiting to be late initialized by init routine
 	OHFFollowerTab=OrderHallMissionFrame.FollowerTab -- Contains model view	
 	if GetAddOnEnableState(UnitName("player"),"OrderHallCommander") > 0 then
-		ns.ingnoreHall=true
+		ns.ignoreHall=true
 		self:Print("Delegating hall management to OrderHallCommander")
 		return
 	else

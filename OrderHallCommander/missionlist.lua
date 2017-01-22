@@ -263,8 +263,8 @@ end
 function module:InitialSetup(this)
 	if type(addon.db.global.warn01_seen)~="number" then	addon.db.global.warn01_seen =0 end
 	if GetAddOnEnableState(UnitName("player"),"GarrisonCommander") > 0 then
-		if addon.db.global.warn01_seen  < 3 then
-			addon.db.global.warn01_seen=addon.db.global.warn01_seen+1
+		if addon.db.global.warn02_seen  < 3 then
+			addon.db.global.warn02_seen=addon.db.global.warn02_seen+1
 			addon:Popup(L["OrderHallCommander overrides GarrisonCommander for Order Hall Management.\n You can revert to GarrisonCommander simply disabling OrderhallCommander.\nIf instead you like OrderHallCommander remember to add it to Curse client and keep it updated"],20)
 		end
 	end 
