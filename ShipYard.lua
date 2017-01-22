@@ -10,6 +10,7 @@ local GSF=GSF
 local GSFMissions=GSFMissions
 local G=C_Garrison
 local pairs=pairs
+local kpairs=addon:GetKpairs()
 local format=format
 local strsplit=strsplit
 local select=select
@@ -72,7 +73,7 @@ function module:OnInitialize()
 	addon:AddToggle("SHIPMOVEPANEL",true,L["Unlock Panel"],L["Makes shipyard panel movable"])
 	--addon:AddToggle("BIGSCREEN",true,L["Use big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
 	addon:AddToggle("SHIPPIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
-  addon:AddToggle("SHIPENHA",true,L["Show Enhancement buttons"],L["Disable if you dont want the equipment buttons in ship view."])
+ 	addon:AddToggle("SHIPENHA",true,L["Show Enhancement buttons"],L["Disable if you dont want the equipment buttons in ship view."])
 	local tabMC=CreateFrame("CheckButton",nil,GSF,"SpellBookSkillLineTabTemplate")
 	GSF.tabMC=tabMC
 	tabMC.tooltip=L["Open Garrison Commander Mission Control"]
@@ -115,10 +116,12 @@ function module:OpenProgressTab()
 	lastTab=3
 	return self:OpenLastTab()
 end
+function module:CloseMissionControlTab() 
+	GSF.MissionControlTab:Hide()
+	GSF.tabMC:SetChecked(false)
+end
 function module:OpenMissionControlTab()
-	print("Clicked",lastTab,GSF.MissionControlTab:IsVisible())
 	if (not GSF.MissionControlTab:IsVisible()) then
-		print("Mission control")
 		lastTab=PanelTemplates_GetSelectedTab(GSF)
 		GSF.FollowerTab:Hide()
 		GSF.FollowerList:Hide()
@@ -128,7 +131,6 @@ function module:OpenMissionControlTab()
 		GSF.MissionControlTab.startButton:Click()
 		GSF.tabMC:SetChecked(true)
 	else
-		print("Back to normal",self)
 		self:OpenLastTab()
 		GSF.tabMC:SetChecked(false)
 		self:OpenLastTab()
@@ -299,7 +301,16 @@ print("Doing one time initialization for",this:GetName(),...)
 	ns.tabCO:ClearAllPoints()
 	ns.tabCO:SetParent(GSF)
 	ns.tabCO:SetPoint('TOPRIGHT',GSF,'TOPLEFT',0,0)
+	for i =1,9 do
+		local hook="GarrisonShipyardFrameTab" ..i
+		if (_G[hook]) then
+			self:SafeHookScript(hook,"OnClick","HookedClickOnTabs")
+		end
+	end	
 
+end
+function module:HookedClickOnTabs()
+	self:CloseMissionControlTab()
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
 --@debug@
@@ -390,7 +401,7 @@ print("Adding Menu",GCS.Menu,GSF.MissionTab:IsVisible(),GSF.FollowerTab:IsVisibl
 	end
 	local menu,size
 	self.currentmenu=GSF.FollowerTab
-	menu,size=self:CreateOptionsLayer('SHIPMOVEPANEL','SHIPENHA','SGCSKIPEPIC','SGCMINLEVEL')
+	menu,size=self:CreateOptionsLayer('SHIPMOVEPANEL','SHIPENHA','SGCSKIPEPIC','SGCMINLEVEL','SGCRIG')
 --@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
 	self:AddOptionToOptionsLayer(menu,'TRC')
