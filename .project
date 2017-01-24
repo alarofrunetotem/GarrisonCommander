@@ -19,4 +19,15 @@
 	<natures>
 		<nature>org.eclipse.koneki.ldt.nature</nature>
 	</natures>
+	<filteredResources>
+		<filter>
+			<id>1485246518169</id>
+			<name></name>
+			<type>26</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-OrderHallCommander</arguments>
+			</matcher>
+		</filter>
+	</filteredResources>
 </projectDescription>

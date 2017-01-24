@@ -164,7 +164,7 @@ function module:Events(on)
 	end
 end
 function module:CloseReport()
-	addon:ResetParties()
+	addon:ScheduleTimer("HardRefreshMissions",0.1)
 	if report then pcall(report.Close,report) report=nil end
 	print(pcall(OHF.CloseMissionComplete(OHF)))
 end
@@ -491,7 +491,7 @@ function module:MissionsPrintResults(success)
 		followers=true
 		if v~=0 then
 			if v>0 then
-				local b=addon:GetFollowerData(k,'qLevel',0)
+				local b=addon:GetFollowerData(k,'qLevel',0) or 0
 				local c=rewards.followerQLevel[k] or 0
 				report:AddFollower(k,v, b>c,rewards.followerPortrait[k],	rewards.followerName[k])
 			else

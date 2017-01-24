@@ -199,6 +199,9 @@ function addon:ApplySORTMISSION(value)
 	module:SortMissions()
 end
 function addon:HardRefreshMissions()
+--@debug@
+	print("Called hard refresh")
+--@end-debug@
 	self:RebuildAllCaches()
 	collectgarbage()
 	self:RefreshMissions()
@@ -262,6 +265,7 @@ end
 
 function module:InitialSetup(this)
 	if type(addon.db.global.warn01_seen)~="number" then	addon.db.global.warn01_seen =0 end
+	if type(addon.db.global.warn02_seen)~="number" then	addon.db.global.warn02_seen =0 end
 	if GetAddOnEnableState(UnitName("player"),"GarrisonCommander") > 0 then
 		if addon.db.global.warn02_seen  < 3 then
 			addon.db.global.warn02_seen=addon.db.global.warn02_seen+1
@@ -603,12 +607,14 @@ function module:AdjustMissionTooltip(this,...)
 	
 end
 function module:PostMissionClick(this,button)
-	addon:Print(button)
 	local mission=this.info or this.missionInfo -- callable also from mission page
+--@debug@
+	addon:Print(button)
 	if button=="MiddleButton" then
 		addon:TestParty(mission.missionID)
 		return
 	end
+--@end-debug@
 	addon:GetMissionpageModule():FillMissionPage(mission,parties[mission.missionID])
 end
 do

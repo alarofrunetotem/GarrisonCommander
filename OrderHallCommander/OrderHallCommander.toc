@@ -30,6 +30,7 @@
 ## X-eMail: alar@aspide.it
 ## X-Date: 2017-01-21T5:43:38Z
 ## X-Embeds: LibInit
+## X-GotWith: GarrisonCommander
 embeds.xml
 localization.lua
 OrderHallCommander.xml
