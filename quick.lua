@@ -2,7 +2,16 @@ local me, ns = ...
 ns.Configure()
 local addon=addon --#addon
 local _G=_G
+local GMF=GMF
+local GSF=GSF
 local qm=addon:NewSubModule("Quick") --#qm
+local missionDone
+local shipyardDone
+local NavalDomination={
+	Alliance=39068,
+	Horde=39246
+}
+local questid=NavalDomination[UnitFactionGroup("player")]
 function qm:OnInitialized()
 	ns.step="none"
 end
@@ -10,31 +19,63 @@ local watchdog=0
 local function HasShipTable()
 	return ns.quests[39068] or ns.quests[39246] -- Naval Domination
 end
+function addon:missionDone()
+	missionDone=true
+end
+function addon:shipyardDone()
+	shipyardDone=true
+end
+function addon:LogoutTimer(dialog,elapsed)
+	if dialog.which ~="LIBINIT_POPUP" then return end
+	local text = _G[dialog:GetName().."Text"];
+	local timeleft = ceil(dialog.timeleft);
+	local which=dialog.which	
+	if ( timeleft < 60 ) then
+		text:SetFormattedText(StaticPopupDialogs[which].text, timeleft, SECONDS);
+	else
+		text:SetFormattedText(StaticPopupDialogs[which].text, ceil(timeleft / 60), MINUTES);
+	end	
+end
+function addon:LogoutPopup(timeout)
+	local popup=addon:Popup(CAMP_TIMER,timeout or 10,
+		function(dialog,data,data2)
+			addon:Unhook(dialog,"OnUpdate")
+			Logout()
+		end,
+		function(dialog,data,timeout)
+			addon:Unhook(dialog,"OnUpdate")
+			if timeout=="timeout" then Logout() end
+			missionDone=false
+			shipyardDone=false
+			StaticPopup_Hide("LIBINIT_POPUP")
+		end
+	)
+	self:SecureHookScript(popup, "OnUpdate", "LogoutTimer")
+end
 function qm:RunQuick()
-	if not ns.quick then return end
---@debug@
-	print("qm.RunQuick",watchdog)
---@end-debug@
+	local completeButton=GMF:IsVisible() and GarrisonCommanderQuickMissionComplete or GCQuickShipMissionCompletionButton
+	local main=GMF:IsVisible() and GMF or GSF
+	if not ns.quick then 
+		HideUIPanel(main)
+		if not G.HasShipyard() then
+			shipyardDone=true
+		end
+		if missionDone and shipyardDone then
+			addon:LogoutPopup(10)
+		end
+		return 
+	end
 	while not qm.Mission do
-		if GarrisonCommanderQuickMissionComplete:IsVisible() then
---@debug@
-			print("Quickcompletion")
---@end-debug@
-			GarrisonCommanderQuickMissionComplete:Click()
+		if completeButton:IsVisible() then
+			completeButton:Click()
 			return -- Waits to be rescheeduled by mission completion
 		end
-		if not GMF.MissionControlTab:IsVisible() then
---@debug@
-			print("MissionControl")
---@end-debug@
-			GMF.tabMC:Click()
+		if not main.MissionControlTab:IsVisible() then
+			main.tabMC:Click()
 			break
 		end
-		if (GMF.MissionControlTab.runButton:IsEnabled()) then
---@debug@
-			print("Run Missions")
---@end-debug@
-			GMF.MissionControlTab.runButton:Click()
+		if (main.MissionControlTab.runButton:IsEnabled()) then
+			main.MissionControlTab.runButton:Click()
 		end
 		break -- Never loop or we get stuck
 	end
@@ -48,10 +89,8 @@ function qm:RunQuick()
 
 end
 function addon:RunQuick(force)
---@debug@
-print("Runquick called")
---@end-debug@
-	if GMF.tabMC:GetChecked() then
+	local main=GMF:IsVisible() and GMF or GSF
+	if main.tabMC:GetChecked() then
 		self:OpenMissionControlTab()
 		self:ScheduleTimer("RunQuick",0.2)
 		return
