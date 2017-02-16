@@ -37,7 +37,7 @@ function module:OnInitialize(...)
 		self:Print("Delegating hall management to OrderHallCommander")
 		return
 	else
-		self:Popup(L["Support for Order Hall missions is being moved to OrderHallCommander.\nPlease install and update it"],7)
+		self:Print(L["Support for Order Hall missions is being moved to OrderHallCommander.\nPlease install and update it"],7)
 	end
 	GHF=ns.GHF
 	GHFMissions=ns.GHFMissions
