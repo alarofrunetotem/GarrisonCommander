@@ -1690,7 +1690,8 @@ print("Setup")
 	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabQ=tabQ
 	tabQ.tooltip=L["Automatically process completed missions and schedules new ones."].."\n"..
-		format(L["Check %s in mission control in order to be also logged out"],L["Auto Logout"])
+		format(L["Check %s in mission control in order to be also logged out"],L["Auto Logout"]) .. "\n" .. 
+		C(format(L["Keep pressed %s while opening table to automate processing"],CTRL_KEY),"green")
 	tabQ:SetNormalTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
 	tabQ:SetPushedTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
 	tabQ:Show()

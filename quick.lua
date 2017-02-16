@@ -96,7 +96,8 @@ function addon:RunQuick(force)
 		return
 	end
 	if not IsShiftKeyDown()  and not force then
-		self:Popup(L["Are you sure to start Garrison Commander Auto Pilot?\n(Keep shift pressed while clicking to avoid this question)"],10,
+		self:Popup(L["Are you sure to start Garrison Commander Auto Pilot?\n(Keep shift pressed while clicking to avoid this question)"].."\n" ..
+				C(format(L["Keep pressed %s while opening table to automate processing"],CTRL_KEY),"green"),10,
 			function()
 				StaticPopup_Hide("LIBINIT_POPUP")
 				return addon:RunQuick(true)
