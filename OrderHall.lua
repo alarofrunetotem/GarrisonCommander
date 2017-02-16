@@ -213,7 +213,7 @@ print("Doing one time initialization for",this:GetName(),...)
 --@end-debug@
 	addon:CheckMP()
 	self:SafeSecureHookScript("OrderHallMissionFrame","OnShow")
-	GCS=addon:CreateHeader(self,'HALLPIN')
+	GCS=addon:CreateHeader(self,'HALLMOVEPANEL','HALLPIN')
 	GHF.FollowerStatusInfo=GHF:CreateFontString(nil, "BORDER", "GameFontNormal")
 	GHF.FollowerStatusInfo:SetPoint("TOPRIGHT",-30,0)
 	GHF.FollowerStatusInfo:SetHeight(25)
