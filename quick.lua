@@ -27,6 +27,52 @@ end
 function addon:shipyardDone()
 	shipyardDone=true
 end
+
+-- backported from LibInit 41
+function addon:Popup(msg,timeout,OnAccept,OnCancel,data,StopCasting)
+	if InCombatLockdown() then
+		return self:ScheduleLeaveCombatAction("Popup",msg,timeout,OnAccept,OnCancel,data,StopCasting)
+	end
+	msg=msg or "Something strange happened"
+	if type(timeout)=="function" then
+		StopCasting=data
+		data=OnCancel
+		OnAccept=timeout
+		timeout=60
+	end
+	StaticPopupDialogs["LIBINIT_POPUP"] = StaticPopupDialogs["LIBINIT_POPUP"] or
+	{
+	text = msg,
+	showAlert = true,
+	timeout = timeout or 60,
+	exclusive = true,
+	whileDead = true,
+	interruptCinematic = true
+	};
+	local popup=StaticPopupDialogs["LIBINIT_POPUP"]
+	if StopCasting then
+		popup.OnShow=StopSpellCasting
+		popup.OnHide=StopSpellCastingCleanup
+	else
+		popup.OnShow=nil
+		popup.OnHide=nil
+	end
+	popup.timeout=timeout
+	popup.text=msg
+	popup.OnCancel=nil
+	popup.OnAccept=OnAccept
+	popup.button1=ACCEPT
+	popup.button2=nil
+	if (OnCancel) then
+		if (type(OnCancel)=="function") then
+			popup.OnCancel=OnCancel
+		end
+		popup.button2=CANCEL
+	else
+		popup.button1=OKAY
+	end
+	return StaticPopup_Show("LIBINIT_POPUP",timeout,SECONDS,data);
+end
 function addon:LogoutTimer(dialog,elapsed)
 	if dialog.which ~="LIBINIT_POPUP" then return end
 	local text = _G[dialog:GetName().."Text"];
