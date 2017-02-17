@@ -7,6 +7,8 @@ local GSF=GSF
 local qm=addon:NewSubModule("Quick") --#qm
 local missionDone
 local shipyardDone
+local format=format
+local ipairs=ipairs
 local NavalDomination={
 	Alliance=39068,
 	Horde=39246
@@ -37,7 +39,27 @@ function addon:LogoutTimer(dialog,elapsed)
 	end	
 end
 function addon:LogoutPopup(timeout)
-	local popup=addon:Popup(CAMP_TIMER,timeout or 10,
+	local msg=''
+	if addon:HasSalvageYard() then
+		local salvage=0
+		local freeSlots=0
+		for i=0,NUM_BAG_SLOTS do
+			freeSlots=freeSlots+(GetContainerNumFreeSlots(i) or 0)
+		end
+		for _,id in ipairs(ns.allSalvages) do 
+			salvage=salvage+(GetItemCount(id) or 0)
+		end
+		if salvage > 5 then
+			timeout=timeout+5
+			msg=format(L["You have %d items to salvage"],salvage)
+			if freeSlots < 5 then
+				msg=msg .. format(L[" and only %d free slots in your bags"],freeSlots)
+			end
+			msg=C(msg,'green').."\n"
+		end
+		
+	end
+	local popup=addon:Popup(msg .. CAMP_TIMER,timeout or 10,
 		function(dialog,data,data2)
 			addon:Unhook(dialog,"OnUpdate")
 			Logout()
@@ -61,14 +83,14 @@ function qm:RunQuick()
 			shipyardDone=true
 		end
 		if missionDone and shipyardDone then
-			addon:LogoutPopup(10)
+			addon:LogoutPopup(5)
 		end
 		return 
 	end
 	while not qm.Mission do
 		if completeButton:IsVisible() then
 			completeButton:Click()
-			return -- Waits to be rescheeduled by mission completion
+			return -- Waits to be rescheduled by mission completion
 		end
 		if not main.MissionControlTab:IsVisible() then
 			main.tabMC:Click()
