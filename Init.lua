@@ -1,7 +1,7 @@
 local me, ns = ...
 local LibInit,minor=LibStub("LibInit",true)
 assert(LibInit,me .. ": Missing LibInit, please reinstall")
-local minvers=40
+local minvers=39
 assert(minor>=minvers,me ..': Need at least Libinit version ' .. minvers)
 local _G=_G
 local setmetatable=setmetatable
@@ -59,60 +59,8 @@ GetQuestsCompleted(ns.quests)
 function addon:EventQUEST_TURNED_IN(event,quest,item,gold)
 	ns.quests[quest]=true
 end
-do
-	--@debug@
-	local newcount, delcount,createdcount,cached = 0,0,0
-	--@end-debug@
-	local pool = setmetatable({},{__mode="k"})
-	---@function [parent=#ns] new
-	function ns.new()
-	--@debug@
-		newcount = newcount + 1
-	--@end-debug@
-		local t = next(pool)
-		if t then
-			pool[t] = nil
-			return t
-		else
-	--@debug@
-			createdcount = createdcount + 1
-	--@end-debug@
-			return {}
-		end
-	end
-	---@function [parent=#ns] tCopy
-	function ns.tCopy(t)
-		local c = ns.new()
-		for k, v in pairs(t) do
-			c[k] = v
-		end
-		return c
-	end
-	---@function [parent=#ns] del
-	function ns.del(t)
-	--@debug@
-		delcount = delcount + 1
-	--@end-debug@
-		wipe(t)
-		pool[t] = true
-	end
-	--@debug@
-	---@function [parent=#ns] cached
-	function cached()
-		local n = 0
-		for k in pairs(pool) do
-			n = n + 1
-		end
-		return n
-	end
-	function addon:CacheStats()
-		print("Created:",createdcount)
-		print("Aquired:",newcount)
-		print("Released:",delcount)
-		print("Cached:",cached())
-	end
-	--@end-debug@
-end
+ns.new=addon:wrap("newTable")
+ns.del=addon:wrap("delTable")
 -- Caching iteminfo
 ns.I=LibStub("LibItemUpgradeInfo-1.0")
 ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
