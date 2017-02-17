@@ -59,8 +59,17 @@ GetQuestsCompleted(ns.quests)
 function addon:EventQUEST_TURNED_IN(event,quest,item,gold)
 	ns.quests[quest]=true
 end
-ns.new=addon:wrap("newTable")
-ns.del=addon:wrap("delTable")
+ns.new=function() return addon:NewTable() end
+ns.del=function(t) return addon:NewTable(t) end
+--@debug@
+local t =ns.new()
+if type(t)~="table" then
+	error("new is broken")
+	return
+else
+	ns.del(t)
+end
+--@end-debug@
 -- Caching iteminfo
 ns.I=LibStub("LibItemUpgradeInfo-1.0")
 ns.GetItemInfo=ns.I:GetCachingGetItemInfo()
