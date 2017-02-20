@@ -4,7 +4,7 @@ enable-nolib-creation: no
 externals:
 	libs/LibInit:
 		url: https://github.com/alarofrunetotem/LibInit.git/LibInit
-		tag: Release-70100-39
+		tag: latest
 
 	libs/Ace3/AceBucket-3.0:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceBucket-3.0
