@@ -1110,93 +1110,7 @@ end
 
 local helpwindow -- pseudo static
 function addon:ShowHelpWindow(button)
-	if (not helpwindow) then
-		helpwindow=CreateFrame("Frame",nil,GCF)
-		helpwindow:EnableMouse(true)
-		helpwindow:SetBackdrop(backdrop)
-		helpwindow:SetBackdropColor(1,1,1,1)
-		helpwindow:SetFrameStrata("TOOLTIP")
-		helpwindow:Show()
-		local html=CreateFrame("SimpleHTML",nil,helpwindow)
-		html:SetFontObject('h1',MovieSubtitleFont);
-		local f=GameFontNormalLarge
-		html:SetFontObject('h2',f);
-		html:SetFontObject('h3',f);
-		html:SetFontObject('p',f);
-		html:SetTextColor('h1',C.Blue())
-		html:SetTextColor('h2',C.Orange())
-		html:SetTextColor('h3',C.Red())
-		html:SetTextColor('p',C.Yellow())
-		local text=[[<html><body>
-<h1 align="center">Garrison Commander Help</h1>
-<br/>
-<p align="center">GC enhances standard Garrison UI by adding a Menu header and useful information in mission button and tooltip.
-Since 2.0.2, the "big screen" mode became optional. If you choosed to disable it, some feature described here will not be available
-</p>
-<br/>
-<h2>  Button list:</h2>
-<p>
-* Success percent with the current followers selection guidelines<br/>
-* Time since the first time we saw this mission in log<br/>
-* A "Good" party composition. on each member countered mechanics are shown.<br/>
-*** Green border means full counter, Orange border low level counter<br/>
-</p>
-<h2>Tooltip:</h2>
-<p>
-* Overall mission status<br/>
-* All members which can possibly play a role in the mission<br/>
-</p>
-<h2>Button enhancement:</h2>
-<p>
-* In rewards, actual quantity is shown (xp, money and resources) ot iLevel (item rewards)<br/>
-* Countered status<br/>
-</p>
-<h2>Menu Header:</h2>
-<p>
-* Quick selection of which follower ignore for match making<br/>
-* Quick mission list order selection<br/>
-</p>
-<h2>Mission Control:</h2>
-<p>Thanks to Motig which donated the code, we have an auto lancher for mission<br/>
-You specify some criteria mission should satisfy (success chance, rewards type etc) and matching missions will be autosubmitted<br/>
-</p>
-]]
-if (MP) then
-text=text..[[
-<p><br/></p>
-<h3>Master Plan 0.20 or above detected</h3>
-<p>Master Plan hides Garrison Commander interface for available missions<br/>
-You can still use Garrison Commander Mission Control<br/>
-You can switch between MP and GC interface for missions checking and unchecking "Use GC Interface" checkbox. It usually works :)
-</p>
-]]
-end
-if (GMM) then
-text=text..[[
-<p><br/></p>
-<h3>Garrison Mission Manager Detected</h3>
-<p>Garrison Mission Manager and Garrison Commander plays reasonably well together.<br/>
-The red button to the right of rewards is from GMM. It spills out of button, Yes, it's designed this way. Dunno why. Ask GMM author :)<br/>
-Same thing for the three red buttons in mission page.
-</p>
-]]
-end
-text=text.."</body></html>"
-		--html:SetTextColor('h1',C.Red())
-		--html:SetTextColor('h2',C.Orange())
-		helpwindow:SetWidth(800)
-		helpwindow:SetHeight(590 + (MP and 160 or 0) + (GMM and 120 or 0))
-		helpwindow:SetPoint("TOPRIGHT",button,"TOPLEFT",0,0)
-		html:ClearAllPoints()
-		html:SetWidth(helpwindow:GetWidth()-20)
-		html:SetHeight(helpwindow:GetHeight()-20)
-		html:SetPoint("TOPLEFT",helpwindow,"TOPLEFT",10,-10)
-		html:SetPoint("BOTTOMRIGHT",helpwindow,"BOTTOMRIGHT",-10,10)
-		html:SetText(text)
-		helpwindow:Show()
-		return
-	end
-	if (helpwindow:IsVisible()) then helpwindow:Hide() else helpwindow:Show() end
+	addon:Help()
 end
 function addon:Toggle(button)
 	local f=button.Toggle
@@ -1292,6 +1206,10 @@ function addon:CreateHeader(module,MOVEPANEL,PIN)
 	local GCF=CreateFrame("Frame","GCF",UIParent,"GarrisonCommanderTitle")
 	local signature=me .. " " .. self.version
 	GCF.Signature:SetText(signature)
+	local _,minor=LibStub("LibInit")
+	local LL=LibStub("AceLocale-3.0"):GetLocale("LibInit" .. minor,true)
+	self:MarkAsNew(GCF,self:NumericVersion(),LL["Release notes"] .. self.version,"Help")
+	
 --@alpha@
 	GCF.Warning:SetText("Alpha Version")
 --@end-alpha@
@@ -1665,7 +1583,6 @@ print("Setup")
 	GMF.tabMC=tabMC
 	tabMC.tooltip=L["Open Garrison Commander Mission Control"]
 	tabMC:SetNormalTexture("Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME.blp")
-	self:MarkAsNew(tabMC,'MissionControl','New in 2.2.0! Try automatic mission management!')
 	tabMC:SetScript("OnClick",function(this,...) addon:OpenMissionControlTab() end)
 	tabMC:Show()
 	tabMC:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-110)
@@ -1687,6 +1604,7 @@ print("Setup")
 	tabHP:Show()
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
 	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
+	-- retrieving release notes localization from LibInit
 	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabQ=tabQ
 	tabQ.tooltip=L["Automatically process completed missions and schedules new ones."].."\n"..
@@ -1879,6 +1797,7 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
 	if IsControlKeyDown() then
+		self:EnableAutoLogout()
 		self:ScheduleTimer("RunQuick",0.1,true)
 	end	
 	return self:RefreshMissions()
@@ -1891,14 +1810,30 @@ function addon:RaiseCompleteDialog()
 	print("Dialog:",GMFMissions.CompleteDialog:GetFrameLevel())
 	--C_Timer.After(0.1,function() local f=GMFMissions.CompleteDialog print("Dialog:",f:GetFrameLevel()) if f:GetFrameLevel() < 45 then f:SetFrameLevel(45) end print("Dialog:",f:GetFrameLevel()) end)
 end
-
-function addon:MarkAsNew(obj,key,message)
+local newsframes={}
+function addon:MarkAsNew(obj,key,message,method)
+	--@debug@
+	db.news[key]=false
+	--@end-debug@
 	if (not db.news[key]) then
-		local f=CreateFrame("Frame",nil,obj,"GarrisonCommanderWhatsNew")
+		local f=CreateFrame("Button",nil,obj,"GarrisonCommanderWhatsNew")
 		f.tooltip=message
-		f:SetPoint("BOTTOMLEFT",obj,"TOPRIGHT")
+		f.texture:ClearAllPoints()
+		f.texture:SetAllPoints()
+		f:SetPoint("TOPLEFT",obj,"TOPLEFT")
+		f:SetFrameStrata("HIGH")
 		f:Show()
+		if method then
+			f:SetScript("OnClick",function(frame) self[method](self,frame) self:MarkAsSeen(key) end)
+		else
+			f:SetScript("OnClick",function(frame) self:MarkAsSeen(key) end)
+		end
+		newsframes[key]=f
 	end
+end
+function addon:MarkAsSeen(key)
+	db.news[key]=true
+	if newsframes[key] then newsframes[key]:Hide() end
 end
 
 function addon:PermanentEvents()
