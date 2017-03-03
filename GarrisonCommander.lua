@@ -546,7 +546,6 @@ function addon:OnInitialized()
 	tabCO:SetAttribute("type","item")
 	tabCO:SetAttribute("item",select(2,GetItemInfo(missionCompleteOrder)))
 	self:loadHelp()
-	self:SecureHook("Garrison_SortMissions","SortMissions")
 
 	--return true
 end
@@ -1624,7 +1623,7 @@ print("Setup")
 	bt.missionType=LE_FOLLOWER_TYPE_GARRISON_6_0
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
 	self:SafeSecureHookScript("GarrisonMissionFrame","OnShow")
-	self:SafeSecureHookScript("GarrisonMissionFrame","OnHide","EventGARRISON_MISSION_NPC_CLOSED")
+	self:SafeSecureHookScript("GarrisonMissionFrame","OnHide")
 	self:Trigger("MSORT")
 	local parties=self:GetParties()
 	if #parties==0 then
@@ -1750,6 +1749,10 @@ function addon:AddMissionId(b)
 		GameTooltip:Show()
 	end
 end
+function addon:ScriptGarrisonMissionFrame_OnHide()
+	self:Unhook(GMFMissions,"UpdateMissions")
+
+end
 ---
 -- Additional setup
 -- This method is called every time garrison mission panel is open because
@@ -1780,12 +1783,7 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 			self:SafeHookScript(hook,"OnClick","HookedClickOnTabs")
 		end
 	end
-	-- GarrisonMissionList_SetTab is overrided
 
-	self:SafeHookScript(GMFMissions,"OnShow",true)--,"GrowPanel")
-	self:SafeHookScript(GMFFollowers,"OnShow",true)--,"GrowPanel")
-	self:SafeHookScript(GCF,"OnHide","CleanUp",true)
-	self:SafeHookScript(GMF.FollowerTab,"OnShow","OnShow_FollowerPage",true)
 
 	-- Mission management
 	self:SafeHookScript(GMF.MissionComplete.NextMissionButton,"OnClick","OnClick_GarrisonMissionFrame_MissionComplete_NextMissionButton",true)
@@ -1800,6 +1798,8 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 		self:EnableAutoLogout()
 		self:ScheduleTimer("RunQuick",0.1,true)
 	end	
+	self:RawHook(GMFMissions,"UpdateMissions","OnUpdateMissions",true)
+	GMFMissions:Update()
 	return self:RefreshMissions()
 end
 function addon:RaiseCompleteDialog()
@@ -3301,6 +3301,21 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 	end
 end
 end
+function addon:OnUpdateMissions()
+	local UpdateShow=true
+--@debug@
+	local start=debugprofilestop()
+	addon:Print(C("OnUpdateMissions","GREEN"),GMFMissions:IsVisible(),GMFRewardSplash:IsVisible())
+--@end-debug@	
+	if UpdateShow then self:SecureHook("Garrison_SortMissions","SortMissions") end
+
+	self.hooks[GMFMissions].UpdateMissions(GMFMissions)
+	if UpdateShow then self:Unhook("Garrison_SortMissions","SortMissions") end
+--@debug@
+	addon:Print(C("OnPostUpdateMissions","RED"),debugprofilestop()-start)
+--@end-debug@	
+end
+
 --addon:SafeRawHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissionsListScroll_update")
 addon.hooks=addon.hooks or {}
 addon.hooks.GarrisonMissionList_Update=GMF.MissionTab.MissionList.Update
