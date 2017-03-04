@@ -364,6 +364,7 @@ _G.Garrison_SortMissions= function(missionsList)
 end
 --]]
 function addon:SortMissions(missionsList)
+	self:Print(C("SortMissions","Orange"))
 	MyGarrison_SortMissions(missionsList)
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
@@ -2556,13 +2557,13 @@ function addon:AddRewards(frame, rewards, numRewards)
 		local bestItemID=self:GetMissionData(missionID,'bestItemID')
 		local pseudoGold
 		local extraItem
-		local rw=self:NewTable()
+		local rw=new()
 		for _, reward in pairs(rewards) do
 			tinsert(rw,reward)
 		end
 		if bestItemID then
 			numRewards=numRewards+1
-			extraItem=self:NewTable()
+			extraItem=new()
 			extraItem.itemID=bestItemID
 			extraItem.best=true
 			extraItem.quantity=1
@@ -2571,7 +2572,7 @@ function addon:AddRewards(frame, rewards, numRewards)
 		end
 		if moreClasses and moreClasses.gold then
 			numRewards=numRewards+1
-			pseudoGold=self:NewTable()
+			pseudoGold=new()
 			pseudoGold.quantity=self:GetMissionData(missionID,'gold')
 			pseudoGold.currencyID=0
 			pseudoGold.pseudogold=true
@@ -2674,12 +2675,12 @@ function addon:AddRewards(frame, rewards, numRewards)
 			index = index + 1;
 		end
 		if pseudoGold then
-			self:DelTable(pseudoGold)
+			del(pseudoGold)
 		end
 		if extraItem then
-			self:DelTable(extraItem)
-			rewards.extraItem=nil
+			del(extraItem)
 		end
+		del(rw)
 
 	end
 	for i = (numRewards + 1), #frame.Rewards do
@@ -3313,7 +3314,8 @@ function addon:OnUpdateMissions()
 	if UpdateShow then self:Unhook("Garrison_SortMissions","SortMissions") end
 --@debug@
 	addon:Print(C("OnPostUpdateMissions","RED"),debugprofilestop()-start)
---@end-debug@	
+--@end-debug@
+	collectgarbage("collect")	
 end
 
 --addon:SafeRawHook(GMF.MissionTab.MissionList.listScroll,"update","HookedGMFMissionsListScroll_update")
