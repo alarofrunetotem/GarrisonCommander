@@ -2678,9 +2678,8 @@ function addon:AddRewards(frame, rewards, numRewards)
 		end
 		if extraItem then
 			self:DelTable(extraItem)
-			rewards.extraItem=nil
 		end
-
+		self:DelTable(rw)
 	end
 	for i = (numRewards + 1), #frame.Rewards do
 		frame.Rewards[i]:Hide();
