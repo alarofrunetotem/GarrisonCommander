@@ -364,7 +364,9 @@ _G.Garrison_SortMissions= function(missionsList)
 end
 --]]
 function addon:SortMissions(missionsList)
+--@debug@
 	self:Print(C("SortMissions","Orange"))
+--@end-debug@
 	MyGarrison_SortMissions(missionsList)
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
@@ -717,10 +719,6 @@ function addon:SetThreatColor(obj,threat)
 
 end
 
-function addon:HookedGarrisonMissionButton_AddThreatsToTooltip(missionID)
-	if (ns.GMF.MissionControlTab:IsVisible()) then return end
-	return self:RenderTooltip(missionID)
-end
 function addon:AddIconsToFollower(missionID,useful,followers,members,followerTypeID)
 	for followerID,icons in pairs(followers) do
 		if self:GetFollowerType(followerID) == followerTypeID then
