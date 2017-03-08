@@ -39,7 +39,8 @@ end
 local classlist ---#table local reference to settings.rewardList
 local class2order={} ---#table maps a classname to its priority
 local settings ---#table Pointer to settings in saved var
-local new, del, copy =ns.new,ns.del,ns.copy
+local new=addon:Wrap("NewTable")
+local del=addon:Wrap("DelTable")
 
 local module=addon:NewSubClass("MissionControl") --#module
 local function chooseBestClass(class,moreClasses)
@@ -133,7 +134,7 @@ function module:CreateMissionList(workList)
 			used[missionId]=true
 		end
 	end
-	self:del()
+	del()
 end
 ---
 -- This routine can be called both as coroutin and as a standard one
