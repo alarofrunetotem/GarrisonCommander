@@ -134,10 +134,10 @@ function module:CreateMissionList(workList)
 			used[missionId]=true
 		end
 	end
-	del()
+	del(used)
 end
 ---
--- This routine can be called both as coroutin and as a standard one
+-- This routine can be called both as coroutine and as a standard one
 -- In standard version, delay between group building and submitting is done via a self schedule
 -- @param #module self
 -- @param #number missionID Optional, to run a single mission
