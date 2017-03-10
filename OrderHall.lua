@@ -151,7 +151,6 @@ function module:ReleaseButton(u)
 	tinsert(pool,u)
 end
 function module:RefreshUpgrades(model,followerID,displayID,showWeapon)
-	print("YO")
 	if not OHFFollowerTab:IsVisible() then return end
 	if model then
 		UpgradeFrame:SetFrameStrata(model:GetFrameStrata())
@@ -251,7 +250,6 @@ print("NPC CLOSED")
 end
 function addon:ApplyMSORTH(value)
 	self:ApplyMSORT(value)
-	self:RefreshMissions()
 end
 
 function module:EventGARRISON_MISSION_STARTED(event,missionType,missionID,...)
