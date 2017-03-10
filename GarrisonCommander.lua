@@ -271,103 +271,69 @@ local function inTable(table, value)
 	return false
 end
 
-
-
---
-
--- These local will became conf var
--- locally upvalued, doing my best to not interfere with other sorting modules,
--- First time i am called to verride it I save it, so I give other modules a chance to hook it, too
--- Could even do a trick and secureHook it at the expense of a double sort...
-local sorters={} --#Sorters
-sorters.EndTime=function (mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return true end
-	local rc1,p1=pcall(G.GetFollowerMissionTimeLeftSeconds,mission1.followers[1])
-	if not rc1 then p1 = mission1.durationSeconds end
-	local rc2,p2=pcall(G.GetFollowerMissionTimeLeftSeconds,mission2.followers[1])
-	if not rc2 then p2 = mission2.durationSeconds end
-	if (p1==p2) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
+local Current_Sorter
+local sortKeys={}
+local nop=function() end
+local sorters={
+		Garrison_SortMissions_Original=nop,
+		Garrison_SortMissions_Chance=function(mission)
+			local p=addon:GetParty(mission.missionID)
+			if not p.full then return 0 end
+			return -p.perc or 0 
+		end,
+		Garrison_SortMissions_Level=function(mission) 
+			return -mission.level * 1000 - (mission.iLevel or 0)
+		end,
+		Garrison_SortMissions_Age=function(mission) 
+			return addon:GetMissionData(mission.missionID,'offerEndTime',0)
+		end,
+		Garrison_SortMissions_Xp=function(mission)
+			return -addon:GetMissionData(mission.missionID,'globalXp',0)
+		end,
+		Garrison_SortMissions_HourlyXp=function(mission)
+			return sorters.Garrison_SortMissions_Xp(mission) / addon:GetMissionData(mission.missionID,'improvedDurationSeconds',1)
+		end,
+		Garrison_SortMissions_Duration=function(mission)
+			return addon:GetMissionData(mission.missionID,'improvedDurationSeconds',0)
+		end,
+		Garrison_SortMissions_Class=function(mission)
+			return addon:GetMissionData(mission.missionID,'class','other')		
+		end,
+		Garrison_SortMissions_Followers=function(mission)
+			return addon:GetMissionData(mission.missionID,'numFollowers',1)
+		end,
+		
+}
+local function sortfuncProgress(a,b)
+	return a.timeLeftSeconds < b.timeLeftSeconds
+end
+local function sortfuncAvailable(a,b)
+	if sortKeys[a.missionID] ~= sortKeys[b.missionID] then
+		return sortKeys[a.missionID] < sortKeys[b.missionID]
 	else
-		return p1 < p2
+		return strcmputf8i(a.name, b.name) < 0
 	end
 end
-sorters.Chance=function (mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetParty(mission1.missionID)
-	local p2=addon:GetParty(mission2.missionID)
-	if (p2.full and not p1.full) then return false end
-	if (p1.full and not p2.full) then return true end
-	if (p1.perc==p2.perc) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
-	else
-		return p1.perc > p2.perc
-	end
-end
-sorters.Duration=function (mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetMissionData(mission1.missionID,'improvedDurationSeconds',0)
-	local p2=addon:GetMissionData(mission2.missionID,'improvedDurationSeconds',0)
-	if (p1==p2) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
-	else
-		return p1 < p2
-	end
-end
-sorters.Age=function (mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetMissionData(mission1.missionID,'offerEndTime',0)
-	local p2=addon:GetMissionData(mission2.missionID,'offerEndTime',0)
-	if (p1==p2) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
-	else
-		return p1 < p2
-	end
-end
-sorters.Class=function(mission1,mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetMissionData(mission1.missionID,'class','other')
-	local p2=addon:GetMissionData(mission2.missionID,'class','other')
-	if (p1==p2) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
-	else
-		return p1 < p2
-	end
-end
-sorters.Followers=function(mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-	local p1=addon:GetMissionData(mission1.missionID,'numFollowers',1)
-	local p2=addon:GetMissionData(mission2.missionID,'numFollowers',1)
-	if (p1==p2) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
-	else
-		return p1 < p2
-	end
-end
-sorters.Xp=function (mission1, mission2)
-	if type(mission1)~="table" or type(mission2) ~="table" then return end
-
-	local p1=addon:GetMissionData(mission1.missionID,'globalXp',0)
-	local p2=addon:GetMissionData(mission2.missionID,'globalXp',0)
-	if (p1==p2) then
-		return strcmputf8i(mission1.name, mission2.name) < 0
-	else
-		return p2 < p1
-	end
-end
-local MyGarrison_SortMissions=_G.Garrison_SortMissions
---[[
-_G.Garrison_SortMissions= function(missionsList)
-	if GMF:IsVisible() then
-		Garrison_SortMissions(missionsList)
-	end
-end
---]]
-function addon:SortMissions(missionsList)
+local pcall=pcall
+local sort=table.sort
+function addon:SortMissions()
 --@debug@
-	self:Print(C("SortMissions","Orange"))
+	addon:Print(C("SortMissions","Orange"),Current_Sorter)
 --@end-debug@
-	MyGarrison_SortMissions(missionsList)
+	if GMFMissions.inProgress then
+		pcall(sort,GMFMissions.inProgressMissions,sortfuncProgress)
+	else
+		if Current_Sorter=="Garrison_SortMissions_Original" then return end
+		local f=sorters[Current_Sorter]
+		for _,mission in pairs(GMFMissions.availableMissions) do
+			local rc,result =pcall(f,mission)
+			sortKeys[mission.missionID]=rc and result or 0
+--@debug@
+			if not rc then self:Print("Sort error",mission.name,mission.missionID,result) end
+--@end-debug@
+		end
+		sort(GMFMissions.availableMissions,sortfuncAvailable)
+	end
 end
 function addon.Garrison_SortMissions_Chance(missionsList)
 	addon:RefreshParties()
@@ -394,15 +360,8 @@ function addon.Garrison_SortMissions_Class(missionsList)
 	table.sort(missionsList, sorters.Class);
 end
 function addon:ApplyMSORT(value)
-	local func=self[value]
-	if (type(func)=="function") then
-		MyGarrison_SortMissions=self[value]
-	else
---@debug@
-		print("Could not found ",value," in addon")
---@end-debug@
-	end
-	self:RefreshMissions()
+	Current_Sorter=value
+	GMFMissions:UpdateMissions()
 end
 
 function addon:GetMain()
@@ -474,6 +433,7 @@ function addon:OnInitialized()
 		Garrison_SortMissions_Followers=L["Number of followers"],
 		Garrison_SortMissions_Age=L["Expiration Time"],
 		Garrison_SortMissions_Xp=L["Global approx. xp reward"],
+		Garrison_SortMissions_HourlyXp=L["Global approx. hourly xp reward"],
 		Garrison_SortMissions_Duration=L["Duration Time"],
 		Garrison_SortMissions_Class=L["Reward type"],
 	},
@@ -481,7 +441,7 @@ function addon:OnInitialized()
 	self:AddToggle("USEFUL",true,L["Enhance tooltip"],L["Adds a list of other useful followers to tooltip"])
 	self:AddToggle("NOTOOLTIP",false,L["No tooltips"],L["Totally removes mission tooltips"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Change via Minimum needed chance slider"])
-	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
+	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minimum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
 	ns.bigscreen=self:GetBoolean("BIGSCREEN")
 	self:AddLabel(L["Followers Panel"])
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown"],L["Mission shown for follower"],1)
@@ -3279,7 +3239,6 @@ function addon:HookedGarrisonMissionList_Update(t,...)
 		local missions=this.inProgressMissions
 		local now=time()
 		local delay=120
-		table.sort(missions,sorters.EndTime)
 		if t then
 			lasttime=0
 		else
@@ -3305,10 +3264,10 @@ function addon:OnUpdateMissions()
 	local start=debugprofilestop()
 	addon:Print(C("OnUpdateMissions","GREEN"),GMFMissions:IsVisible(),GMFRewardSplash:IsVisible())
 --@end-debug@	
-	if UpdateShow then self:SecureHook("Garrison_SortMissions","SortMissions") end
+	self:SecureHook("Garrison_SortMissions","SortMissions")
 
 	self.hooks[GMFMissions].UpdateMissions(GMFMissions)
-	if UpdateShow then self:Unhook("Garrison_SortMissions","SortMissions") end
+	self:Unhook("Garrison_SortMissions") 
 --@debug@
 	addon:Print(C("OnPostUpdateMissions","RED"),debugprofilestop()-start)
 --@end-debug@
