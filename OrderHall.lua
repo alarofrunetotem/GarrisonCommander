@@ -37,7 +37,7 @@ function module:OnInitialize(...)
 		self:Print("Delegating hall management to OrderHallCommander")
 		return
 	else
-		self:Print(L["Support for Order Hall missions is being moved to OrderHallCommander.\nPlease install and update it"],7)
+		self:Print(L["Support for Order Hall missions is being moved to OrderHallCommander.\nPlease install and update it"])
 	end
 	GHF=ns.GHF
 	GHFMissions=ns.GHFMissions
@@ -306,6 +306,11 @@ print("Adding Menu",GCS.Menu,GHF.MissionTab:IsVisible(),GHF.FollowerTab:IsVisibl
 	frame:SetParent(GCS)
 	frame:SetFrameStrata(GCS:GetFrameStrata())
 	frame:SetFrameLevel(GCS:GetFrameLevel()+2)
+	local label=AceGUI:Create("Label")
+	label:SetText(L["Support for Order Hall missions is being moved to OrderHallCommander.\nPlease install and update it"])
+	label:SetColor(C.Orange())
+	label:SetWidth(380)
+	menu:AddChild(label)
 	menu:ClearAllPoints()
 	menu:SetPoint("TOPLEFT",GCS,"TOPLEFT",25,-18)
 	menu:SetWidth(GCS:GetWidth()-50)
