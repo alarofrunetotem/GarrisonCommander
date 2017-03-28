@@ -1,4 +1,4 @@
-## Interface: 70100
+## Interface: 70200
 ## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
