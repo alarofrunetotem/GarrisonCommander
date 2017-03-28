@@ -1166,7 +1166,7 @@ function addon:CreateHeader(module,MOVEPANEL,PIN)
 	GCF.Signature:SetText(signature)
 	local _,minor=LibStub("LibInit")
 	local LL=LibStub("AceLocale-3.0"):GetLocale("LibInit" .. minor,true)
-	self:MarkAsNew(GCF,self:NumericVersion(),LL["Release notes"] .. self.version,"Help")
+	self:MarkAsNew(GCF,self:NumericVersion(),LL["Release notes"] .. ' ' .. self.version,"Help")
 	
 --@alpha@
 	GCF.Warning:SetText("Alpha Version")
