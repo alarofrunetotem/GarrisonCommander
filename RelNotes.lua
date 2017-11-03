@@ -22,7 +22,7 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
-self:RelNotes(2,19,0,[[
+self:RelNotes(2,18,5,[[
 Fix: OrderHallCommander advertising removed. I still stronlgy suggest to install it because Order Hall support in GC is totally outdated  
 ]])
 self:RelNotes(2,18,4,[[
