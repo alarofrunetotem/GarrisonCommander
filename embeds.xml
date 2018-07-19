@@ -3,5 +3,6 @@
 	<Include file="libs\LibDeformat-3.0\lib.xml"/>
 	<Include file="libs\Ace3\AceBucket-3.0\AceBucket-3.0.xml" />
 	<Include file="libs\Ace3\AceSerializer-3.0\AceSerializer-3.0.xml" />
+	<Include file="libs\MSA-DropDownMenu-1.0\MSA-DropDownMenu-1.0.xml"/>
 	<Include file="libs\LibItemUpgradeInfo-1.0\LibItemUpgradeInfo-1.0.xml"/>
 </Ui>
