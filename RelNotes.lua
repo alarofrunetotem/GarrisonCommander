@@ -22,6 +22,9 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(2,18,10,[[
+Fix:Removes hookedbutton chat spam
+]])
 self:RelNotes(2,18,9,[[
 Fix: Message: ...rface\AddOns\GarrisonCommander\GarrisonCommander.lua:3158: attempt to index local 'module' (a nil value)
 ]])
