@@ -3159,7 +3159,6 @@ function addon:HookedGarrisonMissionButton_SetRewards(frame,rewards,numRewards)
 	if not module then
 	 return
 	end
-  pp("Hookedbutton")
 	local main=module:GetMain()
 	if not main or not main:IsVisible() then return end
 	local Missions=module:GetMissions()
