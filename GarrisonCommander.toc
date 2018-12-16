@@ -1,4 +1,4 @@
-## Interface: 80000
+## Interface: 80100
 ## Title: GarrisonCommander
 ## Notes: Sending all follower to missions with just one click and more
 ## Notes-itIT: Invia tutti i seguaci in missione con un click e molto altro
