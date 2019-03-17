@@ -3050,8 +3050,6 @@ function addon:AddShipsToButton(button,mission,missionID,bigscreen)
 		local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
 		bg:SetPoint("RIGHT")
 		bg.button=button
-		bg:SetScript("OnEnter",function(this) GarrisonMissionButton_OnEnter(this.button) end)
-		bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
 		bg:RegisterForClicks("AnyUp")
 		bg:SetScript("OnClick",function(...) self:OnClick_GCMissionButton(...) end)
 		button.gcPANEL=bg
@@ -3067,8 +3065,6 @@ function addon:AddFollowersToButton(button,mission,missionID,bigscreen,numReward
 		local bg=CreateFrame("Button",nil,button,"GarrisonCommanderMissionButton")
 		bg:SetPoint("RIGHT")
 		bg.button=button
-		bg:SetScript("OnEnter",function(this) pcall(GarrisonMissionButton_OnEnter,this.button) end)
-		bg:SetScript("OnLeave",function() GameTooltip:FadeOut() end)
 		bg:RegisterForClicks("AnyUp")
 		bg:SetScript("OnClick",function(...) self:OnClick_GCMissionButton(...) end)
 		button.gcPANEL=bg
