@@ -1349,8 +1349,8 @@ print("Click")
 		end
 	if (frame.info.isCollected) then
 		self:ScheduleTimer("HookedGarrisonFollowerButton_UpdateCounters",0.2,GMF,frame,frame.info,false)
-		self:GetModule("FollowerPage"):ShowUpgradeButtons()
 	end
+	self:GetModule("FollowerPage"):ShowUpgradeButtons()
 end
 -- Shamelessly stolen from Blizzard Code
 -- Appears when hovering on menaces in mission button
