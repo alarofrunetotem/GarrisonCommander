@@ -151,10 +151,9 @@ function module:ShowUpgradeButtons(force)
 	end
 	local followerID=gf.followerID
 	local followerInfo = followerID and G.GetFollowerInfo(followerID);
---	gf.ItemWeapon.itemLevel=674
---	gf.ItemArmor.itemLevel=674
-	local overTheTop=(gf.ItemWeapon.itemLevel + gf.ItemArmor.itemLevel) >=(GARRISON_FOLLOWER_MAX_ITEM_LEVEL *2)
-	if (not overTheTop and  followerInfo and followerInfo.isCollected and not followerInfo.status and followerInfo.level == GARRISON_FOLLOWER_MAX_LEVEL ) then
+
+	local canUpgrade = followerInfo and followerInfo.isCollected and gf.ItemWeapon.itemLevel + gf.ItemArmor.itemLevel < GARRISON_FOLLOWER_MAX_ITEM_LEVEL * 2 
+	if canUpgrade and (not followerInfo.status or followerInfo.status == GARRISON_FOLLOWER_INACTIVE) and followerInfo.isMaxLevel then
 		ClearOverrideBindings(gf)
 		local binded={}
 		local currentType=""
