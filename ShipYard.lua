@@ -172,7 +172,7 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		if mission.inProgress then return end
 		i=i+1
 		addendum=CreateFrame("Frame",nil,frame)
-		addendum:SetPoint("TOPLEFT",frame,"TOPRIGHT",-10,-15)
+		addendum:SetPoint("TOP",frame,"BOTTOM",0,10)
 --@debug@
 		addendum:EnableMouse(true)
 		addendum:SetScript("OnEnter",function(frame) module:TTDump(frame,mission) end)
