@@ -1318,7 +1318,7 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 		frame.GCXp:Hide()
 	end
 	if self:GetToggle("ILV") then
-		if (follower.level >= GARRISON_FOLLOWER_MAX_LEVEL) then
+		if follower.isMaxLevel then
 			local c1=ITEM_QUALITY_COLORS[self:GetAnyData(follower.followerTypeID,follower.followerID,"weaponQuality" ,1)]
 			local c2=ITEM_QUALITY_COLORS[self:GetAnyData(follower.followerTypeID,follower.followerID,"armorQuality" ,1)]
 			frame.GCWep:SetFormattedText("W:%3d",self:GetAnyData(follower.followerTypeID,follower.followerID,"weaponItemLevel",600))
