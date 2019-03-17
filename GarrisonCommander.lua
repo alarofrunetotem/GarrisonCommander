@@ -1177,7 +1177,7 @@ function addon:CreateHeader(module,MOVEPANEL,PIN)
 --@end-alpha@
 	-- Removing wood corner. I do it here to not derive an xml frame. This shoud play better with ui extensions
 	GCF.CloseButton:Hide()
-	for _,f in pairs({GCF:GetRegions()}) do
+	for _,f in pairs({GCF.GarrCorners:GetRegions()}) do
 		if (f:GetObjectType()=="Texture" and f:GetAtlas()=="Garr_WoodFrameCorner") then f:Hide() end
 	end
 	local main=module:GetMain()
