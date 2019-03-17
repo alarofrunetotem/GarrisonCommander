@@ -1296,10 +1296,11 @@ end
 function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 	if not frame.GCWep then
 		frame.GCWep=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCWep:SetPoint("BOTTOMLEFT",frame.Name,"TOPLEFT",0,2)
+		frame.GCWep:SetPoint("LEFT",frame.ILevel,"RIGHT",5,0)
 		frame.GCArm=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
-		frame.GCArm:SetPoint("TOPLEFT",frame.GCWep,"TOPRIGHT")
+		frame.GCArm:SetPoint("LEFT",frame.GCWep,"RIGHT",5,0)
 		frame.GCXp=frame:CreateFontString(nil,"ARTWORK","GameFontHighlightSmall")
+		frame.GCXp:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",-5,5)
 	end
 	if not follower.isCollected or type(follower.followerID)=="number" or follower.isTroop then
 		frame.GCXp:Hide()
@@ -1326,16 +1327,13 @@ function addon:RenderFollowerPageFollowerButton(frame,follower,showCounters)
 			frame.GCArm:SetTextColor(c2.r,c2.g,c2.b)
 			frame.GCWep:Show()
 			frame.GCArm:Show()
-			frame.GCXp:SetPoint("LEFT",frame.GCArm,"RIGHT",2,0)
 		else
 			frame.GCWep:Hide()
 			frame.GCArm:Hide()
-			frame.GCXp:SetPoint("LEFT",frame.Name,"LEFT",0,20)
 		end
 	else
 		frame.GCWep:Hide()
 		frame.GCArm:Hide()
-		frame.GCXp:SetPoint("LEFT",frame.Name,"LEFT",0,20)
 	end
 end
 function addon:HookedGarrisonFollowerListButton_OnClick(frame,button)
