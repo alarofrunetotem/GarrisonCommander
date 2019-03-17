@@ -301,8 +301,8 @@ do
 					end
 					party.missionID=missionID
 					tinsert(GMC.list.Parties,party)
-					GMC.list.widget:PushChild(mb,missionID)
 					mb:SetFullWidth(true)
+					GMC.list.widget:PushChild(mb,missionID)
 					mb:SetMission(self:GetMissionData(missionID),party,false,"control")
 					mb:Blacklist(blacklist[missionID])
 					mb:SetCallback("OnClick",leftclick)
