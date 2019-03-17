@@ -1512,8 +1512,8 @@ do
 			if mission and party and #party.members >= G.GetMissionMaxFollowers(missionID) then
 				local mb=AceGUI:Create("GMCMissionButton")
 				mb:SetScale(0.6)
-				ml:PushChild(mb,missionID)
 				mb:SetFullWidth(true)
+				ml:PushChild(mb,missionID)
 				mb:SetMission(mission,party,false,"followers")
 				mb:SetCallback("OnClick",MissionOnClick)
 				prog=prog+1
