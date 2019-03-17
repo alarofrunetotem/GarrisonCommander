@@ -249,6 +249,11 @@ function module:ShowUpgradeButtons(force)
 	for i=used,#b do
 		b[i]:Hide()
 	end
+	-- fix Blizzard UI Bug
+	if followerInfo and not followerInfo.isCollected then
+		GarrisonFollowerPage_SetItem(gf.ItemWeapon)
+		GarrisonFollowerPage_SetItem(gf.ItemArmor)
+	end
 end
 function module:DelayedRefresh(delay)
 	if GMF.FollowerTab:IsShown() then
