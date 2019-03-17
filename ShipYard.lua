@@ -295,7 +295,7 @@ print("Doing one time initialization for",this:GetName(),...)
 	tabMC:SetNormalTexture("Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME.blp")
 	tabMC:SetScript("OnClick",function(this,...) module:OpenMissionControlTab() end)
 	tabMC:Show()
-	tabMC:SetPoint('TOPLEFT',GSF,'TOPRIGHT',0,0)
+	tabMC:SetPoint('TOPLEFT',GCS,'TOPRIGHT',0,-60)
 	local tabQ=CreateFrame("Button",nil,GSF,"SpellBookSkillLineTabTemplate")
 	GSF.tabQ=tabQ
 	tabQ.tooltip=L["Automatically process completed missions and schedules new ones."].."\n"..
@@ -305,7 +305,7 @@ print("Doing one time initialization for",this:GetName(),...)
 	tabQ:SetPushedTexture("Interface\\ICONS\\Ability_Rogue_Sprint.blp")
 	tabQ:Show()
 	tabQ:SetScript("OnClick",function(this,button) addon:RunQuick() end)
-	tabQ:SetPoint('TOPLEFT',GSF,'TOPRIGHT',0,-210)
+	tabQ:SetPoint('TOPLEFT',GCS,'TOPRIGHT',0,-210)
 	
 	GSF.FollowerStatusInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	GSF.ResourceInfo=GSF.BorderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
