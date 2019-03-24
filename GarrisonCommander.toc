@@ -47,7 +47,6 @@ FollowerRecruiting.lua
 BuildingPage.lua
 ShipYard.lua
 ShipControl.lua
-OrderHall.lua
 quick.lua
 RelNotes.lua
 #@do-not-package@

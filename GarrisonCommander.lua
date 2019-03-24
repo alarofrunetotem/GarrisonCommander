@@ -29,10 +29,8 @@ local minHeight
 local addon=addon --#addon
 local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
-local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.LE_FOLLOWER_TYPE_GARRISON_7_0
 local LE_GARRISON_TYPE_6_0=_G.LE_GARRISON_TYPE_6_0
 local LE_GARRISON_TYPE_6_2=_G.LE_GARRISON_TYPE_6_2
-local LE_GARRISON_TYPE_7_0=_G.LE_GARRISON_TYPE_7_0
 ns.bigscreen=true
 local tprint=print
 local backdrop = {
@@ -97,7 +95,6 @@ local GARRISON_MISSION_PERCENT_CHANCE="%d%%"-- GARRISON_MISSION_PERCENT_CHANCE
 --local GARRISON_CURRENCY=GARRISON_CURRENCY  --824
 local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
-local LE_FOLLOWER_TYPE_GARRISON_7_0=LE_FOLLOWER_TYPE_GARRISON_7_0
 local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY[LE_FOLLOWER_TYPE_GARRISON_6_0]
 --local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL -- 100
 
@@ -388,14 +385,10 @@ function addon:OnInitialized()
 	ns.custom={
 		[LE_FOLLOWER_TYPE_GARRISON_6_0]=addon,
 		[LE_FOLLOWER_TYPE_SHIPYARD_6_2]=self:GetModule("ShipYard"),
-		--[LE_FOLLOWER_TYPE_GARRISON_7_0]=self:GetModule("OrderHall"),
-    --[LE_FOLLOWER_TYPE_GARRISON_8_0]=self:GetModule("BFA"),
-
 	}
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
-	self:SafeRegisterEvent("ADDON_LOADED")
 	self:SafeRegisterEvent("QUEST_TURNED_IN")
 	for _,b in ipairs(GMF.MissionTab.MissionList.listScroll.buttons) do
 		local scale=0.8
@@ -1960,7 +1953,6 @@ local fakeframe={}
 local mainframes={
 	[LE_FOLLOWER_TYPE_GARRISON_6_0]="GarrisonMissionFrame",
 	[LE_FOLLOWER_TYPE_SHIPYARD_6_2]="GarrisonShipyardFrame",
-	[LE_FOLLOWER_TYPE_GARRISON_7_0]="OrderHallMissionFrame",
 
 }
 function addon:FillMissionPage(missionInfo)
@@ -1968,7 +1960,7 @@ function addon:FillMissionPage(missionInfo)
 	if type(missionInfo)=="number" then missionInfo=self:GetMissionData(missionInfo) end
 	if not missionInfo then return end
 	local missionType=missionInfo.followerTypeID
-	if missionType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 or missionType==LE_FOLLOWER_TYPE_GARRISON_7_0 then
+	if missionType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 		if not missionInfo.canStart then return end
 	end
 	local main=_G[mainframes[missionType]]
@@ -1976,9 +1968,6 @@ function addon:FillMissionPage(missionInfo)
 	local missionpage=main:GetMissionPage()
 	local stage=main.MissionTab.MissionPage.Stage
 	local missionenv=stage.MissionInfo.MissionEnv
-	if missionType==LE_FOLLOWER_TYPE_GARRISON_7_0 then
-		missionenv=stage.MissionInfo.MissionTime
-	end
 	if not stage.MissionSeen then
 		if not stage.expires then
 			stage.expires=stage:CreateFontString()
@@ -2732,20 +2721,16 @@ function addon:ScriptGarrisonMissionButton_OnEnter(this, button)
 			GameTooltip:AddLine(GARRISON_MISSION_AVAILABILITY);
 			GameTooltip:AddLine(this.info.offerTimeRemaining, 1, 1, 1);
 		end
-		if not this.hall then
-			if (blacklist[this.info.missionID]) then
-				GameTooltip:AddDoubleLine(L["Blacklisted"],L["Right-Click to remove from blacklist"],1,0.125,0.125,C:Green())
-				GameTooltip:AddLine(L["Blacklisted missions are ignored in Mission Control"])
-			else
-				GameTooltip:AddDoubleLine(L["Not blacklisted"],L["Right-Click to blacklist"],0.125,1.0,0.125,C:Red())
-			end
+		if (blacklist[this.info.missionID]) then
+			GameTooltip:AddDoubleLine(L["Blacklisted"],L["Right-Click to remove from blacklist"],1,0.125,0.125,C:Green())
+			GameTooltip:AddLine(L["Blacklisted missions are ignored in Mission Control"])
+		else
+			GameTooltip:AddDoubleLine(L["Not blacklisted"],L["Right-Click to blacklist"],0.125,1.0,0.125,C:Red())
 		end
-		addon:AddFollowersToTooltip(this.info.missionID,this.hall and LE_FOLLOWER_TYPE_GARRISON_7_0 or LE_FOLLOWER_TYPE_GARRISON_6_0)
-		if not this.hall then
-			if not C_Garrison.IsOnGarrisonMap() and not GMF:IsVisible() then
-				GameTooltip:AddLine(" ");
-				GameTooltip:AddLine(GARRISON_MISSION_TOOLTIP_RETURN_TO_START, nil, nil, nil, 1);
-			end
+		addon:AddFollowersToTooltip(this.info.missionID,LE_FOLLOWER_TYPE_GARRISON_6_0)
+		if not C_Garrison.IsOnGarrisonMap() and not GMF:IsVisible() then
+			GameTooltip:AddLine(" ");
+			GameTooltip:AddLine(GARRISON_MISSION_TOOLTIP_RETURN_TO_START, nil, nil, nil, 1);
 		end
 	end
 --@debug@
@@ -2809,8 +2794,6 @@ function addon:DrawSlimButton(source,frame,progressing,bigscreen)
 		local numRewards=self:AddRewards(frame, mission.rewards, mission.numRewards);
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 			self:AddFollowersToButton(frame,mission,missionID,bigscreen,numRewards)
-		elseif mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_7_0 then
-			self:AddFollowersToButton(frame,mission,missionID,false,numRewards)
 		elseif  mission.followerTypeID==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
 			self:AddShipsToButton(frame,mission,missionID,bigscreen,numRewards)
 		end
