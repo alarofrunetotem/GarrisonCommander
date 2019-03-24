@@ -66,9 +66,9 @@ function module:OnInitialized()
 		addon.AuctionPrices=true
 		appraisers.ATR=Atr_GetAuctionBuyout
 	end
-	if _G.TSMAPI then
+	if _G.TSMAPI_FOUR then
 		addon.AuctionPrices=true
-		appraisers.TSM=function(itemlink) return TSMAPI:GetItemValue(itemlink,"DBMarket") end
+		appraisers.TSM=function(itemlink) return TSMAPI_FOUR.CustomPrice.GetItemPrice(itemlink,"DBMarket") end
 	end
 	if _G.TUJMarketInfo then
 		addon.AuctionPrices=true
