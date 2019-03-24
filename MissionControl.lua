@@ -268,6 +268,8 @@ function module:OnClick_Run(this,button)
 	do
 		local elapsed=0
 		local co=coroutine.wrap(self.RunMission)
+		GMC.list.widget:SetFormattedTitle(L["Sending..."])
+		GMC.list.widget:SetTitleColor(C.Yellow())
 		self:Unhook(GMC.runButton,'OnUpdate')
 		self:RawHookScript(GMC.runButton,'OnUpdate',function(this,ts)
 			elapsed=elapsed+ts
@@ -276,6 +278,8 @@ function module:OnClick_Run(this,button)
 				local rc=co(self)
 				if (not rc) then
 					self:Unhook(GMC.runButton,'OnUpdate')
+					GMC.list.widget:SetTitle(READY)
+					GMC.list.widget:SetTitleColor(C.Green())
 					--GMC.logoutButton:Enable()
 					if not ns.quick and addon:GetBoolean("AUTOLOGOUT") then
 						addon:LogoutPopout(5)
