@@ -317,7 +317,6 @@ end
 function module:OnClick_Run(this,button)
 	local GMC=GSF.MissionControlTab
 	this:Disable()
-	--GMC.logoutButton:Disable()
 	do
 		local elapsed=0
 		local co=coroutine.wrap(self.RunMission)
@@ -333,11 +332,6 @@ function module:OnClick_Run(this,button)
 					self:Unhook(GMC.runButton,'OnUpdate')
 					GMC.list.widget:SetTitle(READY)
 					GMC.list.widget:SetTitleColor(C.Green())
-					--GMC.logoutButton:Enable()
-					if not ns.quick and addon:GetBoolean("SAUTOLOGOUT") then
-						addon:LogoutPopup(5)
-					end
-					addon:shipyardDone()
 					ns.quick=false
 				end
 			end
@@ -797,7 +791,7 @@ function module:BuildFlags()
 	addon:AddSlider("SGCMINLEVEL",settings.minLevel,535,715,L["Item minimum level"],L['Minimum requested level for equipment rewards'],15)
 	addon:AddToggle("SGCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
 	addon:AddToggle("SGCRIG",settings.rig,L["Oil Rig."],L["Always send Oil Rig: Pickup mission as last mission if available"])
-	addon:AddToggle("SAUTOLOGOUT",false,L["Auto Logout"],L["Automatically logout after sending missions"])
+	addon:SetBoolean("SAUTOLOGOUT",false)
 	addon:Trigger('SGCMINLEVEL')
 	addon:Trigger('SGCSKIPEPIC')
 
@@ -883,16 +877,6 @@ function module:BuildMissionList()
 	GMC.runButton:SetScript('OnClick',function(this,button) self:OnClick_Run(this,button) end)
 	GMC.runButton:Disable()
 	GMC.runButton:SetPoint('TOPRIGHT',-10,25)
-	--GMC.logoutButton=CreateFrame('BUTTON', nil,ml.widget.frame, 'GameMenuButtonTemplate')
-	--GMC.logoutButton:SetText(LOGOUT)
-	--GMC.logoutButton:SetWidth(ns.bigscreen and 148 or 90)
-	--GMC.logoutButton:SetScript("OnClick",function()
-	--	GSF:Hide()
-	--	module:Popup(LOGOUT)
-	--	module:ScheduleTimer(Logout,0.5)
-	--	end
-	--)
-	--GMC.logoutButton:SetPoint('TOP',0,25)
 	return ml
 end
 

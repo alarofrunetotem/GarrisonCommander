@@ -1661,7 +1661,7 @@ function addon:AddMenu()
 	local menu,size
 	if GMF.MissionTab:IsVisible() then
 		self.currentmenu=GMF.MissionTab
-		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MSORT','MAXRES','MAXRESCHANCE','IGM','IGP','NOFILL','USEFUL','NOTOOLTIP','MOVEPANEL','AUTOLOGOUT')
+		menu,size=self:CreateOptionsLayer(MP and 'CKMP' or nil,'BIGSCREEN','MSORT','MAXRES','MAXRESCHANCE','IGM','IGP','NOFILL','USEFUL','NOTOOLTIP','MOVEPANEL')
 	elseif GMF.FollowerTab:IsVisible() then
 		local missionlist=ns.bigscreen or self:GetBoolean("FOLLOWERMISSIONLIST")
 		self.currentmenu=GMF.FollowerTab
@@ -1674,7 +1674,7 @@ function addon:AddMenu()
 		self:RenderFollowerPageMissionList(nil,GMF.FollowerTab.followerID)
 	elseif GMF.MissionControlTab:IsVisible() then
 		self.currentmenu=GMF.MissionControlTab
-		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','MINXPLEVEL','MINGOLD','GCSKIPRARE','GCSKIPEPIC','USEFUL','NOTOOLTIP','AUTOLOGOUT')
+		menu,size=self:CreateOptionsLayer('BIGSCREEN','GCMINLEVEL','GCMINUPGRADE','MINXPLEVEL','MINGOLD','GCSKIPRARE','GCSKIPEPIC','USEFUL','NOTOOLTIP')
 	else
 		self.currentmenu=nil
 		menu,size=self:CreateOptionsLayer('BIGSCREEN')
@@ -1754,7 +1754,6 @@ function addon:ScriptGarrisonMissionFrame_OnShow(...)
 	self:Trigger("MSORT")
 	self:Trigger("CKMP")
 	if IsControlKeyDown() then
-		self:EnableAutoLogout()
 		self:ScheduleTimer("RunQuick",0.1,true)
 	end
 	self:RawHook(GMFMissions,"UpdateMissions","OnUpdateMissions",true)

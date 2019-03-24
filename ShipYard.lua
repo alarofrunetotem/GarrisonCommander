@@ -346,7 +346,6 @@ function module:ScriptGarrisonShipyardFrame_OnShow()
 	self:RefreshCurrency()
 	self:RefreshFollowerStatus()
 	if IsControlKeyDown() then
-		self:EnableAutoLogout()
 		self:ScheduleTimer("RunQuick",0.1,true)
 	end
 end

@@ -264,7 +264,6 @@ end
 function module:OnClick_Run(this,button)
 	local GMC=GMF.MissionControlTab
 	this:Disable()
-	--GMC.logoutButton:Disable()
 	do
 		local elapsed=0
 		local co=coroutine.wrap(self.RunMission)
@@ -280,11 +279,6 @@ function module:OnClick_Run(this,button)
 					self:Unhook(GMC.runButton,'OnUpdate')
 					GMC.list.widget:SetTitle(READY)
 					GMC.list.widget:SetTitleColor(C.Green())
-					--GMC.logoutButton:Enable()
-					if not ns.quick and addon:GetBoolean("AUTOLOGOUT") then
-						addon:LogoutPopout(5)
-					end
-					addon:missionDone()
 					ns.quick=false
 				end
 			end
@@ -791,7 +785,6 @@ function module:BuildFlags()
 	addon:AddSlider("MINGOLD",50,1,1000,L["Minimum Gold Value"],L["Gold missions wich returns less than this amount are ignored"])
 	addon:AddToggle("GCSKIPEPIC",settings.skipEpic,L["Ignore epic for xp missions."],L["IF you have a Salvage Yard you probably dont want to have this one checked"])
 	addon:AddToggle("GCSKIPRARE",settings.skipRare,L["Ignore rare missions"],L["Rare missions will not be considered"])
-	--addon:AddToggle("AUTOLOGOUT",false,L["Auto Logout"],L["Automatically logout after sending missions"])
 	addon:SetBoolean("AUTOLOGOUT",false)
 end
 function module:BuildDuration()
@@ -875,16 +868,6 @@ function module:BuildMissionList()
 	GMC.runButton:SetScript('OnClick',function(this,button) self:OnClick_Run(this,button) end)
 	GMC.runButton:Disable()
 	GMC.runButton:SetPoint('TOPRIGHT',-10,25)
---	GMC.logoutButton=CreateFrame('BUTTON', nil,ml.widget.frame, 'GameMenuButtonTemplate')
---	GMC.logoutButton:SetText(LOGOUT)
---	GMC.logoutButton:SetWidth(ns.bigscreen and 148 or 90)
---	GMC.logoutButton:SetScript("OnClick",function()
---		GMF:Hide()
---		module:Popup(LOGOUT)
---		module:ScheduleTimer(Logout,0.5)
---		end
---	)
---	GMC.logoutButton:SetPoint('TOP',0,25)
 	return ml
 end
 
