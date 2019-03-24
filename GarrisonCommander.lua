@@ -2672,7 +2672,7 @@ function addon:AddRewardExtraTooltip(this,...)
 				local _1,l,_3,_4,_5,_6,_7,_8,_9,t=GetItemInfo(k)
 				local buy,source=self:GetMarketValue(l or k)
 				if l then
-					tip:AddDoubleLine(format("|T%s:32|t %s %3.2f%%",t,l,c/total*100),
+					tip:AddDoubleLine(format("|T%s:16|t %s %3.2f%%",t,l,c/total*100),
 					--tip:AddDoubleLine(format("link:%s %s",t,l),
 						GetMoneyString(buy) .. ' ' .. source)
 				else
