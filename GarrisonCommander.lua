@@ -1504,7 +1504,6 @@ do
 			if (tContains(party.members,followerID)) then tinsert(partyIndex,missionID) end
 		end
 		table.sort(partyIndex,function(a,b) return parties[a].perc > parties[b].perc end)
-		local prog=1
 		for i=1,#partyIndex do
 			local missionID=partyIndex[i]
 			local party=parties[missionID]
@@ -1516,7 +1515,6 @@ do
 				ml:PushChild(mb,missionID)
 				mb:SetMission(mission,party,false,"followers")
 				mb:SetCallback("OnClick",MissionOnClick)
-				prog=prog+1
 			end
 		end
 		del(partyIndex)
