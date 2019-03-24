@@ -264,7 +264,7 @@ do
 					missionID=nextMissionID
 					nextMissionID=OILRIG
 				end
-				GMC.list.widget:SetFormattedTitle("Processing mission %d of %d (%s)",currentMission,#aMissions,G.GetMissionName(missionID))
+				GMC.list.widget:SetFormattedTitle(L["Processing mission %d of %d"], currentMission, #aMissions)
 				local class=self:GetMissionData(missionID,"class")
 				--print(C("Processing ","Red"),missionID,addon:GetMissionData(missionID,"name"))
 				local minimumChance=0
@@ -355,13 +355,13 @@ function module:OnClick_Start(this,button)
 		return
 	end
 	this:Disable()
-	GMC.list.widget:SetTitleColor(C.Green())
 	self:CreateMissionList(aMissions)
 	wipe(GMCUsedFollowers)
 	wipe(GMC.list.Parties)
 	shipyard:RefreshFollowerStatus()
 	if (#aMissions>0) then
 		GMC.list.widget:SetFormattedTitle(L["Processing mission %d of %d"],1,#aMissions)
+		GMC.list.widget:SetTitleColor(C.Yellow())
 	else
 		GMC.list.widget:SetTitle("No mission matches your criteria")
 		GMC.list.widget:SetTitleColor(C.Red())
