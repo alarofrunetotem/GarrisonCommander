@@ -1989,7 +1989,7 @@ function addon:FillMissionPage(missionInfo)
 	end
 	stage.missionid:SetFormattedText(GARRISON_MISSION_ID,missionInfo.missionID)
 --@end-debug@
-	if( IsControlKeyDown()) then self:Print("Ctrl key, ignoring mission prefill") return end
+	if( IsShiftKeyDown()) then self:Print("Shift key, ignoring mission prefill") return end
 	if (self:GetBoolean("NOFILL")) then return end
 	local missionID=missionInfo.missionID
 	--holdEvents()
@@ -2532,7 +2532,8 @@ function addon:AddRewards(frame, rewards, numRewards)
 			local Reward = frame.Rewards[index];
 			if not Reward.ScriptHooked then
 				Reward.ScriptHooked=true
-				self:SafeSecureHookScript(Reward,"OnEnter","AddRewardExtraTooltip")
+				self:SafeSecureHookScript(Reward,"OnEnter",function(base) addon:AddRewardExtraTooltip(base,true) end)
+        self:SafeSecureHookScript(Reward,"OnLeave",function(base) addon:AddRewardExtraTooltip(base,false) end)
 			end
 			Reward.Quantity:Hide();
 			Reward.itemID = nil;
@@ -2633,8 +2634,17 @@ function addon:AddRewards(frame, rewards, numRewards)
 	end
 	return numRewards
 end
-function addon:AddRewardExtraTooltip(this,...)
+local savedUpdate
+function addon:AddRewardExtraTooltip(this,enter)
 	local tip=GameTooltip
+	if (enter and not savedUpdate) then
+	   savedUpdate=tip:GetScript("OnUpdate")
+	   tip:SetScript("OnUpdate",function() end)
+	end
+  if (not enter and savedUpdate) then
+     tip:SetScript("OnUpdate",savedUpdate)
+     savedUpdate=nil
+  end
 	local itemID=tostring(this.itemID)
 	if itemID and this.best then
 		local _1,l,_3,_4,_5,_6,_7,_8,_9,_10,buy=GetItemInfo(this.itemID)
