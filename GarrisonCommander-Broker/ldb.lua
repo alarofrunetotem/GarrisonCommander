@@ -381,24 +381,27 @@ function addon:OnInitialized()
 	self:ScheduleTimer("DelayedInit",1)
 	-- Avoid double adding
 	if not IsAddOnLoaded("GarrisonCommander") then
-    self:SecureHookScript(GarrisonLandingPageMinimapButton,"OnEnter",function(this)
+     self:SecureHookScript(GarrisonLandingPageMinimapButton,"OnEnter",function(this)
         if this.description==MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP or
            this.description == GARRISON_TYPE_8_0_LANDING_PAGE_TOOLTIP then
-          GameTooltip:AddLine(WARDROBE_NEXT_VISUAL_KEY .. " " .. MINIMAP_GARRISON_LANDING_PAGE_TOOLTIP)
-          GameTooltip:AddLine(SHIFT_KEY_TEXT .." ".. WARDROBE_NEXT_VISUAL_KEY .. " " .. MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP)
+          GameTooltip:AddLine(CTRL_KEY_TEXT .. " " .. MINIMAP_GARRISON_LANDING_PAGE_TOOLTIP)
+          GameTooltip:AddLine(SHIFT_KEY_TEXT  .. " " .. MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP)
         end
         GameTooltip:Show()
     end
     )
-    GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
+    --GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
     self:SecureHookScript(GarrisonLandingPageMinimapButton,"OnClick",
       function (this,button)
+     --@debug@
+     self:Print("minimap click")
+     --@end-debug@
          local shown=GarrisonLandingPage:IsShown()
          local actual=GarrisonLandingPage.garrTypeID
          local requested=C_Garrison.GetLandingPageGarrisonType()
-         if button=="RightButton" and IsShiftKeyDown() then
+         if IsShiftKeyDown() then
             requested=LE_GARRISON_TYPE_7_0
-         elseif button=="RightButton" then
+         elseif IsControlKeyDown() then
             requested=LE_GARRISON_TYPE_6_0
          end
          if InCombatLockdown() then return end
