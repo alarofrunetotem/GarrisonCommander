@@ -22,6 +22,9 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(3,2,1,[[
+Fix: No longer gives error when clicking on minimap report icon while in combat
+]])
 self:RelNotes(3,2,0,[[
 Fix: Checked Russian Localization
 ]])
