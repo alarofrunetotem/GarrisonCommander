@@ -22,4 +22,5 @@ embeds.xml
 localization.lua
 ldb.lua
 RelNotes.lua
+../GarrisonCommander/minimap.lua
 

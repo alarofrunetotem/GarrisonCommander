@@ -380,37 +380,7 @@ function addon:OnInitialized()
 	frequency=self:GetNumber("FREQUENCY",5)
 	self:ScheduleTimer("DelayedInit",1)
 	-- Avoid double adding
-	if not IsAddOnLoaded("GarrisonCommander") then
-     self:SecureHookScript(GarrisonLandingPageMinimapButton,"OnEnter",function(this)
-        if this.description==MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP or
-           this.description == GARRISON_TYPE_8_0_LANDING_PAGE_TOOLTIP then
-          GameTooltip:AddLine(CTRL_KEY_TEXT .. " " .. MINIMAP_GARRISON_LANDING_PAGE_TOOLTIP)
-          GameTooltip:AddLine(SHIFT_KEY_TEXT  .. " " .. MINIMAP_ORDER_HALL_LANDING_PAGE_TOOLTIP)
-        end
-        GameTooltip:Show()
-    end
-    )
-    --GarrisonLandingPageMinimapButton:RegisterForClicks("LEFTBUTTONUP","RIGHTBUTTONUP")
-    self:SecureHookScript(GarrisonLandingPageMinimapButton,"OnClick",
-      function (this,button)
-     --@debug@
-     self:Print("minimap click")
-     --@end-debug@
-         local shown=GarrisonLandingPage:IsShown()
-         local actual=GarrisonLandingPage.garrTypeID
-         local requested=C_Garrison.GetLandingPageGarrisonType()
-         if IsShiftKeyDown() then
-            requested=LE_GARRISON_TYPE_7_0
-         elseif IsControlKeyDown() then
-            requested=LE_GARRISON_TYPE_6_0
-         end
-         if InCombatLockdown() then return end
-         if shown and actual ~= requested then
-           ShowGarrisonLandingPage(requested);
-         end
-      end
-    )
-	end
+
 	self:loadHelp()
 end
 function addon:ApplyFREQUENCY(value)
@@ -789,12 +759,12 @@ function dataobj:OldUpdate()
 	end
 	self.text=format("%s: %s (Tot: |cff00ff00%d|r) %s: %s",READY,ready,completed,NEXT,prox)
 end-- Resources rate: 144 a day
+--[[ Satchel was removed, keeping code as reference in case Bliz reintriduce simething similar
 local satchel_id=120146
 local satchel_name
 local satchel_link
 local satchel_index
 local button
---@do-not-package@
 function addon:ResBuyer()
 	button=CreateFrame("Button",nil,UIParent,"SecureActionButtonTemplate")
 	button:SetAttribute("type1","item")
@@ -807,7 +777,7 @@ function addon:Buygold(args,...)
 	print(args,...)
 	if not args  or args=="" then
 		self:Print("Use /buygold <resource to use>")
-		self:Print("Example: /buygold 1000 will consume 1000 resourcesm i.e. acquire 20 " .. satchel_link)
+		self:Print("Example: /buygold 1000 will consume 1000 resources i.e. acquire 20 " .. satchel_link)
 		return
 	end
 	local resources=math.floor((tonumber(strsplit(" ",args)) or 50)/50)
@@ -853,7 +823,7 @@ function addon:Buygold(args,...)
 	end
 	self:coroutineExecute(0.2,buyer)
 end
---@end-do-not-package@
+--]]
 local function convert(perc,numeric)
 	perc=max(0,min(10,perc))
 	if numeric then
@@ -872,17 +842,3 @@ function addon:moreIsGood(n,t,numeric)
 	-- n = counted
 	return convert(math.floor(10/t*n),numeric)
 end
---@debug@
-local function highdebug(tb)
-	for k,v in pairs(tb) do
-		if type(v) == "function" then
-			tb[k]=function(...) print(date(),k) return v(...) end
-		end
-	end
-end
---highdebug(addon)
---highdebug(dataobj)
---highdebug(farmobj)
---highdebug(workobj)
-_G.GACB=addon
---@end-debug@

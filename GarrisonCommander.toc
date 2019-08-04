@@ -49,6 +49,7 @@ ShipYard.lua
 ShipControl.lua
 quick.lua
 RelNotes.lua
+minimap.lua
 #@do-not-package@
 Debug.lua
 #@end-do-not-package@
