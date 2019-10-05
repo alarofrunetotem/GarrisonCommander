@@ -1,4 +1,4 @@
-## Interface: 80200
+## Interface: 80205
 ## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
