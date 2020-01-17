@@ -22,7 +22,7 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
-self:RelNotes(3,2,3,[[
+self:RelNotes(3,2,4,[[
 Feature: Toc 80300
 ]])
 self:RelNotes(3,2,2,[[
