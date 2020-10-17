@@ -5,8 +5,8 @@ local _G=_G
 local wipe=wipe
 local format=format
 local UNKNOWN=UNKNOWN
-local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
 
 local module=addon:NewSubModule("Widgets") --#module
 local function Constructor()
@@ -229,7 +229,7 @@ local function GMCGUIContainer()
 		frame:SetScript("OnHide",function(self) self.obj:Fire('OnClose') end)
 		frame.obj=widget
 		--Container Support
-		local content = CreateFrame("Frame",nil,frame)
+		local content = CreateFrame("Frame",nil,frame,BackdropTemplateMixin and "BackdropTemplate")
 		widget.content = content
 		--addBackdrop(content,'Green')
 		content.obj = widget
@@ -298,7 +298,7 @@ local function GMCLayer()
 	end
 	---@function [parent=#GMCLayer]
 	local function Constructor()
-		local frame=CreateFrame("Frame")
+		local frame=CreateFrame("Frame",nil,UIParent,BackdropTemplateMixin and "BackdropTemplate")
 		local title=frame:CreateFontString(nil, "BACKGROUND", "GameFontNormalHugeBlack")
 		title:SetJustifyH("CENTER")
 		title:SetJustifyV("CENTER")
@@ -320,7 +320,7 @@ local function GMCLayer()
 		for k,v in pairs(m) do widget[k]=v end
 		frame:SetScript("OnHide",function(self) self.obj:Fire('OnClose') end)
 		--Container Support
-		local content = CreateFrame("Frame",nil,frame)
+		local content = CreateFrame("Frame",nil,frame,BackdropTemplateMixin and "BackdropTemplate")
 		widget.content = content
 		content.obj = self
 		content:SetPoint("TOPLEFT",title,"BOTTOMLEFT",6,0)

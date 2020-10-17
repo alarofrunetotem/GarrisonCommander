@@ -55,7 +55,9 @@ ns.GMFMissions=ns.GMF.MissionTab.MissionList
 ns.GSFMissions=ns.GSF.MissionTab.MissionList
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 ns.quests={}
-GetQuestsCompleted(ns.quests)
+for k,v in pairs(C_QuestLog.GetAllCompletedQuestIDs()) do
+	ns.quests[v]=true
+end
 function addon:EventQUEST_TURNED_IN(event,quest,item,gold)
 	ns.quests[quest]=true
 end
@@ -377,4 +379,28 @@ function ns.Configure()
 			error("The calling function has a modified environment, I won't replace it.", 2)
 		end
 		setfenv(2, ENV)
+end
+
+function ns.GetCurrencyInfo(type)
+	local ci = C_CurrencyInfo.GetCurrencyInfo(type)
+	return ci.name,
+		ci.quantity,
+		ci.iconFileID,
+		ci.quantityEarnedThisWeek,
+		ci.canEarnPerWeek,
+		ci.maxQuantity,
+		ci.discovered,
+		ci.quality
+end
+
+function ns.GetMissionInfo(missionID)
+	local mi = C_Garrison.GetMissionDeploymentInfo(missionID)
+	return mi.location,
+		mi.xp,
+		mi.environment,
+		mi.environmentDesc,
+		mi.environmentTexture,
+		mi.locTextureKit,
+		mi.isExhausting,
+		mi.enemies
 end

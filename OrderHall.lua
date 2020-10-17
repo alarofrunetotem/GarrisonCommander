@@ -10,14 +10,13 @@ local pairs=pairs
 local format=format
 local strsplit=strsplit
 local select=select
-local GetCurrencyInfo=GetCurrencyInfo
 local generated
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL
-local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
-local LE_FOLLOWER_TYPE_GARRISON_7_0=LE_FOLLOWER_TYPE_GARRISON_7_0
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
+local LE_FOLLOWER_TYPE_GARRISON_7_0=_G.Enum.GarrisonFollowerType.FollowerType_7_0
 local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY[LE_FOLLOWER_TYPE_GARRISON_7_0]
 local module=addon:NewSubClass('OrderHall') --#Module
 local GameTooltip=GameTooltip
@@ -84,7 +83,7 @@ function module:OnInitialize(...)
 	},
 	L["Sort missions by:"],L["Original sort restores original sorting method, whatever it was (If you have another addon sorting mission, it should kick in again)"])
 -- Uprades management
-	UpgradeFrame=CreateFrame("Frame",nil,OHFFollowerTab)
+	UpgradeFrame=CreateFrame("Frame",nil,OHFFollowerTab,BackdropTemplateMixin and "BackdropTemplate")
 	local u=UpgradeFrame
 	u:SetPoint("TOPLEFT",OHFFollowerTab,"TOPLEFT",5,-72)
 	u:SetPoint("BOTTOMLEFT",OHFFollowerTab,"BOTTOMLEFT",5,7)

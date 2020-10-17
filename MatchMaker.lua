@@ -23,8 +23,8 @@ local hearthStoneProTrait=236 -- all followers +36
 local scavengerTrait=79 -- More resources
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2 -- 2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
 local dbg
 local useCap=false
 local currentCap=100

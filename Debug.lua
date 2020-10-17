@@ -4,6 +4,7 @@ local _G=_G
 LoadAddOn("Blizzard_DebugTools")
 --@end-debug@
 local me, ns = ...
+local GetCurrencyInfo=ns.GetCurrencyInfo
 if (me=="doc") then
 	local mt={
 		keys=setmetatable({},{__index=function(t,k) rawset(t,k,{}) return t[k] end }),
@@ -335,7 +336,7 @@ function addon:showdata(fullargs,action,missionid,chance)
 	end
 end
 
-local f=CreateFrame("Frame")
+local f=CreateFrame("Frame",nil,UIParent,BackdropTemplateMixin and "BackdropTemplate")
 f:SetScript("OnEvent",eventTrace)
 f:RegisterAllEvents()
 

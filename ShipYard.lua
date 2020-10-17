@@ -14,13 +14,12 @@ local kpairs=addon:GetKpairs()
 local format=format
 local strsplit=strsplit
 local select=select
-local GetCurrencyInfo=GetCurrencyInfo
 local generated
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL
-local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
 local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY[LE_FOLLOWER_TYPE_SHIPYARD_6_2]
 local module=addon:NewSubClass('ShipYard') --#Module
 local GameTooltip=GameTooltip
@@ -39,6 +38,7 @@ local shipEnhancement={
 	127886
 }
 local lastTab=1
+local GetCurrencyInfo=ns.GetCurrencyInfo
 function module:Test()
 
 --@debug@
@@ -171,7 +171,7 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	if not addendum then
 		if mission.inProgress then return end
 		i=i+1
-		addendum=CreateFrame("Frame",nil,frame)
+		addendum=CreateFrame("Frame",nil,frame,BackdropTemplateMixin and "BackdropTemplate")
 		addendum:SetPoint("TOP",frame,"BOTTOM",0,10)
 --@debug@
 		addendum:EnableMouse(true)
@@ -468,7 +468,7 @@ function addon:ApplySHIPENHA(value)
 end
 function module:ShowEnhancements()
 	if not upgrades then
-		upgrades=CreateFrame("Frame","UPG",GarrisonShipyardFrame.FollowerTab)
+		upgrades=CreateFrame("Frame","UPG",GarrisonShipyardFrame.FollowerTab,BackdropTemplateMixin and "BackdropTemplate")
 		upgrades.items={}
 
 		upgrades:ClearAllPoints()

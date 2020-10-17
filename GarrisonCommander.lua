@@ -27,10 +27,9 @@ local pin=false
 local baseHeight
 local minHeight
 local addon=addon --#addon
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
-local LE_GARRISON_TYPE_6_0=_G.LE_GARRISON_TYPE_6_0
-local LE_GARRISON_TYPE_6_2=_G.LE_GARRISON_TYPE_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
+local LE_GARRISON_TYPE_6_0=_G.Enum.GarrisonType.Type_6_0
 ns.bigscreen=true
 local tprint=print
 local backdrop = {
@@ -65,6 +64,7 @@ local missionCompleteOrder=122514
 
 local lastTab
 local new, del, copy =ns.new,ns.del,ns.copy
+local GetCurrencyInfo,GetMissionInfo=ns.GetCurrencyInfo,ns.GetMissionInfo
 
 local function capitalize(s)
 	s=tostring(s)
@@ -93,8 +93,6 @@ local GARRISON_MISSION_PERCENT_CHANCE="%d%%"-- GARRISON_MISSION_PERCENT_CHANCE
 --local GARRISON_FOLLOWER_BUSY_COLOR=GARRISON_FOLLOWER_BUSY_COLOR
 --local GARRISON_FOLLOWER_INACTIVE_COLOR=GARRISON_FOLLOWER_INACTIVE_COLOR
 --local GARRISON_CURRENCY=GARRISON_CURRENCY  --824
-local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY[LE_FOLLOWER_TYPE_GARRISON_6_0]
 --local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL -- 100
 
@@ -135,8 +133,6 @@ local MAXMISSIONS=8
 local MINPERC=20
 local BUSY_MESSAGE_FORMAT=L["Only first %1$d missions with over %2$d%% chance of success are shown"]
 local BUSY_MESSAGE=format(BUSY_MESSAGE_FORMAT,MAXMISSIONS,MINPERC)
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
 local GarrisonFollowerPortrait_Set=GarrisonFollowerPortrait_Set
 if not GarrisonFollowerPortrait_Set then
 	GarrisonFollowerPortrait_Set=function(portrait, iconFileID)
@@ -687,7 +683,7 @@ function addon:AddFollowersToTooltip(missionID,followerTypeID)
 	local currency=self:GetMissionData(missionID,'costCurrencyTypesID')
 	if cost and currency then
 		local _,available,texture=GetCurrencyInfo(currency)
-		GameTooltip:AddDoubleLine(TABARDVENDORCOST,format("%d |T%s:0|t",cost,texture),nil,nil,nil,C[cost>available and 'Red' or 'Green']())
+		GameTooltip:AddDoubleLine(TABARDVENDORCOST,format("%d |T%d:0|t",cost,texture),nil,nil,nil,C[cost>available and 'Red' or 'Green']())
 	end
 	local members=party.members
 	if followerTypeID == LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
@@ -1842,7 +1838,7 @@ function addon:SafeHookScript(frame,method,handler,hookType)
 
 	end
 end
-local converter=CreateFrame("Frame"):CreateTexture()
+local converter=CreateFrame("Frame",nil,UIParent,BackdropTemplateMixin and "BackdropTemplate"):CreateTexture()
 local shipconv=CreateFrame("Frame",nil,nil,"GarrisonShipMissionCompleteFollowerTemplate")
 function addon:GetFollowerTexture(followerID,followerType)
 	local follower=type(followerID)=="table" and followerID or nil
@@ -2904,7 +2900,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 		button.Env.missionID=missionID
 		local party=button.party
 		if not mission.typeIcon then
-			mission.typeIcon=select(5,G.GetMissionInfo(missionID))
+			mission.typeIcon=select(5,GetMissionInfo(missionID))
 		end
 		if mission.typeIcon then
 			button.Env.IsEnv=true
@@ -2925,7 +2921,7 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 			button.Env:SetScript("OnEnter",nil)
 			button.Env:Hide()
 		end
-		local enemies=mission.enemies or select(8,G.GetMissionInfo(missionID))
+		local enemies=mission.enemies or select(8,GetMissionInfo(missionID))
 		local threats=self:GetParty(missionID,'threats')
 		for i,enemy in ipairs(enemies) do
 			for mechanicID, mechanic in pairs(enemy.mechanics) do

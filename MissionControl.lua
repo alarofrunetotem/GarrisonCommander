@@ -397,7 +397,7 @@ local function drawItemButtons(frame)
 	for frameIndex,i in ipairs(classlist) do
 		local row = GMC.ignoreFrames[frameIndex]
 		if not row then
-			row= CreateFrame('ItemButton', "Priority" .. frameIndex, frame)
+			row= CreateFrame('ItemButton', "Priority" .. frameIndex, frame, BackdropTemplateMixin and "BackdropTemplate")
 			row.chance=settings.rewardChance[row.key] or 100
 			GMC.ignoreFrames[frameIndex] = row
 			row.slider=row.slider or factory:Slider(row,0,100,row.chance,row.chance)
@@ -558,7 +558,7 @@ end
 function module:OnInitialized()
 	local bigscreen=ns.bigscreen
 	chestTexture='GarrMission-'..UnitFactionGroup('player').. 'Chest'
-	local GMC = CreateFrame('FRAME', nil, GMF)
+	local GMC = CreateFrame('FRAME', nil, GMF, BackdropTemplateMixin and "BackdropTemplate")
 	GMF.MissionControlTab=GMC
 	settings=addon.privatedb.profile.missionControl
 	self:RefreshConfig("Init")
@@ -686,7 +686,7 @@ end
 function module:BuildChance()
 	local GMC=GMF.MissionControlTab
 	--Chance
-	local frame= CreateFrame('FRAME', nil, GMC)
+	local frame= CreateFrame('FRAME', nil, GMC, BackdropTemplateMixin and "BackdropTemplate")
 	frame:SetSize(210, 165)
 	GMC.cp = frame:CreateTexture(nil, 'BACKGROUND') --Chest
 	GMC.cp:SetTexture('Interface\\Garrison\\GarrisonMissionUI2.blp')
@@ -790,7 +790,7 @@ end
 function module:BuildDuration()
 	-- Duration
 	local GMC=GMF.MissionControlTab
-	local frame= CreateFrame('FRAME', 'PIPPO', GMC) -- Dutation frame
+	local frame= CreateFrame('FRAME', 'PIPPO', GMC, BackdropTemplateMixin and "BackdropTemplate") -- Dutation frame
 	frame:SetSize(210, 165)
 	frame:SetPoint('TOP',0, -20)
 
@@ -828,7 +828,7 @@ end
 function module:BuildRewards()
 	--Allowed rewards
 	local GMC=GMF.MissionControlTab
-	local frame = CreateFrame('FRAME', nil, GMC)
+	local frame = CreateFrame('FRAME', nil, GMC, BackdropTemplateMixin and "BackdropTemplate")
 	frame:SetWidth(420)
 	GMC.itf = frame:CreateFontString()
 	GMC.itf:SetFontObject('GameFontNormalHuge')

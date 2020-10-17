@@ -10,8 +10,8 @@ local GSFMissions=GarrisonMissionFrameMissions
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY
 local SEAL_CURRENCY=994
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2 -- 2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
 local pairs=pairs
 local format=format
 local strsplit=strsplit
@@ -19,6 +19,7 @@ local generated
 local shipsnumber=0
 local salvages={
 114120,114119,114116}
+local GetCurrencyInfo,GetMissionInfo=ns.GetCurrencyInfo,ns.GetMissionInfo
 local module=addon:NewSubClass('MissionCompletion') --#Module
 function module:GenerateMissionCompleteList(title,anchor)
 	local w=AceGUI:Create("GCMCList")
@@ -267,7 +268,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4,...)
 				step=0
 				currentMission.state=0
 				currentMission.goldMultiplier=currentMission.goldMultiplier or 1
-				currentMission.xp=select(2,G.GetMissionInfo(currentMission.missionID))
+				currentMission.xp=select(2,GetMissionInfo(currentMission.missionID))
 				report:AddMissionButton(currentMission,addon:GetParty(currentMission.missionID),currentMission.successChance,"report")
 			end
 			if (step==0) then
@@ -345,7 +346,7 @@ function module:MissionsPrintResults(success)
 			report:AddIconText(v.icon,GetMoneyString(v.qt))
 		else
 			-- Other currency reward
-			report:AddIconText(v.icon,GetCurrencyLink(k,v.qt))
+			report:AddIconText(v.icon,C_CurrencyInfo.GetCurrencyLink(k,v.qt))
 		end
 	end
 	local items=new()

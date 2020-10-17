@@ -12,8 +12,8 @@ local wipe=wipe
 local GARRISON_CURRENCY=GARRISON_CURRENCY
 local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.Enum.GarrisonFollowerType.FollowerType_6_0
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.Enum.GarrisonFollowerType.FollowerType_6_2
 local GMF=GMF
 local GSF=GSF
 local GMFMissions=GMFMissions
@@ -28,6 +28,7 @@ local index={}
 local classes={}
 local _G=_G
 local new, del, copy =ns.new,ns.del,ns.copy
+local GetCurrencyInfo,GetMissionInfo=ns.GetCurrencyInfo,ns.GetMissionInfo
 
 -- Mission caching is a bit different fron follower caching mission appears and disappears on a regular basis
 local module=addon:NewSubClass('MissionCache') --#module
@@ -224,7 +225,7 @@ function module:AddExtraData(mission)
 	if mission.missionID == dbg then print("Final gold",mission.gold) DevTools_Dump(mission.moreClasses)end
 --@end-debug@
 	if not mission.class then mission.class="other" end
-	local xp=select(2,G.GetMissionInfo(mission.missionID))
+	local xp=select(2,GetMissionInfo(mission.missionID))
 	if not mission.xp or mission.xp==0 then mission.xp=xp end
 	mission.globalXp=tonumber(mission.xp) or 0 + tonumber(mission.xpBonus) or 0
 end
