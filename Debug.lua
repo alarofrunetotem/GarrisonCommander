@@ -188,7 +188,7 @@ function addon:DumpStatus(title)
 		local followerID=followersCache[i].followerID
 		scroll:AddRow(format("%s (%s): %d",self:GetFollowerData(followerID,'fullname'),self:GetFollowerData(followerID,'followerID'),G.GetFollowerXP(followerID)))
 	end
-	scroll:AddRow("Garrison resources: " .. select(2,GetCurrencyInfo(GARRISON_CURRENCY)))
+	scroll:AddRow("Garrison resources: " .. C_CurrencyInfo.GetCurrencyInfo(GARRISON_CURRENCY)['quantity'])
 	scroll:AddRow("Money: " .. GetMoneyString(GetMoney()))
 end
 function addon:DumpFollowers()
