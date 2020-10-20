@@ -30,6 +30,8 @@
 ## X-eMail: alar@aspide.it
 ## X-Date: @project-date-iso@
 ## X-Embeds: LibInit
+## X-Curse-Project-ID: 86760
+## X-WoWI-ID: 23426
 embeds.xml
 wowhead.lua
 localization.lua
