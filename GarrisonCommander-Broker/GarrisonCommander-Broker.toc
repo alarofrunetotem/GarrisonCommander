@@ -1,10 +1,10 @@
-## Interface: 90001
+## Interface: 90002
 ## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
 ## Notes-frFR: Data-Broker pour GarrisonCommander
 ## Author: Alar of Runetotem
-## Version: @project-version@ 90001
+## Version: @project-version@ 90002
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
