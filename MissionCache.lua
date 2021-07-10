@@ -74,6 +74,7 @@ function module:OnInitialized()
 	if _G.TSM_API then
 		addon.AuctionPrices=true
 		appraisers.TSM=function(itemlink) return TSM_API.GetCustomPriceValue("DBMarket", "i:" .. itemlink) end
+	end
 	if _G.TUJMarketInfo then
 		addon.AuctionPrices=true
 		appraisers.TUY=function(itemlink) TUJMarketInfo(itemlink,trash) return trash['market'] end
