@@ -21,6 +21,7 @@ externals:
 move-folders:
 #	GarrisonCommander/OrderHallCommander: OrderHallCommander
    GarrisonCommander/GarrisonCommander-Broker: GarrisonCommander-Broker
+#   GarrisonCommander/loader: GarrisonCommanderLoader
 
 #manual-changelog:
 #		filename: CHANGELOG.txt
