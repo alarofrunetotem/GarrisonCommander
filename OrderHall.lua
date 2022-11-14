@@ -3,6 +3,11 @@ local me, ns = ...
 ns.Configure()
 local GetItemCount=GetItemCount
 local addon=addon --#addon
+
+local function GetRGB(r, g, b, whatever)
+	return r, g, b
+end
+
 local over=over --#over
 local _G=_G
 local G=C_Garrison
@@ -105,7 +110,7 @@ function module:AddLevel(source,button,mission,missionID,bigscreen)
 	button.Level:SetPoint("CENTER", button, "TOPLEFT", 40, -36);
 	local quality=math.min(math.max(mission.level-UnitLevel("player")+3,0),6)
 	button.Level:SetText(mission.level)
-	button.Level:SetTextColor(self:GetQualityColor(quality))
+	button.Level:SetTextColor(GetRGB(self:GetQualityColor(quality)))
 	button.ItemLevel:Show();
 end
 
@@ -197,7 +202,7 @@ function module:RenderUpgradeButton(id,previous)
 		b:SetAttribute("item",select(2,GetItemInfo(id)))
 		GarrisonMissionFrame_SetItemRewardDetails(b)
 		b.Quantity:SetFormattedText("%d",qt)
-		b.Quantity:SetTextColor(C.Yellow())
+		b.Quantity:SetTextColor(GetRGB(C.Yellow()))
 		b.Quantity:Show()
 		b:Show()
 		return b
@@ -491,9 +496,9 @@ function module:ShowUpgradeButtons(force)
 					A.rawlevel=level
 					A.Level:SetText(level < 600 and (currentlevel+level) or level)
 					local c=colors[level]
-					A.Level:SetTextColor(C[c]())
+					A.Level:SetTextColor(GetRGB(C[c]()))
 					A.Quantity:SetFormattedText("%d",qt)
-					A.Quantity:SetTextColor(C.Yellow())
+					A.Quantity:SetTextColor(GetRGB(C.Yellow()))
 					if toc <70000 then
 						A:SetFrameLevel(gf.Model:GetFrameLevel()+1)
 					else

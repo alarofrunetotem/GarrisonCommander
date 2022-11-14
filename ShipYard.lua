@@ -394,11 +394,11 @@ function module:RefreshCurrency()
 		local qt=C_CurrencyInfo.GetCurrencyInfo(GARRISON_SHIP_OIL_CURRENCY)['quantity']
 		GSF.ResourceInfo:SetFormattedText(GSF.ResourceFormat,qt)
 		if qt > 1000 then
-			GSF.ResourceInfo:SetTextColor(C.Green())
+			GSF.ResourceInfo:SetTextColor(GetRGB(C.Green()))
 		elseif qt > 200 then
-			GSF.ResourceInfo:SetTextColor(C.Orange())
+			GSF.ResourceInfo:SetTextColor(GetRGB(C.Orange()))
 		else
-			GSF.ResourceInfo:SetTextColor(C.Red())
+			GSF.ResourceInfo:SetTextColor(GetRGB(C.Red()))
 		end
 	end
 end

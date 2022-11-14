@@ -27,6 +27,11 @@ local pin=false
 local baseHeight
 local minHeight
 local addon=addon --#addon
+
+local function GetRGB(r, g, b, whatever)
+	return r, g, b
+end
+
 local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_2
 local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0
@@ -122,13 +127,13 @@ local GSF=GSF
 local GMFRewardPage=								GMF.MissionComplete
 local GMFMissions=									GMF.MissionTab.MissionList
 local GMFRewardSplash=								GMF.MissionTab.MissionList.CompleteDialog
-local GMFMissionsListScrollFrame=					GMF.MissionTab.MissionList.listScroll
-local GMFMissionListButtons=						GMF.MissionTab.MissionList.listScroll.buttons
-local GMFMissionsListScrollFrameScrollChild=		GMF.MissionTab.MissionList.listScroll.scrollChild
+-- local GMFMissionsListScrollFrame=					GMF.MissionTab.MissionList.ScrollBox
+-- local GMFMissionListButtons=						GMF.MissionTab.MissionList.listScroll.buttons
+-- local GMFMissionsListScrollFrameScrollChild=		GMF.MissionTab.MissionList.listScroll.scrollChild
 local GMFFollowers=									GMF.FollowerList
 local GMFMissionFrameFollowers=						GMFFollowers
-local GMFFollowersListScrollFrame=					GMFFollowers.listScroll
-local GMFFollowersListScrollFrameScrollChild=		GMFFollowers.listScroll.scrollChild
+-- local GMFFollowersListScrollFrame=					GMFFollowers.listScroll
+-- local GMFFollowersListScrollFrameScrollChild=		GMFFollowers.listScroll.scrollChild
 local GMFMissionPage=								GMF.MissionTab.MissionPage
 --dictionary
 local IGNORE_UNAIVALABLE_FOLLOWERS=IGNORE.. ' ' .. UNAVAILABLE
@@ -396,11 +401,14 @@ function addon:OnInitialized()
 		[LE_FOLLOWER_TYPE_GARRISON_6_0]=addon,
 		[LE_FOLLOWER_TYPE_SHIPYARD_6_2]=self:GetModule("ShipYard"),
 	}
+
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
-	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
+	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED") -- Pretty sure this is gone.  Hooking into ADVENTURE_MAP_CLOSE as well.
+	self:SafeRegisterEvent("ADVENTURE_MAP_CLOSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
 	self:SafeRegisterEvent("QUEST_TURNED_IN")
-	for _,b in ipairs(GMF.MissionTab.MissionList.listScroll.buttons) do
+
+	GMF.MissionTab.MissionList.ScrollBox:ForEachFrame(function(b, elementData)
 		local scale=0.8
 		local f,h,s=b.Title:GetFont()
 		b.Title:SetFont(f,h*scale,s)
@@ -409,7 +417,7 @@ function addon:OnInitialized()
 		b:RegisterForClicks("LeftButtonUp","RightButtonUp")
 		addon:SafeSecureHookScript(b,"OnEnter","ScriptGarrisonMissionButton_OnEnter")
 		addon:SafeRawHookScript(b,"OnClick","ScriptGarrisonMissionButton_OnClick")
-	end
+	end)
 	self:CreatePrivateDb()
 	db=self.db.global
 	db.seen=nil -- Removed in 2.6.9
@@ -655,10 +663,10 @@ function addon:SetThreatColor(obj,threat)
 		local _,_,bias,follower,name=strsplit(":",threat)
 		local color=self:GetBiasColor(tonumber(bias) or -1,nil,"Green")
 		local c=C[color]
-		obj.Border:SetVertexColor(c())
+		obj.Border:SetVertexColor(GetRGB(c()))
 		return (tonumber(bias)or -1)>-1
 	else
-		obj.Border:SetVertexColor(C.red())
+		obj.Border:SetVertexColor(GetRGB(C.red()))
 	end
 
 end
@@ -772,9 +780,9 @@ local function switch(flag)
 	if (GCF[flag]) then
 		local b=GCF[flag]
 		if (b:GetChecked()) then
-			b.text:SetTextColor(C.Green())
+			b.text:SetTextColor(GetRGB(C.Green()))
 		else
-			b.text:SetTextColor(C.Silver())
+			b.text:SetTextColor(GetRGB(C.Silver()))
 		end
 	end
 end
@@ -922,6 +930,15 @@ function addon:WipeMission(missionID)
 	--collectgarbage("step")
 end
 
+function addon:EventADVENTURE_MAP_CLOSE(event, ...)
+	--@debug@
+	self:Print(event,...)
+	--@end-debug@
+	if (GCF) then
+		self:RemoveMenu()
+		GCF:Hide()
+	end
+end
 
 function addon:EventGARRISON_MISSION_NPC_CLOSED(event,...)
 --@debug@
@@ -1956,7 +1973,7 @@ function addon:FillMissionPage(missionInfo)
 			stage.expires:SetPoint("TOPLEFT",missionenv,"BOTTOMLEFT")
 		end
 		stage.expires:SetFormattedText(GARRISON_MISSION_AVAILABILITY2,missionInfo.offerTimeRemaining or _G.UNKNOWN)
-		stage.expires:SetTextColor(self:GetAgeColor(missionInfo.offerEndTime or 0 ))
+		stage.expires:SetTextColor(GetRGB(self:GetAgeColor(missionInfo.offerEndTime or 0 )))
 	else
 		stage.expires=stage.MissionSeen -- In order to anchor missionId
 	end
@@ -2015,10 +2032,10 @@ function addon:GrowPanel()
 		GMF:SetHeight(BIGSIZEH)
 		GMFMissions:SetPoint("BOTTOMRIGHT",GMF,-25,35)
 		GMFFollowers:SetPoint("BOTTOMLEFT",GMF,-35,65)
-		GMFMissionsListScrollFrameScrollChild:ClearAllPoints()
-		GMFMissionsListScrollFrameScrollChild:SetPoint("TOPLEFT",GMFMissionsListScrollFrame)
-		GMFMissionsListScrollFrameScrollChild:SetPoint("BOTTOMRIGHT",GMFMissionsListScrollFrame)
-		GMFFollowersListScrollFrameScrollChild:SetPoint("BOTTOMLEFT",GMFFollowersListScrollFrame,-35,35)
+		-- GMFMissionsListScrollFrameScrollChild:ClearAllPoints()
+		-- GMFMissionsListScrollFrameScrollChild:SetPoint("TOPLEFT",GMFMissionsListScrollFrame)
+		-- GMFMissionsListScrollFrameScrollChild:SetPoint("BOTTOMRIGHT",GMFMissionsListScrollFrame)
+		-- GMFFollowersListScrollFrameScrollChild:SetPoint("BOTTOMLEFT",GMFFollowersListScrollFrame,-35,35)
 		GMF.MissionCompleteBackground:SetWidth(BIGSIZEW)
 	else
 		GCF:SetWidth(GMF:GetWidth())
@@ -2079,8 +2096,8 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 		frame.PortraitFrame.LevelBorder:SetAtlas("GarrMission_PortraitRing_LevelBorder");
 		frame.PortraitFrame.LevelBorder:SetWidth(58);
 		GarrisonFollowerPortrait_Set(frame.PortraitFrame.Portrait)
-		frame.PortraitFrame.PortraitRingQuality:SetVertexColor(C.Silver());
-		frame.PortraitFrame.LevelBorder:SetVertexColor(C.Silver());
+		frame.PortraitFrame.PortraitRingQuality:SetVertexColor(GetRGB(C.Silver()));
+		frame.PortraitFrame.LevelBorder:SetVertexColor(GetRGB(C.Silver()));
 		frame.info=nil
 		return
 	end
@@ -2100,7 +2117,7 @@ function addon:RenderFollowerButton(frame,followerID,missionID,b,t)
 		frame.Name:Show()
 		frame.Name:SetText(info.name);
 		local color=missionID and self:GetBiasColor(followerID,missionID,"White") or "Yellow"
-		frame.Name:SetTextColor(C[color]())
+		frame.Name:SetTextColor(GetRGB(C[color]()))
 		frame.Status:SetText(self:GetFollowerStatus(followerID,true,true))
 		frame.Status:Show()
 	end
@@ -2519,7 +2536,7 @@ function addon:AddRewards(frame, rewards, numRewards)
 			Reward.itemID = nil;
 			Reward.currencyID = nil;
 			Reward.tooltip = nil;
-			Reward.Quantity:SetTextColor(C.White())
+			Reward.Quantity:SetTextColor(GetRGB(C.White()))
 			if (reward.itemID) then
 				Reward.itemID = reward.itemID
 				GarrisonMissionFrame_SetItemRewardDetails(Reward);
@@ -2568,21 +2585,21 @@ function addon:AddRewards(frame, rewards, numRewards)
 --						Reward.Quantity:SetText(math.floor(reward.quantity/10000) * multi);
 						Reward.Quantity:Show();
 						if multi >1 then
-							Reward.Quantity:SetTextColor(C:Green())
+							Reward.Quantity:SetTextColor(GetRGB(C:Green()))
 						elseif reward.pseudogold then
-							Reward.Quantity:SetTextColor(C:Orange())
+							Reward.Quantity:SetTextColor(GetRGB(C:Orange()))
 						elseif Reward.auction then
-							Reward.Quantity:SetTextColor(C:Cyan())
+							Reward.Quantity:SetTextColor(GetRGB(C:Cyan()))
 						else
-							Reward.Quantity:SetTextColor(C:Gold())
+							Reward.Quantity:SetTextColor(GetRGB(C:Gold()))
 						end
 					else
 						Reward.Quantity:SetText(reward.quantity * multi);
 						Reward.Quantity:Show();
 						if multi >1 then
-							Reward.Quantity:SetTextColor(C:Green())
+							Reward.Quantity:SetTextColor(GetRGB(C:Green()))
 						else
-							Reward.Quantity:SetTextColor(C:Gold())
+							Reward.Quantity:SetTextColor(GetRGB(C:Gold()))
 						end
 					end
 				else
@@ -2590,9 +2607,9 @@ function addon:AddRewards(frame, rewards, numRewards)
 						Reward.Quantity:SetText(reward.followerXP);
 						Reward.Quantity:Show();
 						if party.xpBonus and party.xpBonus > 0 then
-							Reward.Quantity:SetTextColor(C:Green())
+							Reward.Quantity:SetTextColor(GetRGB(C:Green()))
 						else
-							Reward.Quantity:SetTextColor(C:Gold())
+							Reward.Quantity:SetTextColor(GetRGB(C:Gold()))
 						end
 					end
 					Reward.tooltip = reward.tooltip;
@@ -2893,7 +2910,7 @@ function addon:AddLevel(source,button,mission,missionID,bigscreen)
 		quality=2
 	end
 	button.Level:SetText(level)
-	button.Level:SetTextColor(self:GetQualityColor(quality))
+	button.Level:SetTextColor(GetRGB(self:GetQualityColor(quality)))
 	button.ItemLevel:Hide();
 end
 function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
@@ -2918,9 +2935,9 @@ function addon:AddThreatsToButton(button,mission,missionID,bigscreen)
 			button.Env.texture=mission.typeIcon
 			button.Env.countered=type(party.isEnvMechanicCountered)=="table" and party.isEnvMechanicCountered.environmentMechanicCountered or false
 			if (button.Env.countered) then
-				button.Env.Border:SetVertexColor(C.Green())
+				button.Env.Border:SetVertexColor(GetRGB(C.Green()))
 			else
-				button.Env.Border:SetVertexColor(C.Red())
+				button.Env.Border:SetVertexColor(GetRGB(C.Red()))
 			end
 			button.Env.Description=mission.typeDesc
 			button.Env.Name=mission.type
@@ -2981,10 +2998,10 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	if button.party and type(button.party.perc)=="number" and button.party.perc > perc then perc=button.party.perc end
 	if button.party.full then
 		panel.Percent:SetFormattedText(GARRISON_MISSION_PERCENT_CHANCE,perc)
-		panel.Percent:SetTextColor(self:GetDifficultyColors(perc))
+		panel.Percent:SetTextColor(GetRGB(self:GetDifficultyColors(perc)))
 	else
 		panel.Percent:SetText("N/A")
-		panel.Percent:SetTextColor(C:Silver())
+		panel.Percent:SetTextColor(GetRGB(C:Silver()))
 	end
 	panel.Percent:SetWidth(80)
 	panel.Percent:Show()
@@ -2996,7 +3013,7 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 		panel.Percent:SetJustifyV("BOTTOM")
 		panel.Percent:SetJustifyH("RIGHT")
 		panel.Age:SetFormattedText("Expires in \n%s",mission.offerTimeRemaining or UNKNOWN)
-		panel.Age:SetTextColor(self:GetAgeColor(mission.offerEndTime))
+		panel.Age:SetTextColor(GetRGB(self:GetAgeColor(mission.offerEndTime)))
 		panel.Age:Show()
 	end
 -- XP display
@@ -3009,7 +3026,7 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 		button.xp:SetWidth(0)
 		local xp=(self:GetMissionData(missionID,'xp',0)+self:GetMissionData(missionID,'xpBonus',0)+self:GetParty(missionID,'xpBonus',0) )*button.info.numFollowers
 		button.xp:SetFormattedText("Xp: %d",xp)
-		button.xp:SetTextColor(self:GetDifficultyColors(xp/3000*100))
+		button.xp:SetTextColor(GetRGB(self:GetDifficultyColors(xp/3000*100)))
 		button.xp:Show()
 	else
 		if button.xp then
@@ -3089,9 +3106,10 @@ function addon:HookedGarrisonMissionList_SetTab(tab)
 	--@end-debug@
 	-- I dont actually care wich page we are showing, I know I must redraw missions
 	addon:RefreshFollowerStatus()
-	for i=1,#GMFMissionListButtons do
-		GMFMissionListButtons.lastMissionID=nil
-	end
+	
+	-- for i=1,#GMFMissionListButtons do
+	-- 	GMFMissionListButtons.lastMissionID=nil
+	-- end
 	addon:RefreshMenu()
 	if (HD) then addon:ResetSinks() end
 end
@@ -3107,9 +3125,9 @@ function addon:GarrisonMissionFrame_SelectTab(frame,tab)
 	print(frame,tab)
 --@end-debug@
 	addon:RefreshFollowerStatus()
-	for i=1,#GMFMissionListButtons do
-		GMFMissionListButtons.lastMissionID=nil
-	end
+	-- for i=1,#GMFMissionListButtons do
+	-- 	GMFMissionListButtons.lastMissionID=nil
+	-- end
 	lastTab=tab
 	if (HD) then addon:ResetSinks() end
 	if GMF.tabMC then

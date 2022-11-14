@@ -1,4 +1,4 @@
-package-as: GarrisonCommander
+package-as: GarrisonCommanderRedux
 enable-nolib-creation: no
 
 externals:

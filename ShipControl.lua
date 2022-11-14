@@ -1,6 +1,11 @@
 local me, ns = ...
 ns.Configure()
 local addon=addon --#addon
+
+local function GetRGB(r, g, b, whatever)
+	return r, g, b
+end
+
 local _G=_G
 -- Courtesy of Motig
 -- Concept and interface reused with permission
@@ -509,9 +514,9 @@ local function drawItemButtons(frame)
 		--row.slider:OnValueChanged(row.chance)
 		row.slider:SetValue(row.chance)
 		if (single) then
-			row.slider:SetTextColor(C.Silver())
+			row.slider:SetTextColor(GetRGB(C.Silver()))
 		else
-			row.slider:SetTextColor(C.Green())
+			row.slider:SetTextColor(GetRGB(C.Green()))
 		end
 		row.slider:OnValueChanged(settings.rewardChance[row.key] or 100)
 		--frame.slider:SetText(settings.rewardChance[frame.key])
@@ -720,9 +725,9 @@ function module:BuildChance()
 	GMC.ct:SetFormattedText('%d%%',settings.minimumChance)
 	GMC.ct:SetPoint('CENTER', 0,25)
 	if settings.useOneChance then
-		GMC.ct:SetTextColor(C:Green())
+		GMC.ct:SetTextColor(GetRGB(C:Green()))
 	else
-		GMC.ct:SetTextColor(C:Silver())
+		GMC.ct:SetTextColor(GetRGB(C:Silver()))
 	end
 	GMC.cs = factory:Slider(frame,0,100,settings.minimumChance,L['Minumum needed chance'],L["Mission with lower success chance will be ignored"]) -- Slider
 	GMC.cs:SetPoint('CENTER', 0, -25)
@@ -739,10 +744,10 @@ function module:BuildChance()
 		settings.useOneChance=this:GetChecked()
 		if (settings.useOneChance) then
 			GMC.cp:SetDesaturated(false)
-			GMC.ct:SetTextColor(C.Green())
+			GMC.ct:SetTextColor(GetRGB(C.Green()))
 		else
 			GMC.cp:SetDesaturated(true)
-			GMC.ct:SetTextColor(C.Silver())
+			GMC.ct:SetTextColor(GetRGB(C.Silver()))
 		end
 		drawItemButtons()
 		module:Refresh()
@@ -785,7 +790,7 @@ function module:BuildFlags()
 	warning:SetPoint("TOPLEFT",GMC.chance,"TOPRIGHT",0,0)
 	warning:SetPoint("TOPRIGHT",GMC,"TOPRIGHT",0,-25)
 	warning:SetJustifyH("CENTER")
-	warning:SetTextColor(C.Orange())
+	warning:SetTextColor(GetRGB(C.Orange()))
 	GMC.warning=warning
 	addon:AddLabel(L["Shipyard Control"])
 	addon:AddSlider("SGCMINLEVEL",settings.minLevel,535,715,L["Item minimum level"],L['Minimum requested level for equipment rewards'],15)

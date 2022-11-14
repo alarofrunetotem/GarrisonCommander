@@ -8,6 +8,10 @@ local UNKNOWN=UNKNOWN
 local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
 
+local function GetRGB(r, g, b, whatever)
+	return r, g, b
+end
+
 local module=addon:NewSubModule("Widgets") --#module
 local function Constructor()
 	local widget= AceGUI:Create("Label")
@@ -29,7 +33,7 @@ local backdrop = {
 }
 local function addBackdrop(f,color)
 	f:SetBackdrop(backdrop)
-	f:SetBackdropBorderColor(C[color or 'Yellow']())
+	f:SetBackdropBorderColor(GetRGB(C[color or 'Yellow']()))
 end
 local function GMCList()
 	local Type="GCMCList"
@@ -224,7 +228,7 @@ local function GMCGUIContainer()
 		local widget={frame=frame,missions={}}
 		widget.type=Type
 		widget.SetTitle=function(self,...) self.frame.TitleText:SetText(...) end
-		widget.SetTitleColor=function(self,...) self.frame.TitleText:SetTextColor(...) end
+		widget.SetTitleColor=function(self,...) self.frame.TitleText:SetTextColor(GetRGB(...)) end
 		for k,v in pairs(m) do widget[k]=v end
 		frame:SetScript("OnHide",function(self) self.obj:Fire('OnClose') end)
 		frame.obj=widget
@@ -311,7 +315,7 @@ local function GMCLayer()
 		widget.title=title
 		widget.type=Type
 		widget.SetTitle=function(self,...) self.title:SetText(...) end
-		widget.SetTitleColor=function(self,...) self.title:SetTextColor(...) end
+		widget.SetTitleColor=function(self,...) self.title:SetTextColor(GetRGB(...)) end
 		widget.SetFormattedTitle=function(self,...) self.title:SetFormattedText(...) end
 		widget.SetTitleWidth=function(self,...) self.title:SetWidth(...) end
 		widget.SetTitleHeight=function(self,...) self.title:SetHeight(...) end
@@ -427,7 +431,7 @@ local function GMCMissionButton()
 		end
 		if self.type==Type2 then
 			self.frame.Percent:SetFormattedText("%d%%",perc or party.perc)
-			self.frame.Percent:SetTextColor(addon:GetDifficultyColors(perc or party.perc))
+			self.frame.Percent:SetTextColor(GetRGB(addon:GetDifficultyColors(perc or party.perc)))
 		end
 	end
 

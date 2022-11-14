@@ -27,6 +27,11 @@ local UIDropDownMenu_SetSelectedID,	UIDropDownMenu_Initialize,	UIDropDownMenu_Cr
 =UIDropDownMenu_SetSelectedID,UIDropDownMenu_Initialize,	UIDropDownMenu_CreateInfo,UIDropDownMenu_AddButton
 local UIDropDownMenu_SetWidth,UIDropDownMenu_SetButtonWidth,UIDropDownMenu_JustifyText=UIDropDownMenu_SetWidth,UIDropDownMenu_SetButtonWidth,UIDropDownMenu_JustifyText
 local UIDropDownMenu_SetText=UIDropDownMenu_SetText
+
+local function GetRGB(r, g, b, whatever)
+	return r, g, b
+end
+
 function module:ShowImprovements()
 	local scroller=self:GetScroller("Items")
 	scroller:AddRow("Follower Upgrades",C.Orange())
@@ -223,9 +228,9 @@ function module:ShowUpgradeButtons(force)
 					A.rawlevel=level
 					A.Level:SetText(level < 600 and (currentlevel+level) or level)
 					local c=colors[level]
-					A.Level:SetTextColor(C[c]())
+					A.Level:SetTextColor(GetRGB(C[c]()))
 					A.Quantity:SetFormattedText("%d",qt)
-					A.Quantity:SetTextColor(C.Yellow())
+					A.Quantity:SetTextColor(GetRGB(C.Yellow()))
 					A:SetFrameLevel(20)
 					A.Quantity:Show()
 					A.Level:Show()
