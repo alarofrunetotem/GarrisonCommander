@@ -50,6 +50,11 @@ function module:Test()
 print("test")
 --@end-debug@
 end
+
+local function GetRGB(r, g, b, whatever)
+	return r, g, b
+end
+
 function module:OnInitialize()
 	--GARRISON_SHIPYARD_NPC_OPEN
 	--GARRISON_SHIPYARD_NPC_CLOSE
@@ -187,7 +192,7 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		addendum:SetBackdropColor(0,0,0,0.5)
 		addendum:SetWidth(50)
 		addendum:SetHeight(25)
-		addendum.chance=addendum:CreateFontString(nil,"TOOLTIP","GameFontHighlightMedium")
+		addendum.chance=addendum:CreateFontString(nil,"OVERLAY","GameFontHighlightMedium")
 		addendum.chance:SetAllPoints()
 		addendum.chance:SetJustifyH("CENTER")
 		addendum.chance:SetJustifyV("CENTER")
