@@ -399,7 +399,6 @@ function addon:OnInitialized()
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
 	self:SafeRegisterEvent("QUEST_TURNED_IN")
-  DevTools_Dump(GMF.MissionTab.MissionList.ScrollBox.ScrollTarget)
 	for _,b in GMF.MissionTab.MissionList.ScrollBox:EnumerateFrames() do
 		local scale=0.8
 		local f,h,s=b.Title:GetFont()
