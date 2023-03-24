@@ -19,14 +19,14 @@ local CreateFrame=CreateFrame
 local GARRISON_FOLLOWER_MAX_LEVEL=40
 local new,del=ns.new,ns.del
 local module=addon:NewSubClass("BuildingPage") --#module
-local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_2
-local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0
-local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0
-local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2
-local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0
-local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0
+local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0_GarrisonFollower
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_Boat
+local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
+local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
+local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
+local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
+local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
+local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
 function module:OnInitialize()
 	--module:SafeHookScript(GBFMap,"OnShow","AddFollowersToMap")
 	module:SafeSecureHook("GarrisonBuildingList_Show","AddCheckBox")
