@@ -395,7 +395,6 @@ function addon:OnInitialized()
 		[LE_FOLLOWER_TYPE_GARRISON_6_0]=addon,
 		[LE_FOLLOWER_TYPE_SHIPYARD_6_2]=self:GetModule("ShipYard"),
 	}
-  _G.print("Registro eventi")
 	self:SafeRegisterEvent("GARRISON_MISSION_COMPLETE_RESPONSE")
 	self:SafeRegisterEvent("GARRISON_MISSION_NPC_CLOSED")
 	self:SafeRegisterEvent("GARRISON_MISSION_STARTED")
@@ -1565,7 +1564,7 @@ print("Setup")
 	bt.missionType=LE_FOLLOWER_TYPE_GARRISON_6_0
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
 	self:SafeSecureHookScript("GarrisonMissionFrame","OnShow")
-	self:SafeSecureHookScript("GarrisonMissionFrame","OnHide",function() addon:EventGARRISON_MISSION_NPC_CLOSED("HIDE") end)
+	self:SafeSecureHookScript("GarrisonMissionFrame","OnHide")
 	self:Trigger("MSORT")
 	local parties=self:GetParties()
 	if #parties==0 then
@@ -1692,6 +1691,7 @@ function addon:AddMissionId(b)
 	end
 end
 function addon:ScriptGarrisonMissionFrame_OnHide()
+  self:EventGARRISON_MISSION_NPC_CLOSED("GARRISON_MISSION_NPC_CLOSED")
 	self:Unhook(GMFMissions,"UpdateMissions")
 
 end
@@ -1785,7 +1785,6 @@ function addon:checkHandler(handler)
 	assert (type(handler)=='function' or type(self[handler])=='function',format("Unable to validate handler '%s'",tostring(handler)))
 end
 function addon:SafeRegisterEvent(event,handler)
-  _G.print("Registrato",event)
 	handler=handler or "Event"..event
 	self:checkHandler(handler)
 	return self:RegisterEvent(event,handler)
