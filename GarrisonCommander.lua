@@ -426,7 +426,8 @@ function addon:OnInitialized()
 	end
 	self:AddLabel(L["Garrison Appearance"])
 	--self:AddToggle("MOVEPANEL",true,L["Unlock Panel"],L["Makes main mission panel movable"])
-	self:AddToggle("BIGSCREEN",true,L["Big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
+	--self:AddToggle("BIGSCREEN",true,L["Big screen"],L["Disabling this will give you the interface from 1.1.8, given or taken. Need to reload interface"])
+	self:SetBoolean("BIGSCREEN",true)
 	self:AddToggle("PIN",true,L["Show Garrison Commander menu"],L["Disable if you dont want the full Garrison Commander Header."])
 	self:AddLabel(L["Mission Panel"])
 	self:AddToggle("IGM",true,IGNORE_UNAIVALABLE_FOLLOWERS,IGNORE_UNAIVALABLE_FOLLOWERS_DETAIL)
@@ -448,7 +449,8 @@ function addon:OnInitialized()
 	self:AddToggle("NOTOOLTIP",false,L["No tooltips"],L["Totally removes mission tooltips"])
 	self:AddToggle("MAXRES",true,L["Maximize result"],L["Allows a lower success percentage for resource missions. Change via Minimum needed chance slider"])
 	self:AddSlider("MAXRESCHANCE",80,50,100,L["Minimum needed chance"],L["Applied when 'maximize result' is enabled. Default is 80%"],1)
-	ns.bigscreen=self:GetBoolean("BIGSCREEN")
+	--ns.bigscreen=self:GetBoolean("BIGSCREEN")
+	ns.bigscreen=false
 	self:AddLabel(L["Followers Panel"])
 	self:AddSlider("MAXMISSIONS",5,1,8,L["Mission shown"],L["Mission shown for follower"],1)
 	self:AddSlider("MINPERC",50,0,100,L["Minimun chance"],L["Minimun chance success under which ignore missions"],5)
@@ -1691,7 +1693,7 @@ function addon:AddMissionId(b)
 	end
 end
 function addon:ScriptGarrisonMissionFrame_OnHide()
-  self:EventGARRISON_MISSION_NPC_CLOSED("GARRISON_MISSION_NPC_CLOSED")
+  self:EventGARRISON_MISSION_NPC_CLOSED("GMF_HIDE")
 	self:Unhook(GMFMissions,"UpdateMissions")
 
 end
