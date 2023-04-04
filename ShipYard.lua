@@ -187,7 +187,6 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		addendum:SetBackdropColor(0,0,0,0.5)
 		addendum:SetWidth(50)
 		addendum:SetHeight(25)
-		self:Print("Creo font string")
 
 
 		addendum.chance=addendum:CreateFontString(nil,"OVERLAY","GameTooltipText")
