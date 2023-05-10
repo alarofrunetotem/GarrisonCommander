@@ -1,4 +1,4 @@
-## Interface: 100007
+## Interface: 100100
 ## Title: GarrisonCommander
 ## Notes: Sending all follower to missions with just one click and more
 ## Notes-itIT: Invia tutti i seguaci in missione con un click e molto altro
@@ -12,7 +12,7 @@
 ## Notes-zhTW: 发送所有的追随者与点击多任务
 ## Notes-zhCN: 發送所有的追隨者與點擊多任務
 ## Author: Alar of Daggerspine
-## Version: @project-version@ 100007
+## Version: @project-version@ 100100
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it
