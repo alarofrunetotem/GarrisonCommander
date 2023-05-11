@@ -28,8 +28,6 @@ if (me ==  gc and  not IsAddOnLoaded(gb) or
      ExpansionLandingPageMinimapButton:HookScript("OnEnter",
      function(this)
       local d=this.description
-        print("GCB",d)
-        print(garrison,orderhall,champion,sanctum)
         if GarrisonLandingPage then
           addTooltip(d,CTRL_KEY_TEXT,garrison)
           addTooltip(d,SHIFT_KEY_TEXT,orderhall)
