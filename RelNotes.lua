@@ -22,6 +22,9 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(3,8,0,[[
+Toc: Update for 1.2.5
+]])
 self:RelNotes(3,5,2,[[
 Fix: Removed debug message "Creo font string"
 ]])

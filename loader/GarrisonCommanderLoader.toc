@@ -1,8 +1,9 @@
-## Interface: 100250
+## Interface: 100205
 ## Title: GarrisonCommanderLoader (Draenor mission assistant loader)
 ## Notes: Loads GarrisonCommander only when you open the commander table
 ## Author: Alar of Runetotem
 ## Version: @project-version@ 100250
+## IconTexture: 134414
 ## X-Revision: @project-abbreviated-hash@
 ## eMail: alar@aspide.it
 ## URL: http://wow.aspide.it

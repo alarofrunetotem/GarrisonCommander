@@ -1,5 +1,6 @@
-## Interface: 100250
+## Interface: 100205
 ## Title: GarrisonCommander
+## IconTexture: 134414
 ## Notes: Sending all follower to missions with just one click and more
 ## Notes-itIT: Invia tutti i seguaci in missione con un click e molto altro
 ## Notes-frFR: Vous aide au moment de choisir le droit utilisateur pour la bonne mission
