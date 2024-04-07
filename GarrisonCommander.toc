@@ -1,4 +1,4 @@
-## Interface: 100205
+## Interface: 100206
 ## Title: GarrisonCommander
 ## IconTexture: 134414
 ## Notes: Sending all follower to missions with just one click and more
