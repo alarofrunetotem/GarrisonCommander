@@ -2991,7 +2991,7 @@ function addon:AddIndicatorToButton(button,mission,missionID,bigscreen)
 	panel.Percent:SetWidth(80)
 	panel.Percent:Show()
 	if (GMFMissions.showInProgress) then
-		panel.Percent:SetJustifyV("CENTER")
+		panel.Percent:SetJustifyV("MIDDLE")
 		panel.Percent:SetJustifyH("RIGHT")
 		panel.Age:Hide()
 	else

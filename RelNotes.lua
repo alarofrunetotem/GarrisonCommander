@@ -22,6 +22,10 @@ self:Wiki([[
 == Silent mode ==
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
+self:RelNotes(3,8,1,[[
+Toc: Update for 10.2.7
+Fix: Lua Error about SetJustifyV
+]])
 self:RelNotes(3,8,0,[[
 Toc: Update for 1.2.5
 ]])
