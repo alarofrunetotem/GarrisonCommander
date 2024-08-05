@@ -1,0 +1,495 @@
+{
+    "NOTES": {
+        "k030804": {
+            "major": "3",
+            "minor": "8",
+            "patch": "4",
+            "description": [
+                {
+                    "tag": "Toc",
+                    "info": "Update for 10.2.7"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Lua Error about SetJustifyV"
+                }
+            ]
+        },
+        "k030801": {
+            "major": "3",
+            "minor": "8",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Toc",
+                    "info": "Update for 1.2.5"
+                }
+            ]
+        },
+        "k030502": {
+            "major": "3",
+            "minor": "5",
+            "patch": "2",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Removed debug message \"Creo font string\""
+                }
+            ]
+        },
+        "k030501": {
+            "major": "3",
+            "minor": "5",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Removed broken big screen mode"
+                }
+            ]
+        },
+        "k030307": {
+            "major": "3",
+            "minor": "3",
+            "patch": "7",
+            "description": [
+                {
+                    "tag": "Toc",
+                    "info": "9.1.0"
+                }
+            ]
+        },
+        "k030306": {
+            "major": "3",
+            "minor": "3",
+            "patch": "6",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "84x ...rfaceGarrisonCommander\\GarrisonCommander-3.3.5 90002.lua"
+                }
+            ]
+        },
+        "k030305": {
+            "major": "3",
+            "minor": "3",
+            "patch": "5",
+            "description": [
+                {
+                    "tag": "Toc",
+                    "info": "9.0.2"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Possible Lua error while viewing mission list or mission page"
+                }
+            ]
+        },
+        "k030204": {
+            "major": "3",
+            "minor": "2",
+            "patch": "4",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Toc 80300"
+                }
+            ]
+        },
+        "k030202": {
+            "major": "3",
+            "minor": "2",
+            "patch": "2",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Due to Blizzartd UI changes, unlock panel is no longer available. Sorry mates"
+                }
+            ]
+        },
+        "k030201": {
+            "major": "3",
+            "minor": "2",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Minimap report enhancement removed, You need Garrison Broker for it"
+                }
+            ]
+        },
+        "k030200": {
+            "major": "3",
+            "minor": "2",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Checked Russian Localization"
+                }
+            ]
+        },
+        "k030101": {
+            "major": "3",
+            "minor": "1",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Checked Russian Localization"
+                }
+            ]
+        },
+        "k030100": {
+            "major": "3",
+            "minor": "1",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Lots of cosmetic fixes Blind fix for errors related to changed blizzard itembutton thanks to wildcard-23"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Removed various lua errors thanks to wildcard-23"
+                }
+            ]
+        },
+        "k030002": {
+            "major": "3",
+            "minor": "0",
+            "patch": "2",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Blind fix for errors related to changed blizzard itembutton"
+                }
+            ]
+        },
+        "k030001": {
+            "major": "3",
+            "minor": "0",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "TOC Bump"
+                }
+            ]
+        },
+        "k030000": {
+            "major": "3",
+            "minor": "0",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Updated broker"
+                }
+            ]
+        },
+        "k021900": {
+            "major": "2",
+            "minor": "19",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Addon can no longer log out the game. No workaround found, so Autologout and logout were removed"
+                }
+            ]
+        },
+        "k021810": {
+            "major": "2",
+            "minor": "18",
+            "patch": "10",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Removes hookedbutton chat spam"
+                }
+            ]
+        },
+        "k021809": {
+            "major": "2",
+            "minor": "18",
+            "patch": "9",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Message"
+                }
+            ]
+        },
+        "k021805": {
+            "major": "2",
+            "minor": "18",
+            "patch": "5",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "OrderHallCommander advertising removed. I still stronlgy suggest to install it because Order Hall support in GC is totally outdated"
+                }
+            ]
+        },
+        "k021804": {
+            "major": "2",
+            "minor": "18",
+            "patch": "4",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Error when playing sounds"
+                }
+            ]
+        },
+        "k021802": {
+            "major": "2",
+            "minor": "18",
+            "patch": "2",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Message"
+                }
+            ]
+        },
+        "k021801": {
+            "major": "2",
+            "minor": "18",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Toc bump"
+                }
+            ]
+        },
+        "k021800": {
+            "major": "2",
+            "minor": "18",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Improved autologout management. Now you are logged out on timeout ONLY if you started mission control via ctrl-click on table."
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Popup message should be informative"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Added help button to Shipyard and revamped help to show release notes and addon description"
+                }
+            ]
+        },
+        "k021700": {
+            "major": "2",
+            "minor": "17",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Fast mode"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Fast mode works for both Garrison and Shipyard mission"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "On auto logout informs you if you have items to salvage"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "No longer includes OrderHallCommander"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Lua error when trying to close header in Order Hall if OrderHallCommander was not installed"
+                }
+            ]
+        },
+        "k021601": {
+            "major": "2",
+            "minor": "16",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Mission control was reusing followers"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Option to always fill Oil Rig mission when available"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Blockade Missions are always enabled when needed"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "OrderHallCommander 1.0.0"
+                }
+            ]
+        },
+        "k021600": {
+            "major": "2",
+            "minor": "16",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Mission control added to Shipyard. Send your naval mission with one click!"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Adds reward icons to shipyard missions"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Includes OrderHallCommander"
+                }
+            ]
+        },
+        "k021509": {
+            "major": "2",
+            "minor": "15",
+            "patch": "9",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Non latin languages localization should now work"
+                }
+            ]
+        },
+        "k021508": {
+            "major": "2",
+            "minor": "15",
+            "patch": "8",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Lua error"
+                }
+            ]
+        },
+        "k021507": {
+            "major": "2",
+            "minor": "15",
+            "patch": "7",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "2.15.6 zip was corrupted, repackaged"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Pushed a new version hoping to trigger Curse packager"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Shipyard equipment buitton were appearing out of follower panel frame and not disappearing with follower panel"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Whem mission were filled, followers were not marked \"In party\""
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Added equipment button in OrderHall as a workaround for \"ACTION BLOCKED\". You no longer need drag and drop"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "In broker, OrderHall mission are now purple"
+                }
+            ]
+        },
+        "k021503": {
+            "major": "2",
+            "minor": "15",
+            "patch": "3",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Lua error on startup"
+                }
+            ]
+        },
+        "k021502": {
+            "major": "2",
+            "minor": "15",
+            "patch": "2",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Quick mission button was disappearing if not clicked before moving mouse out of it"
+                }
+            ]
+        },
+        "k021501": {
+            "major": "2",
+            "minor": "15",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "Now works with 7.1.0"
+                }
+            ]
+        },
+        "k021500": {
+            "major": "2",
+            "minor": "15",
+            "patch": "0",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Right clicking minimap Icon opens Garrison Report"
+                },
+                {
+                    "tag": "Feature",
+                    "info": "Switch to bigscreen can now be canceled"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Troops should now be used more wisely in Class Hall Missions"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "Should not raise errors when clicking on followers"
+                },
+                {
+                    "tag": "Fix",
+                    "info": "No longer showing \"Install an auction addon\" even with auction addon installed"
+                }
+            ]
+        }
+    },
+    "PARAGRAPHS": [
+        "Description"
+    ],
+    "TITLE": {
+        "addon": "me",
+        "title": "RELNOTES"
+    },
+    "WIKI": [
+        "= GarrisonCommander helps you when choosing the right follower for the right mission =",
+        "== General enhancements ==",
+        "* Mission panel is movable (position not saved, it's jus to see things, panel is so huge...)",
+        "* Success chance extimation shown in mission list (optionally considering only available followers)",
+        "* Proposed party button",
+        "* each follower can be ignored individually for each mission",
+        "* you can ignore maxed followers",
+        "* you can ignore busy followers",
+        "* you can sort missions",
+        "== Tooltip Enhancements ==",
+        "* list of additional follower than have useful features for the mission",
+        "* both traits (silver lines) and abilities(blue lines) are shown",
+        "* every follower line has now the icon for countered trait\/ability",
+        "* final success chance (optionally considering only available followers)",
+        "== Silent mode ==",
+        "typing \/gac silent in chat will eliminate every chat message from GarrisonCommander"
+    ]
+}
