@@ -311,7 +311,7 @@ local function sel(this,category,categoryId)
 	UIDropDownMenu_SetText(chooser,category)
 end
 function module:GarrisonTraitCountersFrame_OnLoad(this, tooltipString)
-
+	if true then return end
 	this:ClearAllPoints()
 	this:SetParent(GarrisonThreatCountersFrame:GetParent())
 	this:SetPoint("BOTTOMLEFT",185,0)

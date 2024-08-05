@@ -1056,7 +1056,6 @@ end
 
 local helpwindow -- pseudo static
 function addon:ShowHelpWindow(button)
-  print("hewlp")
 	addon:Help()
 end
 function addon:Toggle(button)

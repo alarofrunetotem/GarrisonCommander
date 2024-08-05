@@ -34,5 +34,5 @@ local function HookedGarrisonRecruiterFrame_AddEntryToDropdown(entry,info,level)
 end
 function module:OnInitialize()
 	--self:SafeSecureHook("GarrisonRecruiterFrame_AddEntryToDropdown")
-	hooksecurefunc("GarrisonRecruiterFrame_AddEntryToDropdown",HookedGarrisonRecruiterFrame_AddEntryToDropdown)
+	-- hooksecurefunc("GarrisonRecruiterFrame_AddEntryToDropdown",HookedGarrisonRecruiterFrame_AddEntryToDropdown)
 end
