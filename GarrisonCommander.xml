@@ -451,4 +451,49 @@
 <!-- In 6.2.0 we can inherits
 	<Frame name="GarrisonThreatCountersFrame" inherits="GarrisonThreatCountersFrameTemplate" hidden="true"/>
 -->
+  <CheckButton name="SpellBookSkillLineTabTemplate" frameLevel="510" virtual="true" hidden="true">
+    <Size x="32" y="32"/>
+    <Layers>
+      <Layer level="BACKGROUND">
+        <Texture file="Interface\SpellBook\SpellBook-SkillLineTab">
+          <Size x="64" y="64"/>
+          <Anchors>
+            <Anchor point="TOPLEFT" x="-3" y="11"/>
+          </Anchors>
+        </Texture>
+      </Layer>
+      <Layer level="ARTWORK" textureSubLevel="1">
+        <Texture name="$parentTabardEmblem" parentKey="TabardEmblem" hidden="true" file="Interface\GuildFrame\GuildEmblemsLG_01">
+          <Size x="33" y="38"/>
+          <Anchors>
+            <Anchor point="CENTER" relativeKey="$parent" relativePoint="TOPLEFT" x="16" y="-15"/>
+          </Anchors>
+        </Texture>
+      </Layer>
+      <Layer level="ARTWORK" textureSubLevel="2">
+        <Texture name="$parentTabardIconFrame" file="Interface\Spellbook\GuildSpellbooktabIconFrame" parentKey="TabardIconFrame" hidden="true">
+          <Size x="32" y="32"/>
+          <Anchors>
+            <Anchor point="TOPLEFT"/>
+          </Anchors>
+        </Texture>
+      </Layer>
+    </Layers>
+    <Scripts>
+      <OnClick>
+        -- SpellBookSkillLineTab_OnClick(self);
+		print('Clicked spell line')
+      </OnClick>
+      <OnEnter>
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+        GameTooltip:SetText(self.tooltip);
+      </OnEnter>
+      <OnLeave>
+        GameTooltip:Hide();
+      </OnLeave>
+    </Scripts>
+    <NormalTexture/>
+    <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
+    <CheckedTexture file="Interface\Buttons\CheckButtonHilight" alphaMode="ADD"/>
+  </CheckButton>
 </Ui>
