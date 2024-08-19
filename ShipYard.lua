@@ -46,9 +46,9 @@ local shipEnhancement={
 local lastTab=1
 function module:Test()
 
---@debug@
+--[==[@debug@
 print("test")
---@end-debug@
+--@end-debug@]==]
 end
 function module:OnInitialize()
 	--GARRISON_SHIPYARD_NPC_OPEN
@@ -65,9 +65,9 @@ function module:OnInitialize()
 
 end
 function module:OpenLastTab()
---@debug@
+--[==[@debug@
 	print("Open Last Tab",lastTab)
---@end-debug@
+--@end-debug@]==]
 	lastTab=lastTab or PanelTemplates_GetSelectedTab(GSF)
 	if lastTab then
 		if GSF.MissionControlTab:IsVisible() then
@@ -133,7 +133,7 @@ end
 --Invoked on every mission display, only for available missions
 --
 local i=0
---@debug@
+--[==[@debug@
 local function colors(c1,c2)
 	return C[c1].r,C[c1].g,C[c1].b,C[c2].r,C[c2].g,C[c2].b
 end
@@ -167,7 +167,7 @@ function module:TTDump(frame,data)
 	dump(GameTooltip,data)
 	GameTooltip:Show()
 end
---@end-debug@
+--@end-debug@]==]
 function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 	if not GSF:IsShown() then return end
 	addon:AddExtraData(mission)
@@ -178,11 +178,11 @@ function module:HookedGarrisonShipyardMap_SetupBonus(missionList,frame,mission)
 		i=i+1
 		addendum=CreateFrame("Frame",nil,frame,"BackdropTemplate")
 		addendum:SetPoint("TOP",frame,"BOTTOM",0,10)
---@debug@
+--[==[@debug@
 		addendum:EnableMouse(true)
 		addendum:SetScript("OnEnter",function(frame) module:TTDump(frame,mission) end)
 		addendum:SetScript("OnLeave",function(frame) GameTooltip:Hide() end)
---@end-debug@
+--@end-debug@]==]
 		AddBackdrop(addendum)
 		addendum:SetBackdropColor(0,0,0,0.5)
 		addendum:SetWidth(50)
@@ -258,16 +258,16 @@ function module:HookedGarrisonFollowerButton_UpdateCounters(gsf,frame,follower,s
 	else
 		frame.GCXp:Hide()
 	end
---@debug@
+--[==[@debug@
 	print(follower)
---@end-debug@
+--@end-debug@]==]
 end
 
 
 function module:Setup(this,...)
---@debug@
+--[==[@debug@
 print("Doing one time initialization for",this:GetName(),...)
---@end-debug@
+--@end-debug@]==]
 	addon:CheckMP()
 	GCS=addon:CreateHeader(self,'SHIPMOVEPANEL','SHIPPIN')
 	local ref=GSFMissions.CompleteDialog.BorderFrame.ViewButton
@@ -277,7 +277,7 @@ print("Doing one time initialization for",this:GetName(),...)
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
-	if IsAddOnLoaded("MasterPlanA") then
+	if C_AddOns.IsAddOnLoaded("MasterPlanA") then
 		self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions") -- low efficiency, but survives MasterPlan
 	end
 	self:SafeSecureHook("GarrisonShipyardMap_SetupBonus")
@@ -340,10 +340,10 @@ function module:HookedClickOnTabs()
 	self:CloseMissionControlTab()
 end
 function module:ScriptGarrisonShipyardFrame_OnShow()
---@debug@
+--[==[@debug@
 	print("Doing all time initialization")
 	print(GetTime())
---@end-debug@
+--@end-debug@]==]
 	GCS:Show()
 	GCS:SetWidth(GSF:GetWidth())
 	GSF:ClearAllPoints()
@@ -358,9 +358,9 @@ function module:ScriptGarrisonShipyardFrame_OnShow()
 end
 function module:HookedGarrisonShipyardMapMission_OnLeave()
 
---@debug@
+--[==[@debug@
 print("OnLeave")
---@end-debug@
+--@end-debug@]==]
 	GameTooltip:Hide()
 end
 function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
@@ -370,19 +370,19 @@ function module:HookedGarrisonShipyardMapMission_OnEnter(frame)
 	local mission=frame.info
 	local missionID=mission.missionID
 	addon:AddFollowersToTooltip(missionID,LE_FOLLOWER_TYPE_SHIPYARD_6_2)
---@debug@
+--[==[@debug@
 	g:AddDoubleLine("MissionID:",missionID)
 	g:AddDoubleLine("Class",mission.class)
---@end-debug@
+--@end-debug@]==]
 	g:Show()
 	if g:GetWidth() < GarrisonShipyardMapMissionTooltip:GetWidth() then
 		g:SetWidth(GarrisonShipyardMapMissionTooltip:GetWidth())
 	end
 end
 function addon:EventGARRISON_SHIPYARD_NPC_CLOSED(event,...)
---@debug@
+--[==[@debug@
 print("NPC CLOSED")
---@end-debug@
+--@end-debug@]==]
 	if (GCS) then
 		self:RemoveMenu()
 		GCS:Hide()
@@ -405,9 +405,9 @@ function module:RefreshCurrency()
 	end
 end
 function module:EventGARRISON_MISSION_STARTED(event,missionType,missionID,...)
-	--@debug@
+	--[==[@debug@
 	print(event,missionID)
-	--@end-debug@
+	--@end-debug@]==]
 	self:RefreshFollowerStatus()
 	self:ScheduleTimer("RefreshCurrency",0.2)
 end
@@ -422,16 +422,16 @@ function module:AddMenu()
 	if not GCS or GCS.Menu then
 		return
 	end
---@debug@
+--[==[@debug@
 	print("Adding Menu",GCS.Menu,GSF.MissionTab:IsVisible(),GSF.FollowerTab:IsVisible())
---@end-debug@
+--@end-debug@]==]
 	local menu,size
 	self.currentmenu=GSF.FollowerTab
 	menu,size=self:CreateOptionsLayer('SHIPMOVEPANEL','SHIPENHA','SGCSKIPEPIC','SGCMINLEVEL','SGCRIG')
---@debug@
+--[==[@debug@
 	self:AddOptionToOptionsLayer(menu,'DBG')
 	self:AddOptionToOptionsLayer(menu,'TRC')
---@end-debug@
+--@end-debug@]==]
 	local frame=menu.frame
 	frame:Show()
 	frame:SetParent(GCS)
@@ -445,14 +445,14 @@ function module:AddMenu()
 	GCS.Menu=menu
 end
 function module:RemoveMenu()
---@debug@
+--[==[@debug@
 print("Removing menu")
---@end-debug@
+--@end-debug@]==]
 	if (GCS.Menu) then
 		local rc,message=pcall(GCS.Menu.Release,GCS.Menu)
-		--@debug@
+		--[==[@debug@
 		print("Removed menu",rc,message)
-		--@end-debug@
+		--@end-debug@]==]
 		GCS.Menu=nil
 	end
 end

@@ -20,9 +20,9 @@ local function addTooltip(d,key,message)
   if (d==message) then return end
   GameTooltip:AddLine(key .. " " .. message)
 end
-print("GCB",me,gc,IsAddOnLoaded(gc),gb,IsAddOnLoaded(gb))
-if (me ==  gc and  not IsAddOnLoaded(gb) or
-    me ==  gb and  not IsAddOnLoaded(gc)
+print("GCB",me,gc,C_AddOns.IsAddOnLoaded(gc),gb,C_AddOns.IsAddOnLoaded(gb))
+if (me ==  gc and  not C_AddOns.IsAddOnLoaded(gb) or
+    me ==  gb and  not C_AddOns.IsAddOnLoaded(gc)
 ) then
     print("Hooking tooltip")
      ExpansionLandingPageMinimapButton:HookScript("OnEnter",
