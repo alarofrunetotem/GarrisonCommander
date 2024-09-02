@@ -31,7 +31,7 @@ local pool={}
 function module:OnInitialize(...)
 	if not ns.GHF then return end -- Waiting to be late initialized by init routine
 	OHFFollowerTab=OrderHallMissionFrame.FollowerTab -- Contains model view
-	if GetAddOnEnableState(UnitName("player"),"OrderHallCommander") > 0 then
+	if C_AddOns.GetAddOnEnableState(UnitName("player"),"OrderHallCommander") > 0 then
 		ns.ignoreHall=true
 		return
 	end

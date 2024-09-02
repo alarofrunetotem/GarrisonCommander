@@ -1,6 +1,6 @@
 local me, ns = ...
 ns.Configure()
-local addon=addon
+local addon=ns.addon
 local _G=_G
 local wipe=wipe
 local format=format

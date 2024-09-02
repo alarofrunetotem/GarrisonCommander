@@ -277,7 +277,7 @@ print("Doing one time initialization for",this:GetName(),...)
 	bt:SetText(L["Garrison Comander Quick Mission Completion"])
 	bt:SetPoint("CENTER",0,-50)
 	addon:ActivateButton(bt,"MissionComplete",L["Complete all missions without confirmation"])
-	if IsAddOnLoaded("MasterPlanA") then
+	if C_AddOns.IsAddOnLoaded("MasterPlanA") then
 		self:SafeSecureHook("GarrisonShipyardMap_UpdateMissions") -- low efficiency, but survives MasterPlan
 	end
 	self:SafeSecureHook("GarrisonShipyardMap_SetupBonus")

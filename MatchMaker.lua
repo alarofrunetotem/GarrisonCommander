@@ -1,6 +1,6 @@
 local me,ns=...
 ns.Configure()
-local addon=addon --#addon
+local addon=ns.addon --#addon
 local _G=_G
 local P=ns.party
 --local holdEvents,releaseEvents=addon.holdEvents,addon.releaseEvents
@@ -11,25 +11,25 @@ local pairs=pairs
 local format=format
 local tonumber=tonumber
 local tinsert=tinsert
-local tremove=tremove
 local loadstring=loadstring
 local assert=assert
 local rawset=rawset
 local strsplit=strsplit
-local epicMountTrait=221
-local extraTrainingTrait=80 --all followers +35
-local fastLearnerTrait=29 -- only this follower +50
-local hearthStoneProTrait=236 -- all followers +36
-local scavengerTrait=79 -- More resources
-local GARRISON_CURRENCY=GARRISON_CURRENCY
-local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
-local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
+-- local epicMountTrait=221
+-- local extraTrainingTrait=80 --all followers +35
+-- local fastLearnerTrait=29 -- only this follower +50
+-- local hearthStoneProTrait=236 -- all followers +36
+-- local scavengerTrait=79 -- More resources
+-- local GARRISON_CURRENCY=GARRISON_CURRENCY
+-- local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
+-- local LE_FOLLOWER_TYPE_GARRISON_6_0=_G.LE_FOLLOWER_TYPE_GARRISON_6_0 -- 1
+---@diagnostic disable-next-line: undefined-field
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=_G.LE_FOLLOWER_TYPE_SHIPYARD_6_2 -- 2
 local dbg
-local useCap=false
-local currentCap=100
+-- local useCap=false
+-- local currentCap=100
 local testID=0
-
+--- #class G
 local function formatScore(c,r,x,t,maxres,cap)
 	c=tonumber(c) or 0
 	r=tonumber(r) or 0
@@ -149,7 +149,7 @@ local function AddMoreFollowers(self,mission,scores,justdo,max)
 	local missionScore=self:MissionScore(mission)
 --@debug@
 	if missionID==testID then
-		print("AddMoreFollowers called with ",#scores,justdo,justone,P:FreeSlots())
+		print("AddMoreFollowers called with ",#scores,justdo,max,P:FreeSlots())
 	end
 	if dbg then
 		scroller:AddRow("AddMore")
@@ -228,7 +228,9 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	else
 		filters.skipBusy=not includeBusy
 	end
+---@diagnostic disable-next-line: undefined-global
 	local scores=new()
+---@diagnostic disable-next-line: undefined-global
 	local troops=new()
 	P:Open(missionID,mission.numFollowers)
 	local missionTypeID=mission.followerTypeID
@@ -258,10 +260,12 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	if #scores > 0 then
 --@debug@
 		if (dbg) then
+---@diagnostic disable-next-line: redundant-parameter
 			scroller:addRow("Cap Res Cha Xp T Vra Ran")
 			for i=1,#scores do
 				local score,followerID=strsplit('@',scores[i])
 				local t=score .. " " .. addon:GetAnyData(mission.followerTypeID,followerID,'fullname') .. " " .. tostring(G.GetFollowerStatus(followerID))
+---@diagnostic disable-next-line: redundant-parameter
 				scroller:addRow(t)
 			end
 		else
@@ -278,6 +282,7 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 		if firstmember then
 			if P:AddFollower(firstmember) and dbg then
 --@debug@
+---@diagnostic disable-next-line: redundant-parameter
 				scroller:addRow(C("Slot 1:","Green").. " " .. addon:GetAnyData(0,firstmember,'fullname'))
 --@end-debug@
 			end
@@ -299,6 +304,7 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 		end
 --@debug@
 		if dbg then
+---@diagnostic disable-next-line: redundant-parameter
 			scroller:addRow("Final score: " .. self:MissionScore(mission))
 		end
 --@end-debug@
@@ -318,7 +324,9 @@ local function MatchMaker(self,mission,party,includeBusy,onlyBest)
 	end
 	P:StoreFollowers(party.members)
 	P:Close(party)
+---@diagnostic disable-next-line: undefined-global
 	del(scores)
+---@diagnostic disable-next-line: undefined-global
 	del(troops)
 end
 function addon:MCMatchMaker(missionID,party,skipEpic,cap)
@@ -328,7 +336,7 @@ function addon:MCMatchMaker(missionID,party,skipEpic,cap)
 --@debug@
 	print("Using cap data:",cap)
 --@end-debug@
-	MatchMaker(self,mission,party,false,true,cap)
+	MatchMaker(self,mission,party,false,true)
 	if (skipEpic) then
 		if (self:GetMissionData(missionID,'class')=='xp') then
 			for i=1,#party.members do
@@ -371,10 +379,13 @@ function addon:TestMission(missionID,includeBusy)
 	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
 	missionID=mission.missionID
 	dbg=true
+---@diagnostic disable-next-line: undefined-global, undefined-global
 	local party=new()
 	party.members=new()
 	self:MatchMaker(mission,party,includeBusy)
+---@diagnostic disable-next-line: undefined-global
 	del(party.members)
+---@diagnostic disable-next-line: undefined-global
 	del(party)
 	scroller=nop
 	dbg=false
