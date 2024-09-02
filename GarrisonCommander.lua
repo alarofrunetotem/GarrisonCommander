@@ -8,7 +8,6 @@ local tremove=tremove
 local setmetatable=setmetatable
 local getmetatable=getmetatable
 local type=type
-local GetAddOnMetadata=GetAddOnMetadata
 local CreateFrame=CreateFrame
 local wipe=wipe
 local format=format
@@ -512,14 +511,14 @@ function addon:showdata(fullargs,action,missionid)
 end
 
 function addon:CheckMP()
-	if (IsAddOnLoaded("MasterPlan")) then
+	if (C_AddOns.IsAddOnLoaded("MasterPlan")) then
 		MP=true
 		ns.MP=true
 		MPSwitch=true
 	end
 end
 function addon:CheckGMM()
-	if (IsAddOnLoaded("GarrisonMissionManager")) then
+	if (C_AddOns.IsAddOnLoaded("GarrisonMissionManager")) then
 		GMM=true
 		self:RefreshParties()
 		self:RefreshMissions()
@@ -867,7 +866,7 @@ function addon:SetDbDefaults(default)
 end
 function addon:CreatePrivateDb()
 	self.privatedb=self:RegisterDatabase(
-		GetAddOnMetadata(me,"X-Database")..'perChar',
+		C_AddOns.GetAddOnMetadata(me,"X-Database")..'perChar',
 		{
 			profile={
 				ignored={

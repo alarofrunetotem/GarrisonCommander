@@ -5,21 +5,13 @@ local minvers=39
 assert(minor>=minvers,me ..': Need at least Libinit version ' .. minvers)
 local _G=_G
 local setmetatable=setmetatable
-local next=next
 local pairs=pairs
-local wipe=wipe
-local GetChatFrame=GetChatFrame
-local format=format
 local GetTime=GetTime
-local strjoin=strjoin
-local strspilit=strsplit
-local tostringall=tostringall
-local tostring=tostring
 local tonumber=tonumber
 local type=type
 --@debug@
-LoadAddOn("Blizzard_DebugTools")
-LoadAddOn("LibDebug")
+C_AddOns.LoadAddOn("Blizzard_DebugTools")
+C_AddOns.LoadAddOn("LibDebug")
 if LibDebug then LibDebug() ns.print=print else ns.print=function() end end
 --@end-debug@
 --[===[@non-debug@
@@ -33,6 +25,7 @@ ns.D=LibStub("LibDeformat-3.0")
 ns.C=addon:GetColorTable()
 ns.L=addon:GetLocale()
 ns.G=C_Garrison
+---@diagnostic disable-next-line: undefined-field
 ns.GMF=_G.GarrisonMissionFrame
 ns.blacklist=false
 ns.prioritylist=false
@@ -47,12 +40,15 @@ if not ns.GMF then
 --@debug@
 	print(GetTime())
 --@end-debug@
+---@diagnostic disable-next-line: undefined-field
 	ns.GMF=_G.GarrisonMissionFrame
 end
 if not ns.GMF then error("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available") end
+---@diagnostic disable-next-line: undefined-field
 ns.GSF=_G.GarrisonShipyardFrame
 ns.GMFMissions=ns.GMF.MissionTab.MissionList
 ns.GSFMissions=ns.GSF.MissionTab.MissionList
+---@diagnostic disable-next-line: inject-field
 _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL = _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 local NavalDomination={
 	Alliance=39068,
@@ -313,7 +309,6 @@ ns.traitTable={
 	[231]="Bodyguard",
 	[56]="Enchanting",
 	[57]="Engineering",
-	[62]="Evergreen",
 	[53]="Herbalism",
 	[52]="Mining",
 	[58]="Inscription",
@@ -370,6 +365,7 @@ setmetatable(ENV,
 {__index=_G,
 __newindex=function(t,k,v)
 	assert(type(_G[k]) == 'nil',"Attempting to override global " ..k)
+---@diagnostic disable-next-line: redundant-return-value
 	return rawset(t,k,v)
 end
 }
@@ -381,5 +377,6 @@ function ns.Configure()
 		if old_env ~= _G and old_env ~= ENV then
 			error("The calling function has a modified environment, I won't replace it.", 2)
 		end
+---@diagnostic disable-next-line: param-type-mismatch
 		setfenv(2, ENV)
 end
