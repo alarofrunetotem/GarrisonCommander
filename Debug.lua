@@ -355,9 +355,9 @@ for k,v in pairs(addon) do
 			local original=addon[k]
 			wrapped=function(...)
 				tinsert(callstack,k)
-				local membefore=GetAddOnMemoryUsage("GarrisonCommander")
+				local membefore=C_AddOns.GetAddOnMemoryUsage("GarrisonCommander")
 				local a1,a2,a3,a4,a5,a6,a7,a8,a9=original(...)
-				local memafter=GetAddOnMemoryUsage("GarrisonCommander")
+				local memafter=C_AddOns.GetAddOnMemoryUsage("GarrisonCommander")
 				tremove(callstack)
 				memorysinks[k].mem=memorysinks[k].mem+memafter-membefore
 				memorysinks[k].calls=memorysinks[k].calls+1
