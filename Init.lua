@@ -36,7 +36,7 @@ if not ns.GMF then
 	print("GarrisonCommander is being loaded before Blizzard_GarrisonUI is available")
 	print(GetTime())
 --@end-debug@
-	LoadAddOn("Blizzard_GarrisonUI")
+	C_AddOns.LoadAddOn("Blizzard_GarrisonUI")
 --@debug@
 	print(GetTime())
 --@end-debug@

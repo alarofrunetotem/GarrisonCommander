@@ -23,6 +23,10 @@ self:Wiki([[
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
 self:HF_Paragraph('Release Notes')
+self:RelNotes(3,10,0,[[
+Toc: Update for 11.0.5
+Fix: Removed non longer existing functions
+]])
 self:RelNotes(3,9,2,[[
 Fix: Was still using removed function
 ]])
