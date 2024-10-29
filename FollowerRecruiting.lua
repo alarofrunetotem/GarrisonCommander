@@ -1,3 +1,4 @@
+---@diagnostic disable: unused-local, undefined-global
 local me,ns=...
 ns.Configure()
 local addon=addon
