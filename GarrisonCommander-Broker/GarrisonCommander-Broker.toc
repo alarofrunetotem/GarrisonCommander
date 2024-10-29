@@ -1,4 +1,4 @@
-## Interface: 110000,110002
+## Interface: 110005,110005
 ## Title: GarrisonCommander-Broker
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander

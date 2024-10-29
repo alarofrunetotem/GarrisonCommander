@@ -19,7 +19,7 @@ end
 ns:RegisterEvent("ADDON_LOADED",pp)
 --]]
 if C_Garrison.IsOnGarrisonMap() then
-  LoadAddOn("GarrisonCommander")
+  C_AddOns.LoadAddOn("GarrisonCommander")
 end
 ns:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 ns:RegisterEvent("ZONE_CHANGED","ZONE_CHANGED_NEW_AREA")

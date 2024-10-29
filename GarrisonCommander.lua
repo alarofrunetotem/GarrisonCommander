@@ -1,3 +1,4 @@
+---@diagnostic disable: unused-local, undefined-global, unused-local, undefined-global
 local me, ns = ...
 local toc=select(4,GetBuildInfo())
 local pp=print
@@ -31,7 +32,6 @@ local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_B
 local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
 local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
 local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
 local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
 local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
 local GARRISON_MISSION_AVAILABILITY1=GARRISON_MISSION_AVAILABILITY..'\n %s'
@@ -173,9 +173,9 @@ local function ShowTT(this)
 	GameTooltip:SetText(this.tooltip)
 	GameTooltip:Show()
 end
-local function FadeTT(this)
-	GameTooltip:Fade()
-end
+-- local function FadeTT(this)
+-- 	GameTooltip:Fade()
+-- end
 local function HideTT(this)
 	GameTooltip:Hide()
 end
@@ -1141,9 +1141,6 @@ function addon:AddOptionToOptionsLayer(o,flag,maxsize)
 		widgetsForKey[flag]=widget
 	end
 	return maxsize
-end
-function addon:GetMain()
-	return GMF
 end
 function addon:CreateHeader(module,MOVEPANEL,PIN)
 	if not module then module=self end
