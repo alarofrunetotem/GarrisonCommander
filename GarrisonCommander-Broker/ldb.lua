@@ -1,9 +1,10 @@
+---@diagnostic disable: missing-fields
 local me, ns = ...
 local toc=select(4,GetBuildInfo())
 local pp=print
 --@debug@
-LoadAddOn("Blizzard_DebugTools")
-LoadAddOn("LibDebug")
+C_AddOns.LoadAddOn("Blizzard_DebugTools")
+C_AddOns.LoadAddOn("LibDebug")
 if LibDebug then LibDebug() end
 --@end-debug@
 local print=print
@@ -21,10 +22,10 @@ if not LDB then
 		return init
 	end
 end
-local dataobj --#Missions
-local farmobj --#Farms
-local workobj --#Works
-local cacheobj --#Cache
+local dataobj
+local farmobj
+local workobj
+local cacheobj
 local SecondsToTime=SecondsToTime
 local type=type
 local strsplit=strsplit
@@ -69,7 +70,6 @@ local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_B
 local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
 local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
 local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
 local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
 local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
 local dbversion=1
@@ -119,6 +119,7 @@ function addon:ldbCleanup()
 		local s=self.db.realm.missions[i]
 		if (type(s)=='string') then
 			local t,ID,pc=strsplit('.',s)
+---@diagnostic disable-next-line: cast-local-type
 			t=tonumber(t) or 0
 			if pc==ns.me and t < now then
 				tremove(self.db.realm.missions,i)
@@ -260,7 +261,7 @@ function addon:CountEmpty()
 end
 function addon:WorkUpdate(event,success,shipments_running,shipmentCapacity,plotID)
 
-	local buildings = G.GetBuildings(LE_GARRISON_TYPE_6_0);
+	local buildings = G.GetBuildings(LE_GARRISON_TYPE_6_0) or {}
 	for i = 1, #buildings do
 		if plotID == buildings[i].plotID then
 			local buildingID,name=G.GetBuildingInfo(buildings[i].buildingID)
@@ -277,31 +278,32 @@ function addon:WorkUpdate(event,success,shipments_running,shipmentCapacity,plotI
 	end
 end
 function addon:DiscoverFarms()
-	local buildings = G.GetBuildings(LE_GARRISON_TYPE_6_0);
+	local buildings = G.GetBuildings(LE_GARRISON_TYPE_6_0) or {}
 	for i = 1, #buildings do
 		local buildingID = buildings[i].buildingID;
 		if ( buildingID) then
 			local name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemIcon, itemQuality, itemID = G.GetLandingPageShipmentInfo(buildingID);
-			if (tContains(buildids.mine,buildingID)) then
-				names.mine=name
-				if not self.db.realm.farms[ns.me][name] then
-					self.db.realm.farms[ns.me][name]=0
+			if name then
+				if (tContains(buildids.mine,buildingID)) then
+					names.mine=name
+					if not self.db.realm.farms[ns.me][name] then
+						self.db.realm.farms[ns.me][name]=0
+					end
+				elseif (tContains(buildids.herb,buildingID)) then
+					names.herb=name
+					if not self.db.realm.farms[ns.me][name] then
+						self.db.realm.farms[ns.me][name]=0
+					end
 				end
-			end
-			if (tContains(buildids.herb,buildingID)) then
-				names.herb=name
-				if not self.db.realm.farms[ns.me][name] then
-					self.db.realm.farms[ns.me][name]=0
-				end
-			end
-			if (shipmentCapacity ) then
-				if (creationTime) then
-					local numPending=shipmentsTotal-shipmentsReady
-					local endQueue=duration*numPending-(time()-creationTime)
-					if not numPending or numPending==0 then
-						self.db.realm.orders[ns.me][name]=0
-					else
-						self.db.realm.orders[ns.me][name]=time()+endQueue
+				if (shipmentCapacity ) then
+					if (creationTime) then
+						local numPending=shipmentsTotal-shipmentsReady
+						local endQueue=duration*numPending-(time()-creationTime)
+						if not numPending or numPending==0 then
+							self.db.realm.orders[ns.me][name]=0
+						else
+							self.db.realm.orders[ns.me][name]=time()+endQueue
+						end
 					end
 				end
 			end
@@ -457,6 +459,9 @@ function addon:ColorToString(r,g,b)
 	return format("%02X%02X%02X", 255*r, 255*g, 255*b)
 end
 
+---@class dataobj: LibDataBroker.DataDisplay
+---@field AddDoubleLine function
+---@field AddLine function
 dataobj=LDB:NewDataObject("GC-Missions", {
 	type = "data source",
 	label = "GC "  .. GARRISON_NUM_COMPLETED_MISSIONS,
@@ -464,6 +469,9 @@ dataobj=LDB:NewDataObject("GC-Missions", {
 	category = "Interface",
 	icon = "Interface\\ICONS\\ACHIEVEMENT_GUILDPERK_WORKINGOVERTIME"
 })
+---@class farmobj: LibDataBroker.DataDisplay
+---@field AddDoubleLine function
+---@field AddLine function
 farmobj=LDB:NewDataObject("GC-Farms", {
 	type = "data source",
 	label = "GC " .. "Harvesting",
@@ -472,6 +480,9 @@ farmobj=LDB:NewDataObject("GC-Farms", {
 	icon = "Interface\\Icons\\Inv_ore_gold_nugget"
 	--icon = "Interface\\Icons\\Trade_Engineering"
 })
+---@class workobj: LibDataBroker.DataDisplay
+---@field AddDoubleLine function
+---@field AddLine function
 workobj=LDB:NewDataObject("GC-WorkOrders", {
 	type = "data source",
 	label = "GC " ..CAPACITANCE_WORK_ORDERS,
@@ -479,6 +490,9 @@ workobj=LDB:NewDataObject("GC-WorkOrders", {
 	category = "Interface",
 	icon = "Interface\\Icons\\Trade_Engineering"
 })
+---@class cacheobj: LibDataBroker.DataDisplay
+---@field AddDoubleLine function
+---@field AddLine function
 cacheobj=LDB:NewDataObject("GC-Cache", {
 	type = "data source",
 	label = "GC " .. GARRISON_CACHE,
@@ -551,9 +565,10 @@ function dataobj:OnTooltipShow()
 	if #db > 0 then
 		if addon:GetBoolean("SUMMARY") then
 			local sorted=addon:NewTable()
-			local now=time()
+			now=time()
 			for i=1,#db do
 				if db[i] then
+					---@type integer|string
 					local t,missionID,pc,followerType=strsplit('.',db[i])
 					t=tonumber(t) or 0
 					if not sorted[pc] then
@@ -585,6 +600,7 @@ function dataobj:OnTooltipShow()
 		else
 			for i=1,#db do
 				if db[i] then
+					---@type integer|string,string,string,integer|string
 					local t,missionID,pc,followerType=strsplit('.',db[i])
 					t=tonumber(t) or 0
 					followerType=tonumber(followerType) or LE_FOLLOWER_TYPE_GARRISON_6_0
@@ -708,15 +724,16 @@ function dataobj:Update()
 	local now=time()
 	local n=0
 	local t=0
-	local prox=false
+	local prox
 	for i=1,#addon.db.realm.missions do
+		---@type integer|string
 		local tm,missionID,pc=strsplit('.',addon.db.realm.missions[i])
 		tm=tonumber(tm) or 0
 		t=t+1
 		if tm>now then
 			if not prox then
 				local duration=tm-now
-				local duration=duration < 60 and duration or math.floor(duration/60)*60
+				duration=duration < 60 and duration or math.floor(duration/60)*60
 				prox=format("|cff20ff20%s|r in %s",pc,SecondsToTime(duration))
 			end
 		else
@@ -740,6 +757,7 @@ function dataobj:OldUpdate()
 	local ready=NONE
 	local prox=NONE
 	for i=1,#addon.db.realm.missions do
+		---@type integer|string
 		local t,missionID,pc=strsplit('.',addon.db.realm.missions[i])
 		t=tonumber(t) or 0
 		if t>now then
