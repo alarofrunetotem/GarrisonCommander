@@ -21,11 +21,9 @@ local function addTooltip(d,key,message)
   if (d==message) then return end
   GameTooltip:AddLine(key .. " " .. message)
 end
-print("GCB",me,gc,IsAddOnLoaded(gc),gb,IsAddOnLoaded(gb))
 if (me ==  gc and  not IsAddOnLoaded(gb) or
     me ==  gb and  not IsAddOnLoaded(gc)
 ) then
-    print("Hooking tooltip")
      ExpansionLandingPageMinimapButton:HookScript("OnEnter",
      function(this)
       local d=this.description
@@ -40,7 +38,6 @@ if (me ==  gc and  not IsAddOnLoaded(gb) or
       function (this,button)
         local shift,ctrl,alt=IsShiftKeyDown(),IsControlKeyDown(),IsAltKeyDown()
         local requested=0
-        print (shift,ctrl,alt)
         if ctrl then
           if alt then
             requested=LE_GARRISON_TYPE_9_0
