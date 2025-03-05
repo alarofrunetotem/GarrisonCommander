@@ -4,7 +4,6 @@ ns.Configure()
 local GarrisonMissionFrame_SetItemRewardDetails=GarrisonMissionFrame_SetItemRewardDetails
 local GetItemCount=GetItemCount
 local addon=addon --#addon
-local over=over --#over
 local _G=_G
 local GSF=GSF
 local GSFMissions=GSFMissions
@@ -12,20 +11,12 @@ local G=C_Garrison
 local pairs=pairs
 local kpairs=addon:GetKpairs()
 local format=format
-local strsplit=strsplit
 local select=select
-local generated
 local GARRISON_CURRENCY=GARRISON_CURRENCY
-local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
-local GARRISON_FOLLOWER_MAX_LEVEL=40
-local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0_GarrisonFollower
+local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY or 1101
+local GARRISON_FOLLOWER_MAX_LEVEL=GARRISON_FOLLOWER_MAX_LEVEL or 100
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_Boat
-local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
-local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
-local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
-local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
-local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
+
 local GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY=GARRISON_FOLLOWER_MAX_UPGRADE_QUALITY[LE_FOLLOWER_TYPE_SHIPYARD_6_2]
 local module=addon:NewSubClass('ShipYard') --#Module
 local GameTooltip=GameTooltip
@@ -139,15 +130,17 @@ local function colors(c1,c2)
 end
 local function dump(tip,data,indent)
 	indent=indent or ''
+	---@type string,number|string|boolean|table
 	for k,v in kpairs(data) do
 		local color="Silver"
 		if type(v)=="number" then color="Cyan"
-		elseif type(v)=="string" then color="Yellow" v=v:sub(1,30)
+		elseif type(v)=="string" then 
+			color="Yellow" 
+			if k=="description" then v =v:sub(1,10) else v=v:sub(1,30) end
 		elseif type(v)=="boolean" then v=v and 'True' or 'False' color="White"
 		elseif type(v)=="table" then color="Green"
 		else v=type(v) color="Blue"
 		end
-		if k=="description" then v =v:sub(1,10) end
 		if type(v)=="table" then
 			if v.GetObjectType then
 				v=v:GetObjectType()

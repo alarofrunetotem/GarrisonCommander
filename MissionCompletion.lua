@@ -8,16 +8,12 @@ local GSF=GSF
 local GMFMissions=GarrisonMissionFrameMissions
 local GSFMissions=GarrisonMissionFrameMissions
 local GARRISON_CURRENCY=GARRISON_CURRENCY
-local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY
+---@diagnostic disable-next-line: undefined-field
+local GARRISON_SHIP_OIL_CURRENCY=_G.GARRISON_SHIP_OIL_CURRENCY or 1101
 local SEAL_CURRENCY=994
 local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0_GarrisonFollower
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_Boat
-local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
-local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
-local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
-local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
-local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
+
 local pairs=pairs
 local format=format
 local strsplit=strsplit
@@ -230,7 +226,7 @@ function module:MissionAutoComplete(event,ID,arg1,arg2,arg3,arg4,...)
 		arg1=arg2
 		if tonumber(arg1,0) then
 			--report:AddFollower(ID,arg1,arg2)
-			rewards.followerXP[ID]=rewards.followerXP[ID]+tonumber(arg1) or 0
+			rewards.followerXP[ID]=rewards.followerXP[ID]+(tonumber(arg1) or 0)
 		end
 		return
 	-- GARRISON_MISSION_BONUS_ROLL_LOOT: itemID

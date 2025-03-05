@@ -42,28 +42,8 @@ local settings ---#table Pointer to settings in saved var
 local new=addon:Wrap("NewTable")
 local del=addon:Wrap("DelTable")
 local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0_GarrisonFollower
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_Boat
-local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
-local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
-local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
-local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
-local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
 
 local module=addon:NewSubClass("MissionControl") --#module
-local function chooseBestClass(class,moreClasses)
-	local i=class2order[class] or 999
-	local class=class
-	if type(moreClasses)=="table" then
-		for k,v in pairs(moreClasses) do
-			if class2order[k] < i then
-				class=k
-				i=class2order[class]
-			end
-		end
-	end
-
-end
 function module:AcceptMission(missionID,class,value,name,choosenby)
 	local ar=settings.allowedRewards
 	value=tonumber(value)
@@ -333,6 +313,7 @@ local function buildDragging(frame,drawItemButtons)
 		GameTooltip:SetOwner(this, 'ANCHOR_BOTTOMRIGHT')
 		GameTooltip:AddLine(this.tooltip);
 		for _,line in ipairs(this.list) do
+---@diagnostic disable-next-line: redundant-parameter
 			local info=GetItemInfo(line,2)
 			if info then GameTooltip:AddLine(info) end
 		end
@@ -861,11 +842,13 @@ function module:BuildMissionList()
 	GMC.startButton:SetWidth(198)
 	GMC.startButton:SetPoint('TOPLEFT',10,25)
 	GMC.startButton:SetScript('OnClick', function(this,button) self:OnClick_Start(this,button) end)
+---@diagnostic disable-next-line: param-type-mismatch
 	GMC.startButton:SetScript('OnEnter', function() GameTooltip:SetOwner(GMC.startButton, 'ANCHOR_TOPRIGHT') GameTooltip:AddLine('Assign your followers to missions.') GameTooltip:Show() end)
 	GMC.startButton:SetScript('OnLeave', function() GameTooltip:Hide() end)
 	GMC.runButton = CreateFrame('BUTTON', nil,ml.widget.frame, 'GameMenuButtonTemplate')
 	GMC.runButton:SetText('Send all mission at once')
 	GMC.runButton:SetScript('OnEnter', function()
+---@diagnostic disable-next-line: param-type-mismatch
 		GameTooltip:SetOwner(GMC.runButton, 'ANCHOR_TOPRIGHT')
 		GameTooltip:AddLine(L["Submit all your mission at once. No question asked."])
 		GameTooltip:AddLine(L["You can also send mission one by one clicking on each button."])

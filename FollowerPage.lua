@@ -20,8 +20,8 @@ local GameTooltip=GameTooltip
 local StaticPopupDialogs=StaticPopupDialogs
 local YES=YES
 local NO=NO
-local GARRISON_FOLLOWER_MAX_ITEM_LEVEL=GARRISON_FOLLOWER_MAX_ITEM_LEVEL
-local ORDER_HALL_MAC_ITEM_LEVEL=900
+---@diagnostic disable-next-line: undefined-field
+local GARRISON_FOLLOWER_MAX_ITEM_LEVEL= _G.GARRISON_FOLLOWER_MAX_ITEM_LEVEL or 675
 local module=addon:NewSubClass("FollowerPage") --#module
 local UIDropDownMenu_SetSelectedID,	UIDropDownMenu_Initialize,	UIDropDownMenu_CreateInfo,UIDropDownMenu_AddButton
 =UIDropDownMenu_SetSelectedID,UIDropDownMenu_Initialize,	UIDropDownMenu_CreateInfo,UIDropDownMenu_AddButton
@@ -67,6 +67,7 @@ local function UpgradeFollower(this)
 	local genere=this.tipo:sub(1,1)
 	local currentlevel=genere=="w" and follower.ItemWeapon.itemLevel or  follower.ItemArmor.itemLevel
 	local name = ITEM_QUALITY_COLORS[G.GetFollowerQuality(followerID)].hex..G.GetFollowerName(followerID)..FONT_COLOR_CODE_CLOSE;
+	---@type number|boolean
 	local losing=false
 	local upgrade=math.min(upgradelevel>600 and upgradelevel or upgradelevel+currentlevel,GARRISON_FOLLOWER_MAX_ITEM_LEVEL)
 	if upgradelevel > 600 and currentlevel>600 then
@@ -152,7 +153,7 @@ function module:ShowUpgradeButtons(force)
 	local followerID=gf.followerID
 	local followerInfo = followerID and G.GetFollowerInfo(followerID);
 
-	local canUpgrade = followerInfo and followerInfo.isCollected and gf.ItemWeapon.itemLevel + gf.ItemArmor.itemLevel < GARRISON_FOLLOWER_MAX_ITEM_LEVEL * 2 
+	local canUpgrade = followerInfo and followerInfo.isCollected and gf.ItemWeapon.itemLevel + gf.ItemArmor.itemLevel < GARRISON_FOLLOWER_MAX_ITEM_LEVEL * 2
 	if canUpgrade and (not followerInfo.status or followerInfo.status == GARRISON_FOLLOWER_INACTIVE) and followerInfo.isMaxLevel then
 		ClearOverrideBindings(gf)
 		local binded={}
@@ -160,6 +161,7 @@ function module:ShowUpgradeButtons(force)
 		local shown
 		local reuse
 		for i=#upgrades,1,-1 do
+			---@type string,string,string|number?
 			local tipo,itemID,level=strsplit(":",upgrades[i])
 			if not b[used] then
 				b[used]=CreateFrame("Button","GCUPGRADES"..used,gf,"GarrisonCommanderUpgradeButton,SecureActionbuttonTemplate")
@@ -369,6 +371,7 @@ end
 
 ---@function [parent=#addon] GarrisonTraitCounter_OnEnter
 -- Need to be a global
+---@diagnostic disable-next-line: inject-field
 function _G.GarrisonTraitCounter_OnEnter(this)
 	GameTooltip:SetOwner(this, "ANCHOR_RIGHT");
 	GameTooltip:SetText(this:GetParent().tooltipString:format(this.Count:GetText(), this.name,this.id) , nil, nil, nil, nil, true);
@@ -397,9 +400,11 @@ function module:FillCounters(this,category)
 	end
 end
 -- Binding descriptions
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_HEADER_GCFOLLOWER="Garrison Commander - Follower Page"
 
 for _,v in pairs(addon:GetUpgrades()) do
+	---@type string,string,string|number?
 	local t,_,l=strsplit(':',v)
 	t=t:upper()
 	l=tonumber(l)
@@ -410,9 +415,15 @@ for _,v in pairs(addon:GetUpgrades()) do
 			_G[keyname]=  format(L["Upgrade %1$s to  %2$d itemlevel"],(t:sub(1,1)=="W" and "weapon" or "armor"),l)
 	end
 end
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_NAME_GCWE=L["Applies the best weapon upgrade"]
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_NAME_GCAE=L["Applies the best armor upgrade"]
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_NAME_GCWF=L["Applies the best weapon set"]
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_NAME_GCAF=L["Applies the best armor set"]
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_NAME_GCWT=L["Uses weapon token"]
+---@diagnostic disable-next-line: inject-field
 _G.BINDING_NAME_GCAT=L["Uses armor token"]
