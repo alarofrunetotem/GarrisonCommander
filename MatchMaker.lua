@@ -390,18 +390,6 @@ function addon:TestMission(missionID,includeBusy)
 	scroller=nop
 	dbg=false
 end
-function addon:MCTestMission(missionID,includeBusy,chance)
-	local mission=type(missionID)=="table" and missionID or self:GetMissionData(missionID)
-	missionID=mission.missionID
-	dbg=true
-	local party=new()
-	party.members=new()
-	self:MCMatchMaker(mission,party,includeBusy,true,chance)
-	del(party.members)
-	del(party)
-	scroller=nop
-	dbg=false
-end
 function addon:MatchDebug(d)
 	dbg=d
 end

@@ -14,12 +14,6 @@ local GARRISON_SHIP_OIL_CURRENCY=GARRISON_SHIP_OIL_CURRENCY
 local GARRISON_FOLLOWER_MAX_LEVEL=40
 local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0_GarrisonFollower
 local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_Boat
-local LE_FOLLOWER_TYPE_GARRISON_7_0=Enum.GarrisonFollowerType.FollowerType_7_0_GarrisonFollower
-local LE_FOLLOWER_TYPE_GARRISON_8_0=Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
-local LE_GARRISON_TYPE_6_0=Enum.GarrisonType.Type_6_0_Garrison
-local LE_GARRISON_TYPE_6_2=Enum.GarrisonType.Type_6_2_Garrison
-local LE_GARRISON_TYPE_7_0=Enum.GarrisonType.Type_7_0_Garrison
-local LE_GARRISON_TYPE_8_0=Enum.GarrisonType.Type_8_0_Garrison
 local GMF=GMF
 local GSF=GSF
 local GMFMissions=GMFMissions
@@ -64,22 +58,28 @@ function module:OnInitialized()
 	--> has auction addons installed?
 	local appraisers={}
 	local trash={}
+---@diagnostic disable-next-line: undefined-field
 	if _G.AucAdvanced then
 		addon.AuctionPrices=true
+---@diagnostic disable-next-line: undefined-field
 		appraisers.AUC=_G.AucAdvanced.API.GetMarketValue
 	end
+---@diagnostic disable-next-line: undefined-field
 	if _G.Atr_GetAuctionBuyout then
 		addon.AuctionPrices=true
 		appraisers.ATR=Atr_GetAuctionBuyout
 	end
+---@diagnostic disable-next-line: undefined-field
 	if _G.TSM_API then
 		addon.AuctionPrices=true
 		appraisers.TSM=function(itemlink) return TSM_API.GetCustomPriceValue("DBMarket", "i:" .. itemlink) end
 	end
+---@diagnostic disable-next-line: undefined-field
 	if _G.TUJMarketInfo then
 		addon.AuctionPrices=true
 		appraisers.TUY=function(itemlink) TUJMarketInfo(itemlink,trash) return trash['market'] end
 	end
+---@diagnostic disable-next-line: undefined-field
 	if _G.GetAuctionBuyout then
 		addon.AuctionPrices=true
 		appraisers.AH=GetAuctionBuyout
@@ -120,6 +120,7 @@ end
 function module:GetMission(id,noretry)
 	local mission
 	if index[id] then
+		---@type string,string|number?
 		local type,ix=strsplit("@",index[id])
 		ix=tonumber(ix)
 		if type=="a" then
@@ -160,15 +161,8 @@ function module:AddExtraData(mission)
 	for k,v in pairs(rewards) do
 		if k==615 and v.followerXP then mission.xpBonus=mission.xpBonus+v.followerXP end
 		mission.numrewards=mission.numrewards+1
-		if mission.missionID == dbg then DevTools_Dump(v) end
-		for i,c in ipairs(classes) do
-			--@debug@
-			if mission.missionID == dbg then print("Checking for class",c.key) end
-			--@end-debug@
+		for _,c in ipairs(classes) do
 			local value=c.func(c,k,v)
-			--@debug@
-			if mission.missionID == dbg then print("Returned:",value) end
-			--@end-debug@
 			if value then
 				if not mission.class  then
 					mission[c.key]=mission[c.key]+value
@@ -185,15 +179,16 @@ function module:AddExtraData(mission)
 						mission.bestItemID=v.itemID
 						local count=0
 						for i=1,#data do
-							local c,k,l=strsplit('@',data[i])
-							c=tonumber(c) or 1
-							k=tonumber(k)
-							if (tonumber(c) or 1) >= count then
-								local val,auction=self:GetMarketValue(k)
-								if count<c or (val and val > sellvalue) then
-									count=c
+							---@type string|number?,string|number?,string|number
+							local cc,kk,l=strsplit('@',data[i])
+							cc=tonumber(cc) or 1
+							kk=tonumber(kk)
+							if (tonumber(cc) or 1) >= count then
+								local val,auction=self:GetMarketValue(kk)
+								if count<cc or (val and val > sellvalue) then
+									count=cc
 									sellvalue=val
-									mission.bestItemID=k
+									mission.bestItemID=kk
 									mission.bestItemIDAuction=auction
 								end
 							end
@@ -201,9 +196,6 @@ function module:AddExtraData(mission)
 					else
 						sellvalue=self:GetMarketValue(v.itemID)
 					end
-					--@debug@
-					if mission.missionID == dbg then print("Market value",sellvalue) end
-					--@end-debug@
 					if not tonumber(sellvalue) then
 						print(mission.missionID,"sellvalue for",v.itemID,"was non numeric:",sellvalue)
 						sellvalue=0
@@ -212,9 +204,6 @@ function module:AddExtraData(mission)
 						mission.moreClasses.gold=(mission.moreClasses.gold or 0) + sellvalue * (v.quantity)
 					end
 				end
-				--@debug@
-				if mission.missionID == dbg then print("Current gold",mission.gold,"moreclass gold",mission.moreClasses.gold) end
-				--@end-debug@
 				break
 			end
 		end
@@ -228,13 +217,10 @@ function module:AddExtraData(mission)
 		if not mission.class then mission.class=k end
 		mission[k]=mission[k]+v
 	end
---@debug@
-	if mission.missionID == dbg then print("Final gold",mission.gold) DevTools_Dump(mission.moreClasses)end
---@end-debug@
 	if not mission.class then mission.class="other" end
 	local xp=G.GetMissionDeploymentInfo(mission.missionID)['xp']
 	if not mission.xp or mission.xp==0 then mission.xp=xp end
-	mission.globalXp=tonumber(mission.xp) or 0 + tonumber(mission.xpBonus) or 0
+	mission.globalXp=(tonumber(mission.xp) or 0) + (tonumber(mission.xpBonus) or 0)
 end
 function module:GetMissionIterator(followerType)
 	local list
@@ -362,8 +348,8 @@ function addon:OnAllGarrisonMissions(func,inProgress)
 end
 local sorters={}
 
-function addon:GetMissionIterator(followerType,func)
-	return module:GetMissionIterator(followerType,func)
+function addon:GetMissionIterator(followerType)
+	return module:GetMissionIterator(followerType)
 end
 local function inList(self,id,reward)
 	if self.key=='xp'  then

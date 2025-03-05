@@ -909,7 +909,7 @@ function addon:SetClean()
 	dirty=false
 end
 function addon:HasSalvageYard()
-	local buildings=G.GetBuildings(LE_GARRISON_TYPE_6_0)
+	local buildings=G.GetBuildings(LE_GARRISON_TYPE_6_0) or {}
 	for i =1,#buildings do
 		local building=buildings[i]
 		if building.texPrefix=="GarrBuilding_SalvageYard_1_A" then return true end
@@ -1343,7 +1343,7 @@ print(this)
 	tip:AddLine(this.Description,C.Orange())
 	if (this.countered) then
 		if this.IsEnv then
-			local t=G.GetFollowersTraitsForMission(this.missionID)
+			local t=G.GetFollowersTraitsForMission(this.missionID) or {}
 			for followerID,k in pairs(t) do
 				for i=1,#k do
 					if k[i].icon==this.texture then
@@ -1352,7 +1352,7 @@ print(this)
 				end
 			end
 		else
-			local t=G.GetBuffedFollowersForMission(this.missionID,true)
+			local t=G.GetBuffedFollowersForMission(this.missionID,true) or {}
 			for followerID,k in pairs(t) do
 				for i=1,#k do
 					if k[i].name==this.Name then
@@ -1540,7 +1540,7 @@ print("Setup")
 	tabHP:SetPushedTexture("Interface\\ICONS\\INV_Misc_QuestionMark.blp")
 	tabHP:Show()
 	tabHP:SetPoint('TOPLEFT',GCF,'TOPRIGHT',0,-10)
-	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(this,button) end)
+	tabHP:SetScript("OnClick",function(this,button) addon:ShowHelpWindow(button) end)
 	-- retrieving release notes localization from LibInit
 	local tabQ=CreateFrame("Button",nil,GMF,"SpellBookSkillLineTabTemplate")
 	GMF.tabQ=tabQ
@@ -1782,7 +1782,7 @@ function addon:checkHandler(handler)
 	assert (type(handler)=='function' or type(self[handler])=='function',format("Unable to validate handler '%s'",tostring(handler)))
 end
 function addon:SafeRegisterEvent(event,handler)
-	handler=handler or "Event"..event
+	handler=handler or ("Event"..event)
 	self:checkHandler(handler)
 	return self:RegisterEvent(event,handler)
 end
@@ -1797,7 +1797,7 @@ function addon:SafeHook(object,method,handler,hookType)
 	if type(object) == "string" then
 		method, handler, hookType , object = object, method, handler,nil
 	end
-	handler=handler or "Hooked"..method
+	handler=handler or ("Hooked"..method)
 	self:checkHandler(handler)
 	if hookType=="post" or hookType=="secure" then
 		self:SecureHook(object,method,handler)
@@ -1870,7 +1870,7 @@ function addon:GetFollowerTexture(followerID,followerType)
 			if followerType==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 				local iconID=follower.portraitIconID
 				if iconID then
-					converter:SetToFileData(iconID)
+					converter:SetTexture(iconID)
 					return converter:GetTexture()
 				end
 			elseif followerType==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
@@ -1952,6 +1952,7 @@ function addon:FillMissionPage(missionInfo)
 			stage.expires:SetDrawLayer(missionenv:GetDrawLayer())
 			stage.expires:SetPoint("TOPLEFT",missionenv,"BOTTOMLEFT")
 		end
+---@diagnostic disable-next-line: undefined-field
 		stage.expires:SetFormattedText(GARRISON_MISSION_AVAILABILITY2,missionInfo.offerTimeRemaining or _G.UNKNOWN)
 		stage.expires:SetTextColor(self:GetAgeColor(missionInfo.offerEndTime or 0 ))
 	else
@@ -2374,41 +2375,6 @@ function addon:OnClick_GCMissionButton(frame,button)
 	end
 end
 
---[[
-addon.oldSetUp=addon.SetUp
-function addon:ExperimentalSetUp()
-
-end
-addon.SetUp=addon.ExperimentalSetUp
---]]
-
-function addon:HookedGarrisonMissionPageFollowerFrame_OnEnter(frame)
-	if not frame.info then
-		return;
-	end
-
-	GarrisonFollowerTooltip:ClearAllPoints();
-	GarrisonFollowerTooltip:SetPoint("TOPLEFT", frame, "BOTTOMRIGHT");
-	GarrisonFollowerTooltip_Show(frame.info.garrFollowerID,
-		frame.info.isCollected,
-		C_Garrison.GetFollowerQuality(frame.info.followerID),
-		C_Garrison.GetFollowerLevel(frame.info.followerID),
-		C_Garrison.GetFollowerXP(frame.info.followerID),
-		C_Garrison.GetFollowerLevelXP(frame.info.followerID),
-		C_Garrison.GetFollowerItemLevelAverage(frame.info.followerID),
-		C_Garrison.GetFollowerAbilityAtIndex(frame.info.followerID, 1),
-		C_Garrison.GetFollowerAbilityAtIndex(frame.info.followerID, 2),
-		C_Garrison.GetFollowerAbilityAtIndex(frame.info.followerID, 3),
-		C_Garrison.GetFollowerAbilityAtIndex(frame.info.followerID, 4),
-		C_Garrison.GetFollowerTraitAtIndex(frame.info.followerID, 1),
-		C_Garrison.GetFollowerTraitAtIndex(frame.info.followerID, 2),
-		C_Garrison.GetFollowerTraitAtIndex(frame.info.followerID, 3),
-		C_Garrison.GetFollowerTraitAtIndex(frame.info.followerID, 4),
-		true,
-		C_Garrison.GetFollowerBiasForMission(frame.missionID, frame.info.followerID) < 0.0
-		);
-end
-
 function deleteGarrisonMissionFrame_SetFollowerPortrait(portraitFrame, followerInfo, forMissionPage)
 	local color = ITEM_QUALITY_COLORS[followerInfo.quality];
 	portraitFrame.PortraitRingQuality:SetVertexColor(color.r, color.g, color.b);
@@ -2636,14 +2602,16 @@ function addon:AddRewardExtraTooltip(this,enter)
 			tip:AddLine(REWARDS,C:Green())
 			local total=0
 			for k,v in pairs(creates) do
+				---@type string|number?,string|number?
 				local c,k=strsplit('@',v)
 				c=tonumber(c) or 1
 				total=total+(tonumber(c) or 1)
 			end
 			for _,v in pairs(creates) do
+				---@type string|number?,string|number?
 				local c,k=strsplit('@',v)
 				c=tonumber(c) or 1
-				k=tonumber(k)
+				k=tonumber(k) or -1
 				local _1,l,_3,_4,_5,_6,_7,_8,_9,t=GetItemInfo(k)
 				local buy,source=self:GetMarketValue(l or k)
 				if l then
@@ -2784,7 +2752,7 @@ function addon:DrawSlimButton(source,frame,progressing,bigscreen)
 		if mission.followerTypeID==LE_FOLLOWER_TYPE_GARRISON_6_0 then
 			self:AddFollowersToButton(frame,mission,missionID,bigscreen,numRewards)
 		elseif  mission.followerTypeID==LE_FOLLOWER_TYPE_SHIPYARD_6_2 then
-			self:AddShipsToButton(frame,mission,missionID,bigscreen,numRewards)
+			self:AddShipsToButton(frame,mission,missionID,bigscreen)
 		end
 		frame.Title:SetPoint("TOPLEFT",frame.Indicators,"TOPRIGHT",0,-5)
 		frame.Success:SetPoint("LEFT",frame.Indicators,"RIGHT",0,0)
@@ -3255,5 +3223,7 @@ addon:SafeSecureHook("GarrisonMissionButton_SetRewards")
 --addon:SecureHook("GarrisonMissionButton_OnEnter","ScriptGarrisonMissionButton_OnEnter")
 addon:SafeSecureHook(GMF,"SelectTab","GarrisonMissionFrame_SelectTab")
 addon:SafeRawHookScript(GMF.MissionTab.MissionPage.CloseButton,"OnClick","GarrisonMissionPageOnClose")
+---@diagnostic disable-next-line: inject-field
 _G.GarrisonCommander=addon
+---@diagnostic disable-next-line: inject-field
 _G.GAC=addon

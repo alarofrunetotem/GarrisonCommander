@@ -1,5 +1,16 @@
 {
     "NOTES": {
+        "k031003": {
+            "major": "3",
+            "minor": "10",
+            "patch": "3",
+            "description": [
+                {
+                    "tag": "Feature",
+                    "info": "Added category"
+                }
+            ]
+        },
         "k031002": {
             "major": "3",
             "minor": "10",

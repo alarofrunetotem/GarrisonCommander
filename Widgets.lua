@@ -5,8 +5,8 @@ local _G=_G
 local wipe=wipe
 local format=format
 local UNKNOWN=UNKNOWN
-local LE_FOLLOWER_TYPE_GARRISON_6_0=LE_FOLLOWER_TYPE_GARRISON_6_0
-local LE_FOLLOWER_TYPE_SHIPYARD_6_2=LE_FOLLOWER_TYPE_SHIPYARD_6_2
+local LE_FOLLOWER_TYPE_GARRISON_6_0=Enum.GarrisonFollowerType.FollowerType_6_0_GarrisonFollower 
+local LE_FOLLOWER_TYPE_SHIPYARD_6_2=Enum.GarrisonFollowerType.FollowerType_6_0_Boat
 
 local module=addon:NewSubModule("Widgets") --#module
 local function Constructor()
@@ -219,6 +219,7 @@ local function GMCGUIContainer()
 	local function Constructor()
 		local frame=CreateFrame("Frame",Type..(GetTime()*1000),nil,"GarrisonUITemplate")
 		for _,f in pairs({frame:GetRegions()}) do
+---@diagnostic disable-next-line: undefined-field
 			if (f:GetObjectType()=="Texture" and f:GetAtlas()=="Garr_WoodFrameCorner") then f:Hide() end
 		end
 		local widget={frame=frame,missions={}}
@@ -322,6 +323,7 @@ local function GMCLayer()
 		--Container Support
 		local content = CreateFrame("Frame",nil,frame)
 		widget.content = content
+---@diagnostic disable-next-line: undefined-global
 		content.obj = self
 		content:SetPoint("TOPLEFT",title,"BOTTOMLEFT",6,0)
 		content:SetPoint("TOPRIGHT",title,"BOTTOMRIGHT",-6,0)

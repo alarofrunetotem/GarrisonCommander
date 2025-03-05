@@ -164,6 +164,7 @@ function party:Close(desttable)
 			if not ability.isTrait then
 				for counter,data in pairs(ability.counters) do
 					for j=1,#threats do
+						---@type string,string,string|number?
 						local enemy,threat,oldbias,follower,name=strsplit(":",threats[j])
 						oldbias=tonumber(oldbias) or -2
 						if bias >oldbias and tonumber(threat)==tonumber(counter) then

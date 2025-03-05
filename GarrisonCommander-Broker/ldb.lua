@@ -1,4 +1,4 @@
----@diagnostic disable: missing-fields
+---@diagnostic disable: missing-fields, param-type-mismatch
 local me, ns = ...
 local toc=select(4,GetBuildInfo())
 local pp=print
