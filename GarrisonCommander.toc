@@ -1,4 +1,4 @@
-## Interface: 110007, 110100
+## Interface: 110105, 110107
 ## Title: GarrisonCommander
 ## IconTexture: 134414
 ## Category-enUS: Expansion Features

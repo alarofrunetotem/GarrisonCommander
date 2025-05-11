@@ -24,6 +24,9 @@ self:Wiki([[
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
 self:HF_Paragraph('Release Notes')
+self:RelNotes(3,10,4,[[
+Fix: work in progress
+]])
 self:RelNotes(3,10,3,[[
 Feature: Added category
 ]])
