@@ -1,5 +1,16 @@
-## Interface: 110105, 110107
+## Interface: 110200, 110205
 ## Title: GarrisonCommander-Broker
+## Category-enUS: Expansion Features
+## Category-deDE: Erweiterungsfeatures
+## Category-esES: Características
+## Category-esMX: Características de expansiones
+## Category-frFR: Contenu d’extension
+## Category-itIT: Contenuti specifici
+## Category-koKR: 확장팩 특징
+## Category-ptBR: Características da Expansão
+## Category-ruRU: Особый контент
+## Category-zhCN: 特色更新
+## Category-zhTW: 資料片特色
 ## Notes: Data-Broker for GarrisonCommander
 ## Notes-itIT: Data-Broker per GarrisonCommander
 ## Notes-frFR: Data-Broker pour GarrisonCommander
