@@ -1,4 +1,4 @@
-## Interface: 110200, 110205
+## Interface: 110207, 120000, 120001
 ## Title: GarrisonCommander-Broker
 ## Category-enUS: Expansion Features
 ## Category-deDE: Erweiterungsfeatures
