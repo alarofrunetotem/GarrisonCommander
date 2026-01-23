@@ -27,10 +27,10 @@ if (me ==  gc and  not IsAddOnLoaded(gb) or
      ExpansionLandingPageMinimapButton:HookScript("OnEnter",
      function(this)
       local d=this.description
-        addTooltip(d,CTRL_KEY_TEXT,garrison)
-        addTooltip(d,SHIFT_KEY_TEXT,orderhall)
-        addTooltip(d,CTRL_KEY_TEXT .. '-' .. SHIFT_KEY_TEXT,champion)
-        if C_PlayerInfo.IsExpansionLandingPageUnlockedForPlayer(LE_EXPANSION_DRAGONFLIGHT) then addTooltip(d,CTRL_KEY_TEXT .. '-' .. ALT_KEY_TEXT,sanctum) end
+        if garrison then addTooltip(d,CTRL_KEY_TEXT,garrison) end
+        if orderhall then addTooltip(d,SHIFT_KEY_TEXT,orderhall) end
+        if champion then addTooltip(d,CTRL_KEY_TEXT .. '-' .. SHIFT_KEY_TEXT,champion) end
+        if sanctum then addTooltip(d,CTRL_KEY_TEXT .. '-' .. ALT_KEY_TEXT,sanctum) end
         GameTooltip:Show()
     end
     )
@@ -61,8 +61,7 @@ if (me ==  gc and  not IsAddOnLoaded(gb) or
            ExpansionLandingPage:Hide()
         end
         if actual ~= requested then
-          ShowGarrisonLandingPage(requested);
-          
+          pcall(ShowGarrisonLandingPage,requested);
        end
      end
     )

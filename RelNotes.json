@@ -1,5 +1,16 @@
 {
     "NOTES": {
+        "k031201": {
+            "major": "3",
+            "minor": "12",
+            "patch": "1",
+            "description": [
+                {
+                    "tag": "Fix",
+                    "info": "lua error"
+                }
+            ]
+        },
         "k031200": {
             "major": "3",
             "minor": "12",
