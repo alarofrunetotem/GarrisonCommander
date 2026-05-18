@@ -1,4 +1,6 @@
-[![Package and release](https://github.com/alarofrunetotem/GarrisonCommander/actions/workflows/main.yml/badge.svg?branch=master&event=push)](https://github.com/alarofrunetotem/GarrisonCommander/actions/workflows/main.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/alarofrunetotem/GarrisonCommander/main.yml)
+![Dynamic Regex Badge](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2Falarofrunetotem%2FGarrisonCommander%2Fblob%2Fdevelop%2FLibInit.toc&search=%23%23%20Interface%3A(%5B%200123456789%2C%5D*)&label=LibInit)
+
 
 # GarrisonCommander helps you when choosing the right follower for the right mission
 ## General enhancements 
