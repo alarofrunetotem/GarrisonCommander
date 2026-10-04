@@ -1,4 +1,4 @@
-## Interface: 120005
+## Interface: 120100, 120105
 ## Title: GarrisonCommanderLoader (Draenor mission assistant loader)
 ## Notes: Loads GarrisonCommander only when you open the commander table
 ## Author: Alar of Runetotem

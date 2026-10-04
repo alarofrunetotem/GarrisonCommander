@@ -24,6 +24,9 @@ self:Wiki([[
 typing /gac silent in chat will eliminate every chat message from GarrisonCommander
 ]])
 self:HF_Paragraph('Release Notes')
+self:RelNotes(3,13,2,[[
+Toc: 12.1.0
+]])
 self:RelNotes(3,13,1,[[
 Toc: 12.0.5
 ]])
